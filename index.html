@@ -1,24 +1,436 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>My test page</title>
-    <link rel="stylesheet" href="styles/style.css">
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Open+Sans+Condensed:300&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <h1>Mozilla is cool</h1>
-	<img src="images/firefox-icon.png" alt="My test image">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mohammed Ashraf — Healthcare Data Automation & Systems</title>
+<meta name="description" content="Automation, HL7 healthcare data integration, and server administration. Direct engagement, no agency in between.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EDEA;
+    --paper-raised:#F4F6F4;
+    --ink:#1A231F;
+    --ink-soft:#485650;
+    --line:#C9D1CB;
+    --teal:#2E6B5E;
+    --teal-deep:#1F4E44;
+    --amber:#C1832E;
+    --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 28px;}
 
-	<p>At Mozilla, we're a global community of </p>
-	<ul>
-	<li>technologists</li>
-	<li>thinkers</li>
-	<li>builders</li>
-	</ul>
-	<p>working together to keep the Internet alive and accessible, so people worldwide can be informed contributors and creators of the Web. We believe this act of human collaboration across an open platform is essential to individual growth and our collective future.</p>
-	<p>Read the <a href="https://www.mozilla.org/en-US/about/manifesto/">Mozilla Manifesto</a> to learn even more about the values and principles that guide the pursuit of our mission.</p>
-<button>Change User </button>
-<script src="scripts/main.js"></script>
-  </body>
+  /* focus visibility */
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--teal-deep);
+    outline-offset:3px;
+  }
+
+  /* ---------- Nav ---------- */
+  header.site{
+    padding:22px 0 0;
+    border-bottom:1px solid var(--line);
+  }
+  .navrow{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-bottom:18px;
+  }
+  .navrow .name{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    letter-spacing:0.02em;
+  }
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav a{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    text-decoration:none;
+    color:var(--ink-soft);
+    margin-left:22px;
+  }
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:64px 0 56px;}
+  .segment-line{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--mono-label);
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:10px 14px;
+    display:inline-block;
+    overflow-x:auto;
+    max-width:100%;
+    white-space:pre;
+  }
+  h1.headline{
+    font-family:'IBM Plex Serif', serif;
+    font-weight:600;
+    font-size:clamp(32px, 5vw, 50px);
+    line-height:1.12;
+    margin:26px 0 18px;
+    max-width:14ch;
+    color:var(--ink);
+  }
+  .headline em{
+    font-style:normal;
+    color:var(--teal-deep);
+    border-bottom:2px solid var(--amber);
+  }
+  .sub{
+    font-size:18px;
+    color:var(--ink-soft);
+    max-width:52ch;
+    margin:0 0 30px;
+  }
+  .decode{
+    margin:34px 0 38px;
+    border:1px solid var(--line);
+    background:var(--ink);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .decode .bar{
+    display:flex; gap:6px;
+    padding:10px 14px;
+    border-bottom:1px solid #2A362F;
+  }
+  .decode .bar span{
+    width:9px; height:9px; border-radius:50%;
+    background:#3A4A42;
+  }
+  .decode .body{
+    padding:20px 22px 24px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:#9FB3AA;
+  }
+  .decode .raw::before{content:"raw  ";color:#5C7069;}
+  .decode .arrow{
+    color:var(--amber);
+    margin:10px 0;
+    display:block;
+  }
+  .decode .clean::before{content:"reads ";color:#5C7069;}
+  .decode .clean{color:#EAF1EC;}
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14px;
+    text-decoration:none;
+    padding:12px 22px;
+    border-radius:3px;
+    display:inline-block;
+    border:1px solid transparent;
+  }
+  .btn.primary{
+    background:var(--teal-deep);
+    color:var(--paper-raised);
+  }
+  .btn.primary:hover{background:var(--teal);}
+  .btn.ghost{
+    border-color:var(--ink);
+    color:var(--ink);
+  }
+  .btn.ghost:hover{background:var(--paper-raised);}
+
+  /* ---------- Section shell ---------- */
+  section{padding:56px 0;}
+  section.alt{background:var(--paper-raised); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--mono-label);
+    margin:0 0 10px;
+  }
+  h2{
+    font-family:'IBM Plex Serif', serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 30px;
+    max-width:30ch;
+  }
+
+  /* ---------- Services ---------- */
+  .services{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+  }
+  .service{
+    border:1px solid var(--line);
+    background:var(--paper);
+    border-radius:6px;
+    padding:22px 20px;
+  }
+  section.alt .service{background:var(--paper);}
+  .service .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--teal-deep);
+    margin-bottom:10px;
+    display:block;
+  }
+  .service h3{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:17px;
+    margin:0 0 8px;
+  }
+  .service p{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+
+  /* ---------- Proof ---------- */
+  .log{
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    background:var(--paper-raised);
+  }
+  .log-entry{
+    padding:22px 24px;
+    border-bottom:1px solid var(--line);
+    display:grid;
+    grid-template-columns:120px 1fr;
+    gap:20px;
+  }
+  .log-entry:last-child{border-bottom:none;}
+  .log-entry .stamp{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--mono-label);
+    padding-top:2px;
+  }
+  .log-entry h3{
+    font-size:16.5px;
+    margin:0 0 6px;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .log-entry p{
+    margin:0;
+    font-size:14.5px;
+    color:var(--ink-soft);
+  }
+
+  /* ---------- Direct trust ---------- */
+  .direct-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+    align-items:start;
+  }
+  .direct-grid p{color:var(--ink-soft); font-size:15px;}
+  .compare{border:1px solid var(--line); border-radius:6px; overflow:hidden; background:var(--paper);}
+  .compare-row{display:grid; grid-template-columns:1fr 1fr; font-size:13.5px;}
+  .compare-row div{padding:12px 16px;}
+  .compare-row.head div{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--mono-label);
+    background:var(--paper-raised);
+  }
+  .compare-row:not(.head){border-top:1px solid var(--line);}
+  .compare-row div:first-child{color:var(--ink-soft); border-right:1px solid var(--line);}
+  .compare-row div:last-child{color:var(--teal-deep); font-weight:500;}
+
+  /* ---------- Contact ---------- */
+  .contact-shell{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:40px;
+  }
+  form{display:flex; flex-direction:column; gap:14px;}
+  label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--mono-label);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  input, textarea{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:15px;
+    padding:11px 12px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  textarea{min-height:110px; resize:vertical;}
+  .contact-side{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.9;
+  }
+  .contact-side a{color:var(--teal-deep); text-decoration:none; border-bottom:1px solid var(--teal-deep);}
+
+  footer{
+    padding:28px 0 40px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--mono-label);
+    text-align:center;
+  }
+
+  @media (max-width:760px){
+    .services{grid-template-columns:1fr;}
+    .direct-grid{grid-template-columns:1fr;}
+    .contact-shell{grid-template-columns:1fr;}
+    .log-entry{grid-template-columns:1fr; gap:6px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap navrow">
+    <div class="name"><b>Mohammed Ashraf</b> / automation &amp; systems</div>
+    <nav>
+      <a href="#work">Work</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="segment-line">MSH|^~\&amp;|ASHRAF|AUTOMATION|YOU|YOUR-SYSTEM|now||INTRO^MSG|1|P|2.5</div>
+    <h1 class="headline">I fix the data pipelines your <em>vendor</em> won't touch.</h1>
+    <p class="sub">Automation, scripting, and healthcare data integration — HL7 files, server admin, the manual work nobody wants to own. You talk to the person doing the work, not an account manager.</p>
+
+    <div class="decode">
+      <div class="bar"><span></span><span></span><span></span></div>
+      <div class="body">
+        <span class="raw">OBX|3|NM|1234^Field||broken^^L|</span>
+        <span class="arrow">→ decoded, validated, merged, delivered on time →</span>
+        <span class="clean">a working file your system can actually ingest</span>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn primary" href="#contact">Start a project</a>
+      <a class="btn ghost" href="#work">See the work</a>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="services">
+  <div class="wrap">
+    <p class="eyebrow">What I do</p>
+    <h2>Three things, done properly, no subcontracting.</h2>
+    <div class="services">
+      <div class="service">
+        <span class="tag">HL7 / HEALTH DATA</span>
+        <h3>Healthcare data integration</h3>
+        <p>Parsing, validating, and merging HL7 message files across systems and departments so nothing gets lost or duplicated between them.</p>
+      </div>
+      <div class="service">
+        <span class="tag">SCRIPTS / TOOLS</span>
+        <h3>Automation &amp; scripting</h3>
+        <p>Python and Bash tools that remove the repetitive, error-prone manual work your team is currently doing by hand.</p>
+      </div>
+      <div class="service">
+        <span class="tag">LINUX / APACHE</span>
+        <h3>Server administration</h3>
+        <p>Setup, maintenance, and troubleshooting for Linux servers — keeping the systems underneath everything else actually up.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="wrap">
+    <p class="eyebrow">Recent work</p>
+    <h2>A couple of things I've shipped.</h2>
+    <div class="log">
+      <div class="log-entry">
+        <div class="stamp">HL7 / DESKTOP TOOL</div>
+        <div>
+          <h3>HL7 file merge utility</h3>
+          <p>Built a Python + Tkinter desktop tool that merges HL7 message files scattered across multiple folders into one validated set — turning an hours-long manual hunt into a few clicks.</p>
+        </div>
+      </div>
+      <div class="log-entry">
+        <div class="stamp">INFRA / RELIABILITY</div>
+        <div>
+          <h3>Server &amp; sync recovery</h3>
+          <p>Diagnosed and restored a stalled Apache server, and resolved a Google Drive for Desktop sync fault that was silently dropping files from a shared folder before anyone noticed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap direct-grid">
+    <div>
+      <p class="eyebrow">Why direct</p>
+      <h2>No mediator between you and the work.</h2>
+      <p>Projects routed through an agency pass through a sales layer and an account manager before they reach the person actually writing the code. That adds cost and slows everything down. Working directly means one point of contact, faster turnaround, and a fixed price that isn't padded for someone else's margin.</p>
+    </div>
+    <div class="compare">
+      <div class="compare-row head"><div>Through an agency</div><div>Direct</div></div>
+      <div class="compare-row"><div>Relayed through account manager</div><div>Direct message, direct answer</div></div>
+      <div class="compare-row"><div>Markup on top of the work</div><div>Pay for the work</div></div>
+      <div class="compare-row"><div>Handoffs between people</div><div>Same person start to finish</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap contact-shell">
+    <div>
+      <p class="eyebrow">Get in touch</p>
+      <h2>Tell me what's broken.</h2>
+      <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" required>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required>
+
+        <label for="message">What do you need built or fixed?</label>
+        <textarea id="message" name="message" required></textarea>
+
+        <button class="btn primary" type="submit" style="border:none; cursor:pointer; margin-top:6px; width:fit-content;">Send</button>
+      </form>
+    </div>
+    <div class="contact-side">
+      <p>Prefer email?<br><a href="mailto:ashrafbaarab@gmail.com">ashrafbaarab@gmail.com</a></p>
+      <p>Usually replies within a day.<br>Based on project scope, not hours billed.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Mohammed Ashraf — built and maintained directly, no agency in the middle.
+</footer>
+
+</body>
 </html>
