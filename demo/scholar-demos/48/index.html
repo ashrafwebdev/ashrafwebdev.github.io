@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shaykh Talha Rasool — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample Islamic scholar website design for Shaykh Talha Rasool — bio, lecture archive, publications and booking. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#3A2038; --mid:#5C3457; --soft:#F0E7EF; --accent:#C8933F; --cream:#F9F5F8;
+    --ink:#241A23; --inks:#6A5768; --line:#E2D3E0; --ond:#F3E8F2; --onds:#DFC3DC;
+    --font-disp:'Playfair Display',serif; --font-body:'Source Sans 3',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:var(--cream); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;}
+  .navrow{padding:18px 0 14px; text-align:center;}
+  .brand{text-decoration:none; font-family:var(--font-disp); font-size:22px; font-weight:700; color:var(--deep);}
+  nav.links{display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin-top:12px;}
+  nav.links a{font-size:12.5px; text-decoration:none; color:var(--inks); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;}
+  nav.links a:hover{color:var(--deep);}
+
+
+  .hero{background:linear-gradient(150deg, var(--deep), var(--mid)); color:var(--ond); padding:60px 0 0;}
+  .hero-banner-inner{display:grid; grid-template-columns:1fr 200px; gap:30px; align-items:end;}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0 0 12px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(28px,4.2vw,42px); margin:0 0 10px; font-weight:700;}
+  .hero .role{font-size:14.5px; color:var(--onds); margin:0 0 30px;}
+  .portrait{width:170px; height:170px; border-radius:14px 14px 0 0; background:rgba(255,255,255,0.1); border:2px solid var(--accent); border-bottom:none; display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:44px; color:var(--accent); justify-self:end;}
+  .hero-bio-bar{background:var(--cream); padding:26px 0;}
+  .hero-bio-bar p{max-width:70ch; margin:0 0 18px; color:var(--inks); font-size:15px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  @media (max-width:760px){.hero-banner-inner{grid-template-columns:1fr;} .portrait{justify-self:center;}}
+
+
+  .filterbar{display:flex; gap:9px; margin-bottom:24px; flex-wrap:wrap;}
+  .filterbar button{font-family:var(--font-body); font-size:13px; font-weight:600; padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:var(--cream); color:var(--inks); cursor:pointer;}
+  .filterbar button.active{background:var(--deep); border-color:var(--deep); color:var(--ond);}
+  .lecture-list{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--cream);}
+  .lecture-row{display:grid; grid-template-columns:100px 1fr 110px; gap:16px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); font-size:14px;}
+  .lecture-row:last-child{border-bottom:none;}
+  .lecture-row .tag{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--accent);}
+  .lecture-row h3{margin:0 0 3px; font-size:15px; font-weight:600;}
+  .lecture-row .meta{color:var(--inks); font-size:12.5px;}
+  .lecture-row .len{color:var(--inks); font-size:12.5px; text-align:right;}
+  @media (max-width:760px){.lecture-row{grid-template-columns:1fr; row-gap:4px;} .lecture-row .len{text-align:left;}}
+
+
+  .pub-timeline{border-left:2px solid var(--line); margin-left:6px; padding-left:26px; display:flex; flex-direction:column; gap:22px;}
+  .pt-item{position:relative;}
+  .pt-item::before{content:""; position:absolute; left:-32px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--deep);}
+  .pt-item .yr{font-family:var(--font-disp); color:var(--deep); font-weight:700; font-size:15px; margin-bottom:4px;}
+  .pt-item h3{margin:0 0 4px; font-size:15px;}
+  .pt-item p{margin:0; color:var(--inks); font-size:13.5px;}
+
+
+  .sched-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .sched-card{background:var(--cream); border:1px solid var(--line); border-radius:8px; padding:20px;}
+  .sched-card .when{font-family:var(--font-disp); color:var(--deep); font-weight:700; font-size:16px; margin-bottom:10px; display:block;}
+  .sched-card p{margin:0 0 8px; font-size:14px;}
+  .sched-card .where{font-size:12.5px; color:var(--accent); font-weight:600;}
+  @media (max-width:760px){.sched-grid{grid-template-columns:1fr;}}
+
+
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-side p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-side b{display:block; color:var(--deep); font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:32px 0 26px; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+  .foot-social{display:flex; justify-content:center; gap:14px; margin-bottom:16px;}
+  .foot-social span{width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--onds);}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real person. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">Shaykh Talha Rasool</a>
+    <nav class="links">
+      <a href="#lectures">Lectures</a>
+      <a href="#publications">Publications</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-banner-inner">
+    <div>
+      <p class="eyebrow-tag">Islamic Scholar &amp; Educator</p>
+      <h1>Shaykh Talha Rasool</h1>
+      <p class="role">Spirituality, tazkiyah, and the sciences of the heart</p>
+    </div>
+    <div class="portrait">TR</div>
+  </div>
+  <div class="hero-bio-bar">
+    <div class="wrap">
+      <p>Shaykh Talha Rasool has spent 17 years studying and teaching spirituality, combining traditional training with a practical, contemporary teaching style.</p>
+      <div class="hero-ctas">
+        <a class="btn gold" href="#schedule">Upcoming sessions</a>
+        <a class="btn outline-dark" href="#contact">Book a talk</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="lectures">
+
+<div class="wrap">
+  <p class="eyebrow">Lecture archive</p>
+  <h2>Recent talks &amp; classes</h2>
+  <div class="filterbar">
+      <button type="button" class="active" data-filter="all">All</button>
+      <button type="button" data-filter="aqeedah">Aqeedah</button>
+      <button type="button" data-filter="fiqh">Fiqh</button>
+      <button type="button" data-filter="seerah">Seerah</button>
+      <button type="button" data-filter="tafsir">Tafsir</button>
+  </div>
+  <div class="lecture-list" id="lectureList">
+      <div class="lecture-row" data-cat="seerah"><span class="tag">Seerah</span><div><h3>The Treaty of Hudaybiyyah: Patience as Strategy</h3><span class="meta">Seerah series, part 9</span></div><span class="len">42 min</span></div>
+      <div class="lecture-row" data-cat="fiqh"><span class="tag">Fiqh</span><div><h3>Zakat on Modern Investments</h3><span class="meta">Community Q&A</span></div><span class="len">33 min</span></div>
+      <div class="lecture-row" data-cat="tafsir"><span class="tag">Tafsir</span><div><h3>Surah Al-Mulk: Reflections on Sovereignty</h3><span class="meta">Night class</span></div><span class="len">35 min</span></div>
+      <div class="lecture-row" data-cat="aqeedah"><span class="tag">Aqeedah</span><div><h3>Understanding Tawakkul in Difficult Times</h3><span class="meta">Friday evening class</span></div><span class="len">46 min</span></div>
+      <div class="lecture-row" data-cat="aqeedah"><span class="tag">Aqeedah</span><div><h3>Divine Decree and Human Free Will</h3><span class="meta">Evening halaqa</span></div><span class="len">24 min</span></div>
+      <div class="lecture-row" data-cat="seerah"><span class="tag">Seerah</span><div><h3>Lessons from the Hijrah</h3><span class="meta">Muharram lecture series</span></div><span class="len">28 min</span></div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.filterbar button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.filterbar button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      var filter = btn.getAttribute('data-filter');
+      document.querySelectorAll('#lectureList .lecture-row').forEach(function(row){
+        row.style.display = (filter === 'all' || row.getAttribute('data-cat') === filter) ? '' : 'none';
+      });
+    });
+  });
+</script>
+
+
+</section>
+
+<section id="publications">
+
+<div class="wrap">
+  <p class="eyebrow">Writing</p>
+  <h2>Publications</h2>
+  <div class="pub-timeline">
+    <div class="pt-item"><div class="yr">2019</div><h3>The Believer's Heart</h3><p>A short work on tazkiyah and the spiritual diseases of the heart.</p></div>
+    <div class="pt-item"><div class="yr">2020</div><h3>Notes on the Seerah</h3><p>A study guide accompanying the weekly seerah class, used by over a dozen study circles.</p></div>
+    <div class="pt-item"><div class="yr">2022</div><h3>Marriage in Islam: A Field Guide</h3><p>Practical premarital counseling material used by several community centers.</p></div>
+    <div class="pt-item"><div class="yr">2023</div><h3>Reading the Qur'an in Difficult Times</h3><p>A short book on applying Qur'anic guidance to modern anxiety and uncertainty.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="schedule">
+
+<div class="wrap">
+  <p class="eyebrow">What's next</p>
+  <h2>Upcoming sessions &amp; Q&amp;A</h2>
+  <div class="sched-grid">
+    <div class="sched-card"><span class="when">Sat, Oct 4</span><p>Monthly tafsir circle</p><span class="where">Online, 8:00 PM</span></div>
+    <div class="sched-card"><span class="when">Sun, Aug 13</span><p>Community iftar talk</p><span class="where">In person, evening</span></div>
+    <div class="sched-card"><span class="when">Mon, Sep 22</span><p>Guest lecture at a local Islamic school</p><span class="where">In person, morning</span></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="contact">
+
+<div class="wrap contact-grid">
+  <div>
+    <p class="eyebrow">Get in touch</p>
+    <h2>Book a talk or ask a question</h2>
+    <form id="bookForm">
+      <label for="bname">Name</label>
+      <input id="bname" required>
+      <label for="borg">Organization (optional)</label>
+      <input id="borg">
+      <label for="btype">Request type</label>
+      <select id="btype">
+        <option>Speaking invitation</option>
+        <option>Media interview</option>
+        <option>General question</option>
+      </select>
+      <label for="bmsg">Message</label>
+      <textarea id="bmsg" required></textarea>
+      <button class="btn gold" type="submit">Send request</button>
+      <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email or a booking calendar.</div>
+    </form>
+  </div>
+  <div class="contact-side">
+    <p><b>Email</b>office@shaykh-talha-rasool-example.org</p>
+    <p><b>Response time</b>Usually within 3–5 days</p>
+    <p><b>Based in</b>Copperfield</p>
+    <p><b>Available for</b>Conference keynotes, panel discussions, media interviews</p>
+  </div>
+</div>
+<script>
+  document.getElementById('bookForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  <div class="foot-social"><span>f</span><span>ig</span><span>x</span></div>
+  Shaykh Talha Rasool — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+</body>
+</html>
