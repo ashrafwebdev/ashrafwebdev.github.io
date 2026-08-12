@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn to Code — Frontend &amp; Backend, Zero to Hero</title>
+<meta name="description" content="A free, no-fluff roadmap for learning frontend and backend programming languages — HTML, CSS, JavaScript, TypeScript, Python, Node.js, PHP, Ruby, Java, C#, Go, Rust, and SQL — from zero to hero.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/">
+
+<meta property="og:title" content="Learn to Code — Frontend & Backend, Zero to Hero">
+<meta property="og:description" content="A free roadmap covering 13 frontend and backend languages, each broken into four stages: Zero, Learning, Advanced, and Hero.">
+<meta property="og:url" content="https://ashrafwebdev.github.io/learn/">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EDEA;
+    --paper-raised:#F4F6F4;
+    --ink:#1A231F;
+    --ink-soft:#485650;
+    --line:#C9D1CB;
+    --teal:#2E6B5E;
+    --teal-deep:#1F4E44;
+    --amber:#C1832E;
+    --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .hero{padding:56px 0 40px;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--mono-label); margin:0 0 12px;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(30px,4.6vw,46px); margin:0 0 16px; max-width:20ch;}
+  .hero p.sub{font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 12px;}
+
+  .legend{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:28px 0 8px;}
+  .legend-item{border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 16px;}
+  .legend-item .ln{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--teal-deep); display:block; margin-bottom:6px;}
+  .legend-item b{font-family:'IBM Plex Serif', serif; font-size:16px; display:block; margin-bottom:4px;}
+  .legend-item span.desc{font-size:13px; color:var(--ink-soft);}
+
+  .jumpnav{display:flex; flex-wrap:wrap; gap:8px; margin:26px 0 0;}
+  .jumpnav a{font-family:'IBM Plex Mono', monospace; font-size:12.5px; text-decoration:none; color:var(--teal-deep); background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:7px 14px;}
+  .jumpnav a:hover{background:#fff; border-color:var(--teal-deep);}
+  .jumpnav-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); width:100%; margin:14px 0 0;}
+  .jumpnav-label:first-child{margin-top:0;}
+
+  section.group{padding:56px 0;}
+  section.group.alt{background:var(--paper-raised); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  section.group h2{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:26px; margin:0 0 8px;}
+  section.group p.group-sub{color:var(--ink-soft); font-size:15px; max-width:64ch; margin:0 0 34px;}
+
+  .lang-block{margin-bottom:48px; scroll-margin-top:24px;}
+  .lang-block:last-child{margin-bottom:0;}
+  .lang-head{display:flex; gap:16px; align-items:flex-start; margin-bottom:20px;}
+  .lang-mark{
+    flex-shrink:0; width:48px; height:48px; border-radius:8px; background:var(--teal-deep); color:var(--paper-raised);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:14px;
+  }
+  .lang-tag{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label);}
+  .lang-head h3{font-family:'IBM Plex Serif', serif; font-size:22px; margin:4px 0 6px;}
+  .lang-tagline{font-size:14.5px; color:var(--ink-soft); margin:0; max-width:64ch;}
+
+  .stage-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+  .stage-card{border:1px solid var(--line); background:#fff; border-radius:7px; padding:18px;}
+  section.group.alt .stage-card{background:#fff;}
+  .stage-head{display:flex; align-items:baseline; gap:8px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line);}
+  .stage-num{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--amber); font-weight:600;}
+  .stage-label{font-family:'IBM Plex Serif', serif; font-size:15.5px; font-weight:600; color:var(--teal-deep);}
+  .stage-topics{list-style:none; margin:0 0 14px; padding:0;}
+  .stage-topics li{font-size:12.5px; color:var(--ink); margin-bottom:7px; padding-left:14px; position:relative;}
+  .stage-topics li::before{content:"–"; position:absolute; left:0; color:var(--mono-label);}
+  .stage-project{font-size:12px; color:var(--ink-soft); margin:0; padding-top:10px; border-top:1px dashed var(--line);}
+  .stage-project b{color:var(--teal-deep);}
+
+  .order-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:28px 30px; margin-top:8px;
+  }
+  .order-banner h3{font-family:'IBM Plex Serif', serif; font-size:19px; margin:0 0 10px; color:#fff;}
+  .order-banner p{margin:0; font-size:14.5px; color:#D7E3DE; max-width:70ch;}
+  .order-banner b{color:#fff;}
+
+  footer{padding:36px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:900px){
+    .stage-row{grid-template-columns:repeat(2,1fr);}
+    .legend{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:600px){
+    .stage-row{grid-template-columns:1fr;}
+    .legend{grid-template-columns:1fr;}
+    .lang-head{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="name" href="../index.html" style="text-decoration:none;"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#religious-sites">Web Design</a>
+      <a href="../learn/index.html">Learn</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Free guide</p>
+    <h1>Learn to code — frontend &amp; backend, zero to hero.</h1>
+    <p class="sub">Thirteen languages, each broken into four honest stages. No paid course, no email wall — pick a language, start at Zero, and work your way to Hero.</p>
+
+    <div class="legend">
+      <div class="legend-item"><span class="ln">Stage 01</span><b>Zero</b><span class="desc">You've never written a line. Syntax and fundamentals only.</span></div>
+      <div class="legend-item"><span class="ln">Stage 02</span><b>Learning</b><span class="desc">You can build small real things, with some guidance.</span></div>
+      <div class="legend-item"><span class="ln">Stage 03</span><b>Advanced</b><span class="desc">You write production-quality code and understand the tooling.</span></div>
+      <div class="legend-item"><span class="ln">Stage 04</span><b>Hero</b><span class="desc">You can architect systems, optimize deeply, and mentor others.</span></div>
+    </div>
+
+    <div class="jumpnav">
+      <span class="jumpnav-label">Frontend</span>
+      <a href="#html">HTML</a>
+      <a href="#css">CSS</a>
+      <a href="#javascript">JavaScript</a>
+      <a href="#typescript">TypeScript</a>
+      <span class="jumpnav-label">Backend</span>
+      <a href="#python">Python</a>
+      <a href="#nodejs">Node.js</a>
+      <a href="#php">PHP</a>
+      <a href="#ruby">Ruby</a>
+      <a href="#java">Java</a>
+      <a href="#csharp">C#</a>
+      <a href="#go">Go</a>
+      <a href="#rust">Rust</a>
+      <a href="#sql">SQL</a>
+    </div>
+  </div>
+</section>
+
+<section class="group">
+  <div class="wrap">
+    <h2>Frontend languages</h2>
+    <p class="group-sub">What runs in the browser — the layer every user actually sees and touches.</p>
+
+    <div class="lang-block" id="html">
+      <div class="lang-head">
+        <span class="lang-mark">H</span>
+        <div>
+          <span class="lang-tag">Markup</span>
+          <h3>HTML</h3>
+          <p class="lang-tagline">The structure every web page is built on — start here, no exceptions.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Elements, tags, and attributes</li>
+            <li>Document structure: <!DOCTYPE>, head, body</li>
+            <li>Headings, paragraphs, lists</li>
+            <li>Links and images</li>
+            <li>Basic forms: input, button, label</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a single static page: your resume as HTML.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Semantic HTML5: header, nav, main, article, section, footer</li>
+            <li>Tables for tabular data</li>
+            <li>Forms in depth: validation attributes, input types, select/textarea</li>
+            <li>Accessibility basics: alt text, labels, landmark roles</li>
+            <li>Meta tags, favicons, and basic SEO tags</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a multi-page site with a shared nav and a working contact form.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>ARIA roles and advanced accessibility patterns</li>
+            <li>Web Components basics (custom elements, templates, slots)</li>
+            <li>Structured data (schema.org / JSON-LD) for rich search results</li>
+            <li>Performance: lazy loading, preloading, resource hints</li>
+            <li>Progressive enhancement principles</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Audit an existing site for accessibility and fix every issue you find.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Authoring reusable Web Components / design-system primitives</li>
+            <li>WCAG AA/AAA-level accessibility audits and remediation</li>
+            <li>Building and documenting a component library</li>
+            <li>Contributing to HTML/ARIA spec discussions or major open-source UI kits</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Publish a small open-source component library other developers can install.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="css">
+      <div class="lang-head">
+        <span class="lang-mark">C</span>
+        <div>
+          <span class="lang-tag">Styling</span>
+          <h3>CSS</h3>
+          <p class="lang-tagline">Turns structure into something people actually want to look at.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Selectors and specificity</li>
+            <li>The box model: margin, border, padding, content</li>
+            <li>Colors, units (px, %, em, rem), and typography basics</li>
+            <li>display: block, inline, inline-block</li>
+            <li>Linking a stylesheet and basic cascading rules</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Style your HTML resume page: fonts, colors, spacing.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Flexbox for one-dimensional layout</li>
+            <li>CSS Grid for two-dimensional layout</li>
+            <li>Responsive design and media queries</li>
+            <li>Positioning: relative, absolute, fixed, sticky</li>
+            <li>Transitions and simple hover/focus states</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a fully responsive landing page that works from 320px to 1920px.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Custom properties (CSS variables) and theming</li>
+            <li>Keyframe animations and transform performance</li>
+            <li>CSS architecture: BEM, utility-first (Tailwind-style), or CSS Modules</li>
+            <li>Sass/Less: nesting, mixins, functions</li>
+            <li>Dark mode with prefers-color-scheme</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a themeable component library with light/dark mode built in.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Container queries and intrinsic responsive design</li>
+            <li>Subgrid and advanced Grid layouts</li>
+            <li>Performance: critical CSS, containment, will-change</li>
+            <li>Building and maintaining a design system used by other teams</li>
+            <li>Authoring or contributing to a CSS framework</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design and ship a small CSS framework or design-token system for a team.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="javascript">
+      <div class="lang-head">
+        <span class="lang-mark">J</span>
+        <div>
+          <span class="lang-tag">Programming language</span>
+          <h3>JavaScript</h3>
+          <p class="lang-tagline">The language that makes the browser interactive — and increasingly, everything else.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Variables (let/const), data types, and operators</li>
+            <li>Conditionals and loops</li>
+            <li>Functions and parameters</li>
+            <li>Arrays and objects basics</li>
+            <li>Console debugging</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a to-do list that runs entirely in the browser console.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>DOM selection and manipulation</li>
+            <li>Events and event listeners</li>
+            <li>Array/object methods: map, filter, reduce, destructuring</li>
+            <li>Fetching data with fetch() and working with JSON</li>
+            <li>ES6+ syntax: arrow functions, template literals, spread/rest</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a weather app that fetches live data from a public API.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Promises and async/await in depth</li>
+            <li>Closures, scope, and the 'this' keyword</li>
+            <li>Classes, prototypes, and inheritance</li>
+            <li>ES Modules and code organization</li>
+            <li>Error handling patterns and unit testing (Jest/Vitest)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build and test a small library (e.g. a form-validation utility) with full unit tests.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>The event loop, microtasks, and macrotasks in depth</li>
+            <li>Memory management and performance profiling</li>
+            <li>Common design patterns (module, observer, factory) in JS</li>
+            <li>Build tooling internals: bundlers, transpilers, tree-shaking</li>
+            <li>Contributing to an open-source JavaScript library</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Profile and optimize a real app's bundle size and runtime performance.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="typescript">
+      <div class="lang-head">
+        <span class="lang-mark">T</span>
+        <div>
+          <span class="lang-tag">Typed superset of JavaScript</span>
+          <h3>TypeScript</h3>
+          <p class="lang-tagline">JavaScript with a safety net — catches whole categories of bugs before you ship.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Basic types: string, number, boolean, array, any</li>
+            <li>Type annotations on variables and functions</li>
+            <li>Interfaces and type aliases</li>
+            <li>tsconfig.json basics</li>
+            <li>Compiling TS to JS</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Convert a small existing JavaScript file to TypeScript.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Generics</li>
+            <li>Union and intersection types</li>
+            <li>Enums and literal types</li>
+            <li>Type narrowing and type guards</li>
+            <li>Built-in utility types (Partial, Pick, Omit, Record)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a typed API client wrapper around fetch() for a public API.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Advanced generics and constraints</li>
+            <li>Conditional types and mapped types</li>
+            <li>Declaration files (.d.ts) for untyped libraries</li>
+            <li>Decorators</li>
+            <li>Strict mode and gradually typing a large codebase</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Write type declarations for a small untyped npm package.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Type-level programming (recursive conditional types, template literal types)</li>
+            <li>Designing type-safe public APIs for a library</li>
+            <li>Contributing types to DefinitelyTyped</li>
+            <li>Working with the TypeScript Compiler API</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Publish a fully-typed open-source npm package with zero 'any' types.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="group alt">
+  <div class="wrap">
+    <h2>Backend languages</h2>
+    <p class="group-sub">What runs on the server — the layer that handles data, logic, and everything the user doesn't see.</p>
+
+    <div class="lang-block" id="python">
+      <div class="lang-head">
+        <span class="lang-mark">Py</span>
+        <div>
+          <span class="lang-tag">General-purpose</span>
+          <h3>Python</h3>
+          <p class="lang-tagline">Readable, versatile, and often the fastest path from idea to working code.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and data types</li>
+            <li>Control flow: if/elif/else, loops</li>
+            <li>Functions and default arguments</li>
+            <li>Lists, dictionaries, tuples, sets</li>
+            <li>Reading input and printing output</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a command-line unit converter or calculator.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Object-oriented Python: classes, inheritance</li>
+            <li>File I/O and working with JSON/CSV</li>
+            <li>Modules, packages, and virtual environments (venv)</li>
+            <li>Calling APIs with the requests library</li>
+            <li>Basic error handling with try/except</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a script that pulls data from a public API and saves a report.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Decorators and context managers</li>
+            <li>Generators and iterators</li>
+            <li>Async Python with asyncio</li>
+            <li>Testing with pytest</li>
+            <li>Web frameworks: Flask/FastAPI (or Django) fundamentals</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build and deploy a small REST API with FastAPI or Flask, with tests.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Performance profiling and optimization (cProfile, Cython, PyPy)</li>
+            <li>Packaging and publishing to PyPI</li>
+            <li>Designing large Django/FastAPI systems: architecture, caching, queues</li>
+            <li>Contributing to CPython or a major open-source Python project</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design and ship a production-grade API service with auth, caching, and background jobs.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="nodejs">
+      <div class="lang-head">
+        <span class="lang-mark">N</span>
+        <div>
+          <span class="lang-tag">JavaScript runtime</span>
+          <h3>Node.js</h3>
+          <p class="lang-tagline">Takes the JavaScript you already know and runs it on the server.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Running scripts with node</li>
+            <li>npm and package.json basics</li>
+            <li>CommonJS modules (require/module.exports)</li>
+            <li>Reading/writing files with the fs module</li>
+            <li>Basic console-based programs</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a CLI tool that reads a text file and reports word counts.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Building REST APIs with Express</li>
+            <li>Routing, middleware, and request/response handling</li>
+            <li>Environment variables and configuration</li>
+            <li>Connecting to a database (MongoDB or PostgreSQL)</li>
+            <li>Streams and buffers basics</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a REST API with CRUD endpoints backed by a real database.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Authentication: JWT and session-based auth</li>
+            <li>Middleware architecture and error-handling patterns</li>
+            <li>Testing with Jest/Supertest</li>
+            <li>Async patterns at scale (queues, worker processes)</li>
+            <li>Basics of microservice architecture</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Add authentication, tests, and rate limiting to your REST API.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Event loop internals and performance tuning</li>
+            <li>Clustering and horizontal scaling</li>
+            <li>Designing scalable, resilient service architectures</li>
+            <li>Publishing and maintaining an npm package</li>
+            <li>Contributing to Node core or a major framework</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Architect a multi-service backend with a queue, cache layer, and load-tested API.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="php">
+      <div class="lang-head">
+        <span class="lang-mark">P</span>
+        <div>
+          <span class="lang-tag">Web-focused scripting</span>
+          <h3>PHP</h3>
+          <p class="lang-tagline">Powers a huge share of the web — still one of the fastest ways to ship a dynamic site.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and control structures</li>
+            <li>Functions and basic form handling</li>
+            <li>Superglobals: $_GET, $_POST, $_SESSION</li>
+            <li>Embedding PHP in HTML</li>
+            <li>Basic MySQL queries</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a guestbook page that saves and displays messages.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Object-oriented PHP: classes, interfaces</li>
+            <li>Working with MySQL via PDO</li>
+            <li>Sessions, cookies, and basic auth</li>
+            <li>Composer and package management</li>
+            <li>Basic MVC structure</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a small blog with login, post creation, and comments.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>PSR standards and modern PHP conventions</li>
+            <li>A framework in depth: Laravel or Symfony fundamentals</li>
+            <li>Testing with PHPUnit</li>
+            <li>Building and consuming REST APIs</li>
+            <li>Caching and query optimization</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a Laravel or Symfony app with auth, an API, and a test suite.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Performance tuning: OPcache, query profiling</li>
+            <li>Building and maintaining a framework or reusable package</li>
+            <li>Architecting large, multi-team Laravel/Symfony applications</li>
+            <li>Contributing to PHP core or PHP RFCs</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design and ship a production Laravel/Symfony app with a CI/CD pipeline.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="ruby">
+      <div class="lang-head">
+        <span class="lang-mark">R</span>
+        <div>
+          <span class="lang-tag">Developer-happiness focused</span>
+          <h3>Ruby</h3>
+          <p class="lang-tagline">Designed for programmer happiness — and the engine behind Rails.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and control flow</li>
+            <li>Methods and blocks</li>
+            <li>Arrays and hashes</li>
+            <li>String manipulation</li>
+            <li>irb for interactive experimentation</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a command-line quiz game.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Object-oriented Ruby: classes, modules, mixins</li>
+            <li>Gems and Bundler</li>
+            <li>File I/O</li>
+            <li>Intro to Rails: MVC, routes, views</li>
+            <li>ActiveRecord basics</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a simple Rails CRUD app (e.g. a recipe box).</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Metaprogramming basics</li>
+            <li>Rails deep dive: associations, validations, callbacks</li>
+            <li>Testing with RSpec</li>
+            <li>Background jobs (Sidekiq/ActiveJob)</li>
+            <li>API-only Rails apps</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Add background jobs, an API, and a full RSpec test suite to your Rails app.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Performance profiling and optimization</li>
+            <li>Building and publishing gems</li>
+            <li>Architecting large, multi-team Rails applications</li>
+            <li>Contributing to Ruby or Rails core</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Extract a reusable feature from your app into a published, tested gem.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="java">
+      <div class="lang-head">
+        <span class="lang-mark">Jv</span>
+        <div>
+          <span class="lang-tag">Enterprise-grade</span>
+          <h3>Java</h3>
+          <p class="lang-tagline">Verbose by reputation, but the backbone of enormous, reliable systems.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and types</li>
+            <li>Control flow and methods</li>
+            <li>Classes and objects basics</li>
+            <li>Arrays</li>
+            <li>Compiling and running with javac/java</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a console-based library catalog with classes for books and members.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>OOP principles: inheritance, polymorphism, interfaces</li>
+            <li>The Collections framework (List, Map, Set)</li>
+            <li>Exception handling</li>
+            <li>File I/O</li>
+            <li>Build tools: Maven or Gradle basics</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a small inventory management console app with file persistence.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Generics</li>
+            <li>Streams and lambda expressions</li>
+            <li>Concurrency: threads and the executor framework</li>
+            <li>Spring Boot fundamentals</li>
+            <li>Testing with JUnit</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a Spring Boot REST API with a database and a test suite.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>JVM internals, garbage collection, and performance tuning</li>
+            <li>Designing microservice architectures</li>
+            <li>Advanced design patterns at scale</li>
+            <li>Contributing to a major Java open-source project</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Architect and deploy a multi-service Spring Boot system with monitoring.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="csharp">
+      <div class="lang-head">
+        <span class="lang-mark">C#</span>
+        <div>
+          <span class="lang-tag">.NET ecosystem</span>
+          <h3>C#</h3>
+          <p class="lang-tagline">A modern, strongly-typed language with a huge ecosystem behind it in .NET.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and types</li>
+            <li>Control flow and methods</li>
+            <li>Classes and objects basics</li>
+            <li>Arrays and lists</li>
+            <li>Running code with the .NET CLI</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a console-based expense tracker.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>OOP: inheritance, interfaces, polymorphism</li>
+            <li>Collections and basic LINQ queries</li>
+            <li>Exception handling</li>
+            <li>Working with files</li>
+            <li>Intro to ASP.NET Core</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a simple ASP.NET Core web app with a form and a database.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>async/await in depth</li>
+            <li>Generics and advanced LINQ</li>
+            <li>ASP.NET Core Web APIs</li>
+            <li>Entity Framework Core</li>
+            <li>Testing with xUnit</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a tested ASP.NET Core Web API backed by Entity Framework.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Performance and memory tuning</li>
+            <li>Designing large-scale .NET architectures</li>
+            <li>Cross-platform development with .NET MAUI</li>
+            <li>Contributing to .NET or a major open-source .NET project</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Architect a production-grade .NET API with CI/CD and monitoring.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="go">
+      <div class="lang-head">
+        <span class="lang-mark">Go</span>
+        <div>
+          <span class="lang-tag">Simple, fast, built for concurrency</span>
+          <h3>Go</h3>
+          <p class="lang-tagline">Minimal syntax, built-in concurrency, and famously fast compile times.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax, variables, and types</li>
+            <li>Control flow and functions</li>
+            <li>Slices and maps</li>
+            <li>Packages and go run/go build</li>
+            <li>Basic error handling (the Go way)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a CLI tool that fetches and formats data from a public API.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Structs and interfaces</li>
+            <li>Goroutines and channels basics</li>
+            <li>Error handling patterns in depth</li>
+            <li>Working with modules (go.mod)</li>
+            <li>Building a basic HTTP server with net/http</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a small REST API using only the standard library.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Concurrency patterns: worker pools, select statements</li>
+            <li>Testing with the built-in testing package</li>
+            <li>Building REST APIs with a router (chi/gin)</li>
+            <li>Working with databases (database/sql)</li>
+            <li>Context for cancellation and timeouts</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a concurrent job-processing service with a REST API front end.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Performance profiling (pprof) and optimization</li>
+            <li>Designing distributed systems in Go</li>
+            <li>Contributing to the Go standard library or major tools</li>
+            <li>Architecting microservices at scale</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design and deploy a distributed, horizontally-scalable Go service.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="rust">
+      <div class="lang-head">
+        <span class="lang-mark">Rs</span>
+        <div>
+          <span class="lang-tag">Systems programming, memory-safe</span>
+          <h3>Rust</h3>
+          <p class="lang-tagline">Systems-level performance without the classic memory-safety footguns.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Syntax and variables</li>
+            <li>Ownership basics (the core Rust idea)</li>
+            <li>Control flow and functions</li>
+            <li>Structs and enums</li>
+            <li>cargo basics: build, run, test</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a CLI tool (e.g. a simple grep clone).</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Ownership and borrowing in depth</li>
+            <li>Result and Option for error handling</li>
+            <li>Traits and generics basics</li>
+            <li>Collections (Vec, HashMap)</li>
+            <li>Working with crates.io packages</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build a small command-line task manager with persistent storage.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Advanced traits and generics</li>
+            <li>Concurrency: threads and message passing</li>
+            <li>Async Rust (tokio basics)</li>
+            <li>Testing and documentation</li>
+            <li>Building a basic web service (axum/actix)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build an async REST API with a database connection pool.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Unsafe Rust and when it's actually needed</li>
+            <li>Advanced macro programming</li>
+            <li>Building performance-critical systems software</li>
+            <li>Contributing to the Rust compiler or ecosystem crates</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Build and publish a crate that solves a real performance-sensitive problem.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="lang-block" id="sql">
+      <div class="lang-head">
+        <span class="lang-mark">S</span>
+        <div>
+          <span class="lang-tag">The language every backend eventually needs</span>
+          <h3>SQL</h3>
+          <p class="lang-tagline">Not a 'backend language' in the traditional sense — but no backend developer gets far without it.</p>
+        </div>
+      </div>
+      <div class="stage-row">
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">01</span>
+            <span class="stage-label">Zero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>SELECT, WHERE, ORDER BY</li>
+            <li>Filtering with AND/OR/IN/LIKE</li>
+            <li>INSERT, UPDATE, DELETE basics</li>
+            <li>Primary keys and basic table design</li>
+            <li>Using a GUI client (or psql/mysql CLI)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design and query a small database for a personal project (e.g. a book list).</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">02</span>
+            <span class="stage-label">Learning</span>
+          </div>
+          <ul class="stage-topics">
+            <li>JOINs: inner, left, right</li>
+            <li>GROUP BY and aggregate functions</li>
+            <li>Subqueries</li>
+            <li>Foreign keys and referential integrity</li>
+            <li>Basic normalization (1NF–3NF)</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design a normalized schema for a small e-commerce app and write reporting queries.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">03</span>
+            <span class="stage-label">Advanced</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Indexes and reading query execution plans</li>
+            <li>Transactions and isolation levels</li>
+            <li>Window functions</li>
+            <li>Views and stored procedures</li>
+            <li>Query optimization for slow queries</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Take a slow, real-world query and optimize it with indexes and a rewritten plan.</p>
+        </div>
+        <div class="stage-card">
+          <div class="stage-head">
+            <span class="stage-num">04</span>
+            <span class="stage-label">Hero</span>
+          </div>
+          <ul class="stage-topics">
+            <li>Database architecture and schema design at scale</li>
+            <li>Replication, sharding, and partitioning strategies</li>
+            <li>Deep performance tuning under real production load</li>
+            <li>Choosing and migrating between database engines</li>
+          </ul>
+          <p class="stage-project"><b>Try this:</b> Design a sharding or replication strategy for a dataset that's outgrown a single instance.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-banner">
+      <h3>Don't know where to start?</h3>
+      <p>If you're completely new: learn <b>HTML → CSS → JavaScript</b> first, in that order — they're not optional, no matter what you build next. Once you're comfortable there, pick <b>one</b> backend language based on what you want to build: <b>Python</b> or <b>Node.js</b> for general-purpose and fast iteration, <b>Go</b> if you care about performance and simplicity, <b>Rust</b> if you want systems-level control, or <b>PHP/Ruby/Java/C#</b> if you're joining a team that already uses one. Learn <b>SQL</b> alongside whichever backend language you pick — you'll need it almost immediately.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  A free resource by <a href="../index.html">Mohammed Ashraf</a>. Have a project to build once you're past Hero? <a href="../index.html#contact">Let's talk</a>.
+</footer>
+
+</body>
+</html>
