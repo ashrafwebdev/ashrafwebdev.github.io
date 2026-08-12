@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A production-grade order-processing API with CI/CD and live monitoring — C# capstone project — Learn to Code</title>
+<meta name="description" content="A production-grade order-processing API with CI/CD and live monitoring — the Hero-stage capstone project for C#, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/csharp/project-hero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#csharp">C#</a> / Hero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">04</span> Hero stage capstone</span>
+    <h1>A production-grade order-processing API with CI/CD and live monitoring</h1>
+    <p class="lang-line"><b>C#</b> &middot; ties together everything in the Hero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">This is the roadmap's own capstone framing made literal: architect a production-grade .NET API with CI/CD and monitoring. The project is an order-processing API for a small e-commerce-style domain (customers, products, orders) built with Clean Architecture layering, deployed automatically on every push, and observable in production &mdash; not just "working on my machine", but demonstrably running, tested, and watched the way a real backend service would be.</p>
+    <p>The project deliberately combines everything from earlier stages under real constraints: the domain layer must have zero dependency on EF Core or ASP.NET Core, async and LINQ are used throughout the application and infrastructure layers, generics show up in at least one genuinely reusable abstraction (a generic repository or result type), and the whole thing is proven correct by an automated test suite that a CI pipeline runs on every commit, not by hand-testing before a demo.</p>
+    <p>What separates this from the Advanced-stage API is scope and rigor, not new unfamiliar tools: it needs a real architectural boundary between business rules and infrastructure, it needs to survive being deployed and left running (which is what monitoring is for), and it needs a pipeline that would catch a regression before it ever reaches production, since that's the difference between a project that merely works and one a hiring manager would call portfolio-worthy.</p>
+    <ul class="used-topics">
+      <li><a href="performance-and-memory-tuning.html">Performance and memory tuning</a></li>
+      <li><a href="designing-large-scale-net-architectures.html">Designing large-scale .NET architectures</a></li>
+      <li><a href="cross-platform-development-with-net-maui.html">Cross-platform development with .NET MAUI</a></li>
+      <li><a href="contributing-to-net-or-a-major-open-source-net-p.html">Contributing to .NET or a major open-source .NET project</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>A solution split into at least Domain, Application, Infrastructure, and Api projects, where Domain has no project reference to EF Core, ASP.NET Core, or any other framework package.</li>
+        <li>At least one generic abstraction used for real (e.g. a generic repository interface constrained with <code>where T : class</code>, or a generic <code>Result of T</code> type used consistently for success/failure across the application layer).</li>
+        <li>EF Core migrations checked into source control, with the API able to apply pending migrations automatically on startup in a development environment.</li>
+        <li>A CI pipeline (GitHub Actions or equivalent) that runs on every push: restores, builds, runs the full xUnit suite, and fails the build on any test failure &mdash; configured as an actual workflow file in the repository, not described in prose.</li>
+        <li>A CD step that deploys the API automatically on a successful build to some real, reachable environment (a cloud VM, a container platform, or a PaaS free tier all count).</li>
+        <li>Structured logging (not <code>Console.WriteLine</code>) plus at least one health-check endpoint and one basic metric or dashboard (request count, error rate, or response time) visible for the running deployed instance.</li>
+        <li>At least 70% of the Application and Domain layers covered by automated tests, verified by a coverage tool and enforced (or at least reported) in the CI pipeline.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Design the Domain and Application layers first, entirely without a database or a web framework in the picture &mdash; write the entities, the interfaces the application layer needs (like <code>IOrderRepository</code>), and unit tests against fakes before any infrastructure code exists.</li>
+        <li>Build the Infrastructure layer's EF Core implementation next, wiring it to the interfaces already defined inward, and confirm migrations apply cleanly to a real database instance.</li>
+        <li>Build the thin Api layer last of the application code, keeping controllers minimal and pushing all real logic down into Application-layer handlers you already tested in isolation.</li>
+        <li>Get the CI pipeline running early, even before the app is feature-complete &mdash; a pipeline that only ever runs against a growing, real feature set is far more trustworthy than one bolted on at the end.</li>
+        <li>Add CD, logging, health checks, and monitoring only once the core API is stable and its tests are green, since instrumenting a moving target wastes effort re-doing the same wiring repeatedly.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add the outbox pattern for a domain event (like "OrderPlaced") so an event is only published after the database transaction that created the order actually commits.</li>
+        <li>Add a load test (using a tool like k6 or NBomber) against the deployed instance and use the results to justify one concrete performance change, backed by dotnet-counters or dotnet-trace output.</li>
+        <li>Extend CI with a required code-review gate and branch protection rules, and document the full deployment runbook (rollback steps included) as if handing the project to another engineer.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="contributing-to-net-or-a-major-open-source-net-p.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Contributing to .NET or a major open-source .NET project</span></a>
+    <span></span>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>
