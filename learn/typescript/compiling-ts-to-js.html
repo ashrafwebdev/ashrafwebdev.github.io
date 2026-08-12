@@ -110,25 +110,55 @@
   </div>
 
   <article>
-    <p class="lead">Browsers and Node.js can't run TypeScript directly — the <code>tsc</code> compiler (or a faster tool like esbuild/SWC) strips out the type annotations and transforms modern syntax down to plain JavaScript your runtime actually understands.</p>
-    <p>In practice, most projects don't call <code>tsc</code> directly for the final build — bundlers like Vite handle transpilation internally for speed, while <code>tsc --noEmit</code> is run separately purely for type checking.</p>
+    <p class="lead">Browsers and Node.js can't run TypeScript directly — the <code>tsc</code> compiler (or a faster tool like esbuild or SWC) strips out the type annotations entirely and transforms modern syntax down to plain JavaScript your runtime actually understands. This transformation happens purely at the syntax level; it never inspects whether your program does anything sensible at runtime, only whether the types you wrote are internally consistent beforehand.</p>
+    <p>In practice, most projects don't call <code>tsc</code> directly for their final production build — bundlers like Vite handle transpilation internally using a much faster tool (esbuild, under the hood, in Vite's case) purely for speed, while <code>tsc --noEmit</code> is run as a separate step purely for type checking, decoupled entirely from the build pipeline that actually produces JavaScript.</p>
+    <p>This split matters because fast transpilers like esbuild and SWC compile each file in isolation, without ever building a full type-aware model of your project — which means they can strip types and rewrite syntax extremely quickly, but they physically cannot catch a type error, since doing so requires knowledge that spans multiple files. A project relying only on a fast bundler and skipping <code>tsc --noEmit</code> can genuinely ship broken code that a normal <code>tsc</code> build would have blocked.</p>
+    <p>TypeScript type annotations are erased completely at compile time and have precisely zero runtime footprint — there's no performance cost to types, and no way to inspect a TypeScript type from within running JavaScript, because by the time the code executes, that information simply no longer exists. This is different from some other typed-to-JS languages that keep runtime type metadata around.</p>
+    <p>By default, <code>tsc</code> still emits JavaScript even when it reports type errors, unless <code>noEmitOnError</code> is explicitly set to true — which surprises people expecting a type error to behave like a hard build failure the way it would in many other compiled languages. CI pipelines that only check the exit status of a plain <code>tsc</code> build (without <code>noEmitOnError</code>) can miss this distinction, since <code>tsc</code>'s own exit code does reflect errors even though a .js file still gets written.</p>
+    <p>Source maps, enabled with <code>"sourceMap": true</code>, let you debug the original .ts file directly in the browser or Node's inspector even though the runtime is actually executing the emitted .js — the source map is a separate file mapping each position in the compiled output back to its original location in your TypeScript source.</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>npx tsc index.ts          # compiles index.ts to index.js
 npx tsc --noEmit          # type-check only, don't output files
 npx tsc --watch           # recompile automatically on save</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Before and after erasure</div>      <pre><code>// input.ts
+function add(a: number, b: number): number {
+  return a + b;
+}
+const total: number = add(2, 3);
+
+// output.js (after tsc strips every type annotation)
+function add(a, b) {
+  return a + b;
+}
+const total = add(2, 3);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">noEmitOnError-gotcha.ts</div>      <pre><code>// broken.ts
+function greet(name: string): string {
+  return 123; // type error: number not assignable to string
+}
+
+// `tsc broken.ts` reports the error AND still writes broken.js by default.
+// Add "noEmitOnError": true in tsconfig.json to stop the .js file
+// from being emitted at all when a type error is present.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>TypeScript type annotations are erased entirely at compile time — they have zero runtime footprint or performance cost.</li>
-        <li><code>tsc --noEmit</code> is how most projects use the compiler purely as a type checker alongside a faster bundler.</li>
-        <li>A type error doesn't necessarily stop tsc from emitting JavaScript unless <code>noEmitOnError</code> is set.</li>
-        <li>Source maps (<code>"sourceMap": true</code>) let you debug the original .ts file even though the runtime executes .js.</li>
+        <li><code>tsc --noEmit</code> is how most projects use the compiler purely as a type checker alongside a faster, non-type-checking bundler.</li>
+        <li>Fast transpilers like esbuild/SWC strip types per-file without cross-file type analysis, so they cannot catch genuine type errors — only <code>tsc</code> can.</li>
+        <li>A type error doesn't necessarily stop <code>tsc</code> from emitting JavaScript unless <code>noEmitOnError</code> is set.</li>
+        <li>Source maps (<code>"sourceMap": true</code>) let you debug the original .ts file even though the runtime executes the emitted .js.</li>
+        <li>There's no way to inspect a TypeScript type at runtime — by execution time, the type information has been fully discarded.</li>
+        <li>A CI pipeline that skips a real <code>tsc</code> check and relies only on a fast bundler's build success can ship code with real type errors.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Compile a small .ts file with tsc, inspect the output .js file, and confirm the type annotations are completely gone.</p>
+      <p>Compile a small .ts file with tsc, inspect the output .js file, and confirm the type annotations are completely gone. Then introduce a deliberate type error, run tsc again without noEmitOnError, and check whether the .js file was still written despite the reported error — then add noEmitOnError and see how the behavior changes.</p>
     </div>
   </article>
 

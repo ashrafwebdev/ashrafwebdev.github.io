@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">TypeScript adds a type system on top of JavaScript, checked at compile time rather than runtime. The basic types map directly onto JavaScript's: <code>string</code>, <code>number</code>, <code>boolean</code>, and arrays written as <code>string[]</code> or <code>Array&lt;string&gt;</code>.</p>
-    <p><code>any</code> opts a value out of type checking entirely — it's sometimes necessary when migrating JavaScript, but it should be treated as a last resort, not a default, since it silently disables the exact safety TypeScript exists to provide.</p>
+    <p class="lead">TypeScript adds a type system on top of JavaScript, checked at compile time rather than runtime. The basic types map directly onto JavaScript's own categories: <code>string</code>, <code>number</code>, and <code>boolean</code> correspond exactly to what <code>typeof</code> would report on the equivalent JavaScript value, so nothing about the underlying data changes — only what the compiler is willing to let you do with it before your code ever runs.</p>
+    <p>Arrays are written either as <code>string[]</code> or using the generic form <code>Array&lt;string&gt;</code> — the two are completely interchangeable and compile to identical JavaScript. <code>T[]</code> is the more common style in most codebases and style guides, with the generic form generally reserved for cases where the element type itself is a more complex expression that reads more clearly wrapped in angle brackets.</p>
+    <p><code>number</code> covers every numeric value TypeScript knows about, integers and floating point alike — there's no separate <code>int</code> or <code>float</code>, because JavaScript itself only has one general-purpose numeric type under the hood. Arbitrary-precision whole numbers use the distinct <code>bigint</code> type instead, written with an <code>n</code> suffix like <code>10n</code>, and TypeScript will not let you mix <code>number</code> and <code>bigint</code> in the same arithmetic expression without an explicit conversion.</p>
+    <p><code>any</code> is the type system's escape hatch: a value typed <code>any</code> can be assigned to anything, read as anything, and called as anything, with zero compile-time checking performed on it at all. That flexibility is exactly the problem — assigning an <code>any</code>-typed value into a strongly typed variable silently disables checking on that variable too, and the unsafety keeps spreading through every place the value travels afterward, often resurfacing as a runtime crash far from where the <code>any</code> was introduced.</p>
+    <p>It's worth knowing that arrays typed with a specific element type are still mutable containers — pushing a value of the wrong type into a <code>number[]</code> is caught at compile time just as reliably as assigning it directly, since TypeScript tracks the array's element type through every method that adds to it, including <code>push</code>, <code>unshift</code>, and spread.</p>
+    <p>Reaching for <code>any</code> out of impatience is one of the most common ways a new TypeScript codebase ends up barely safer than the plain JavaScript it replaced. A handful of well-placed <code>any</code>s at the boundary of untyped legacy code or a third-party library is a reasonable pragmatic choice; scattering them through new code you're writing from scratch generally isn't, and it's worth treating each one as a small debt to pay down later.</p>
     <div class="code-block">
 <div class="cap">basics.ts</div>      <pre><code>let username: string = "amina";
 let age: number = 27;
@@ -121,18 +125,40 @@ let scores: number[] = [88, 92, 75];
 let anything: any = "careful with this one";
 anything = 42; // allowed, but you've lost all safety</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">arrays-and-checking.ts</div>      <pre><code>let scores: number[] = [88, 92, 75];
+scores.push(100);       // OK, matches the element type
+// scores.push("A");   // Error: string is not assignable to number
+
+let bigCount: bigint = 9007199254740993n;
+// let mixed = bigCount + 1; // Error: cannot mix bigint and number
+let mixedFixed = bigCount + 1n; // OK, both bigint</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">any-spreads-unsafety.ts</div>      <pre><code>function parseConfig(raw: any) {
+  return raw.settings.timeout; // no error here, even if this is wrong
+}
+
+const config = parseConfig(JSON.parse("{}"));
+let timeoutMs: number = config; // no error either — 'any' infected this too
+console.log(timeoutMs.toFixed(2)); // crashes at runtime: undefined has no toFixed</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Basic types mirror JavaScript's runtime types, checked before your code ever runs.</li>
-        <li>Prefer <code>unknown</code> over <code>any</code> when you genuinely don't know a type — <code>unknown</code> forces you to check before using it.</li>
-        <li>Array types can be written as <code>T[]</code> or <code>Array&lt;T&gt;</code> — both are equivalent, <code>T[]</code> is more common.</li>
-        <li>TypeScript can usually infer types automatically — you don't need to annotate every single variable.</li>
+        <li>Basic types mirror JavaScript's runtime types, checked before your code ever runs, not while it runs.</li>
+        <li>Prefer <code>unknown</code> over <code>any</code> when you genuinely don't know a type — <code>unknown</code> forces you to check or narrow before using it, while <code>any</code> lets you do anything unchecked.</li>
+        <li>Array types can be written as <code>T[]</code> or <code>Array&lt;T&gt;</code> — both are equivalent, and <code>T[]</code> is more common in everyday code.</li>
+        <li><code>number</code> covers integers and floats alike; use the separate <code>bigint</code> type for arbitrary-precision whole numbers.</li>
+        <li>TypeScript can usually infer types automatically from a variable's initial value — you don't need to annotate every single declaration.</li>
+        <li>Array methods that add elements (<code>push</code>, <code>unshift</code>, spread) are still type-checked against the array's declared element type.</li>
+        <li>An <code>any</code> value contaminates every variable it flows into, silently disabling checks well beyond the original line where it appeared.</li>
+        <li>Treat <code>any</code> as a deliberate, temporary escape hatch at code boundaries, not a default choice when a type is merely inconvenient to figure out.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Declare typed variables for a user's name, age, admin status, and a list of their favorite numbers, without using any.</p>
+      <p>Declare typed variables for a user's name, age, admin status, and a list of their favorite numbers, without using any. Then write a small function that intentionally accepts an any-typed parameter, pass a value of the wrong shape through it, and observe where the mistake actually surfaces at runtime rather than at compile time.</p>
     </div>
   </article>
 

@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Enums define a named set of constant values, useful for things like status codes or directions where a fixed, known set of options exists. Literal types achieve something similar using plain string or number unions, often with less runtime overhead.</p>
-    <p>Modern TypeScript style increasingly favors string literal unions (<code>"pending" | "done"</code>) over enums for simple cases — they compile to nothing extra and work seamlessly with plain JavaScript objects.</p>
+    <p class="lead">Enums define a named set of constant values, useful for things like status codes or directions where a fixed, known set of options exists and you want a single readable name standing in for each one. Literal types achieve something similar using plain string or number unions, often with less runtime overhead and simpler interop with plain JavaScript data.</p>
+    <p>Numeric enums, the default form, auto-assign increasing numbers to each member starting from 0 unless you specify otherwise — which is convenient, but means inserting a new member in the middle of an existing enum silently renumbers everything after it, a real risk if those numeric values are ever persisted (to a database or serialized API payload) rather than only used within a single running program.</p>
+    <p>String enums avoid that renumbering risk entirely, since each member's value is the literal string you wrote rather than an auto-assigned number — for anything whose value might cross a serialization boundary, a string enum (or a plain string literal union) is generally the safer choice over a numeric one.</p>
+    <p>Modern TypeScript style increasingly favors string literal unions (a type like the union of the strings <code>pending</code> and <code>done</code>) over enums for simple cases — a literal union compiles to nothing extra at all, works seamlessly with plain JavaScript objects and JSON data that was never aware TypeScript existed, and avoids a few enum-specific quirks around how enum members compare to plain strings.</p>
+    <p><code>const enum</code> is a variant that gets fully inlined at every usage site during compilation, producing no runtime object at all — closer in spirit to a literal union — but it has real compatibility caveats with some bundlers and with <code>isolatedModules</code> (a setting many modern build tools require), since it needs the compiler to see every usage during a single compilation pass.</p>
+    <p>Both enums and literal unions give you autocomplete and compile-time checking of valid values, which is the main win either approach provides over a bare, unconstrained string parameter — the choice between them is mostly about runtime footprint, serialization safety, and team convention rather than one being definitively superior.</p>
     <div class="code-block">
 <div class="cap">enums.ts</div>      <pre><code>enum Direction {
   Up,
@@ -125,18 +129,46 @@ type Direction2 = "up" | "down" | "left" | "right";
 
 function move(dir: Direction2) { console.log(`Moving ${dir}`); }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">string-enum-vs-numeric-risk.ts</div>      <pre><code>// Numeric enum: inserting a member in the middle renumbers everything after it
+enum StatusNumeric {
+  Pending,   // 0
+  Active,    // 1
+  Cancelled, // 2 -- if this ever got saved to a database as "2", inserting a
+             // new member above it would silently change its meaning
+}
+
+// String enum: the value IS the string, safe to persist and compare
+enum StatusString {
+  Pending = "PENDING",
+  Active = "ACTIVE",
+  Cancelled = "CANCELLED",
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">orderStatus.ts</div>      <pre><code>// const enum: fully inlined, zero runtime object, but has bundler caveats
+const enum LogLevel {
+  Info,
+  Warn,
+  Error,
+}
+let level = LogLevel.Warn; // compiles down to `let level = 1;`</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Enums generate an actual JavaScript object at runtime; literal type unions generate nothing — they're purely compile-time.</li>
-        <li><code>const enum</code> avoids the runtime object but has compatibility caveats with some bundlers.</li>
-        <li>String literal unions are increasingly the preferred lightweight alternative to enums for simple fixed-option sets.</li>
-        <li>Both approaches give you autocomplete and compile-time checking of valid values.</li>
+        <li>Numeric enums auto-assign increasing numbers by default; inserting a member in the middle silently renumbers every member after it.</li>
+        <li>String enums fix the members' values to the literal strings you wrote, making them much safer to persist or serialize than numeric enums.</li>
+        <li><code>const enum</code> avoids the runtime object entirely by inlining values at compile time, but has compatibility caveats with some bundlers and <code>isolatedModules</code>.</li>
+        <li>String literal unions are increasingly the preferred lightweight alternative to enums for simple fixed-option sets that interact with plain JS/JSON data.</li>
+        <li>Both approaches give you autocomplete and compile-time checking of valid values — the choice is mostly about runtime footprint and serialization safety.</li>
+        <li>Any enum or union value that might cross a serialization boundary (a database, an API payload) should favor explicit string values over auto-numbered ones.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Model an order status (pending, shipped, delivered, cancelled) both as an enum and as a string literal union, and compare the generated JavaScript for each.</p>
+      <p>Model an order status (pending, shipped, delivered, cancelled) both as a string enum and as a string literal union, and compare the generated JavaScript for each. Then simulate the renumbering risk by writing a numeric enum for the same statuses and inserting a new member in the middle, noting which existing numeric values silently changed.</p>
     </div>
   </article>
 

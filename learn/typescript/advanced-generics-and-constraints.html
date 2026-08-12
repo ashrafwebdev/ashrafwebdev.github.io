@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A generic without constraints can be literally anything, which sometimes means TypeScript can't guarantee the operations you want to perform inside the function. <code>extends</code> on a type parameter constrains it to types matching a certain shape.</p>
-    <p>Constraints let you write generic code that's still genuinely type-safe — <code>T extends { length: number }</code> guarantees every type passed in has a <code>.length</code> property, so accessing it inside the function is safe.</p>
+    <p class="lead">A generic without constraints can be literally anything, which sometimes means TypeScript can't guarantee the operations you want to perform inside the function are actually valid — an unconstrained <code>T</code> might not have a <code>.length</code> property, for instance, so accessing one on it is a compile error, even if you're confident every real caller will pass something with a length.</p>
+    <p><code>extends</code> on a type parameter constrains it to types matching a certain shape, without collapsing the type down to that shape the way a plain (non-generic) parameter typed as the constraint would — the specific type passed in is still preserved and returned as itself, which matters a great deal when the function returns a value of the same type it was given.</p>
+    <p><code>keyof T</code> produces a union of a type's property names as string (or, for numeric-keyed types like arrays, number) literals, and it's most powerful paired with a second constrained generic parameter — a function that takes an object and a key constrained by <code>keyof</code> of that object's type can only ever be called with a key that genuinely exists on it, and the return type reflects exactly that property's type.</p>
+    <p>Default type parameters, written as <code>T = string</code> after the parameter name, let a generic have a sensible fallback when the caller doesn't explicitly specify a type argument and inference has nothing to infer it from — useful for generic classes or types instantiated with no arguments up front, like an empty collection that later gets a specific element type inferred as items are added.</p>
+    <p>Constrained generics strike a balance unconstrained generics and <code>any</code> both fail to strike: an unconstrained generic is safe but can't guarantee any particular capability, while <code>any</code> guarantees every capability but with zero actual safety. A well-chosen constraint gives you exactly the capabilities the function body needs, and nothing more — which is also a form of documentation, since the constraint itself tells a reader what the function actually requires from its input.</p>
+    <p>It's worth knowing that constraints compose: a type parameter can be constrained by an expression involving another type parameter of the same function (<code>K extends keyof T</code>), which is precisely the pattern behind a safe, generic property-accessor function — the second parameter's valid values depend directly on whatever concrete type the first parameter turns out to be.</p>
     <div class="code-block">
 <div class="cap">constraints.ts</div>      <pre><code>function logLength&lt;T extends { length: number }&gt;(item: T): T {
   console.log(item.length);
@@ -122,18 +126,40 @@ logLength("hello");        // OK, strings have .length
 logLength([1, 2, 3]);      // OK, arrays have .length
 // logLength(42);          // Error: number has no .length</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">keyof-and-getProperty.ts</div>      <pre><code>function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+const user = { id: 1, name: "Amina" };
+const name = getProperty(user, "name"); // inferred as string
+// getProperty(user, "email"); // Error: "email" is not a key of user's type</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">default-type-parameter.ts</div>      <pre><code>class Collection&lt;T = string&gt; {
+  private items: T[] = [];
+  add(item: T) { this.items.push(item); }
+  all(): T[] { return this.items; }
+}
+
+const names = new Collection();       // T defaults to string
+const numbers = new Collection&lt;number&gt;(); // explicit override</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>T extends Shape</code> constrains a generic to types compatible with that shape, without losing the specific type.</li>
-        <li><code>keyof T</code> produces a union of a type's property names, often paired with generics for type-safe property access.</li>
-        <li>Default type parameters (<code>&lt;T = string&gt;</code>) let a generic have a sensible fallback when not explicitly specified.</li>
+        <li><code>T extends Shape</code> constrains a generic to types compatible with that shape, without losing the specific type passed in.</li>
+        <li><code>keyof T</code> produces a union of a type's property names, often paired with a second generic parameter for type-safe property access.</li>
+        <li>Default type parameters (<code>T = string</code>) let a generic have a sensible fallback when not explicitly specified and inference has nothing to work from.</li>
         <li>Constrained generics strike the balance between flexibility (generics) and safety (constraints) that unconstrained generics or <code>any</code> can't.</li>
+        <li>A constraint on a type parameter also documents, right in the signature, exactly what capability the function body actually needs from its input.</li>
+        <li>Constraints can reference another type parameter of the same function, as in a key parameter constrained by <code>keyof</code> of the object parameter's type.</li>
+        <li>A generic constrained to a shape still preserves and can return the exact original type — it isn't collapsed down to the constraint itself.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a generic getProperty function (constrained so the key parameter must be a valid key of the object's type) that returns a correctly-typed property value, and verify TypeScript rejects an invalid key.</p>
+      <p>Write a generic getProperty function, constrained so the key parameter must be a valid key of the object's type, that returns a correctly-typed property value, and verify TypeScript rejects an invalid key. Then write a small generic Collection class with a default type parameter, and instantiate it both with and without an explicit type argument to see the difference.</p>
     </div>
   </article>
 

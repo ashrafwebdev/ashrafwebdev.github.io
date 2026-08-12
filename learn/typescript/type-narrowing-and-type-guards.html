@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">When a value has a union type, TypeScript needs to figure out which specific member of the union you're dealing with before letting you use type-specific properties — this process is called narrowing, and it happens through checks like <code>typeof</code>, <code>instanceof</code>, or checking a discriminant property.</p>
-    <p>A custom type guard is a function that returns a special <code>value is Type</code> boolean, teaching TypeScript how to narrow a type based on your own custom logic, beyond what built-in checks can express.</p>
+    <p class="lead">When a value has a union type, TypeScript needs to figure out which specific member of the union you're dealing with before letting you use type-specific properties or methods — this process is called narrowing, and it happens through checks like <code>typeof</code>, <code>instanceof</code>, the <code>in</code> operator, or comparing a discriminant property against a specific literal value.</p>
+    <p>Narrowing only applies within the scope where the check was actually performed — it doesn't persist across a function boundary (calling a separate helper function to do the check doesn't narrow the caller's variable, unless that helper is itself written as a type guard), and reassigning a narrowed variable to a new value of the wider union type widens it right back.</p>
+    <p>A custom type guard is a function whose return type is written as <code>value is Type</code> instead of a plain <code>boolean</code> — it still returns an actual boolean at runtime, but that special return type annotation teaches TypeScript to narrow the checked value based on your own custom logic, wherever the function is called as an <code>if</code> condition, beyond what built-in checks alone could express.</p>
+    <p>Discriminated unions (a shared literal <code>kind</code> or <code>type</code> field across every member) are the single most robust narrowing pattern for object unions, because switching or branching on that one field narrows the entire object correctly in each branch, in a way that checking individual properties one at a time generally can't replicate as cleanly, especially once a union has more than two or three members.</p>
+    <p>The <code>in</code> operator is a lesser-known but genuinely useful narrowing tool for object unions that don't share a discriminant field: <code>"radius" in shape</code> narrows a union down to whichever member actually declares a <code>radius</code> property, which is handy when you're narrowing types you don't control and can't retroactively add a discriminant field to.</p>
+    <p>Assertion functions are a close cousin of type guards, written with a return type of <code>asserts value is Type</code> instead of <code>value is Type</code> — rather than returning a boolean you check in an <code>if</code>, they narrow by throwing when the check fails, which is a common pattern for validating function arguments up front and then working with the narrowed type for the rest of the function body.</p>
     <div class="code-block">
 <div class="cap">narrowing.ts</div>      <pre><code>function printId(id: string | number) {
   if (typeof id === "string") {
@@ -125,18 +129,51 @@ function isString(value: unknown): value is string {
   return typeof value === "string";
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">in-operator-and-discriminated-union.ts</div>      <pre><code>interface Circle { kind: "circle"; radius: number; }
+interface Square { kind: "square"; side: number; }
+
+function area(shape: Circle | Square): number {
+  if (shape.kind === "circle") {
+    return Math.PI * shape.radius ** 2; // narrowed via discriminant
+  }
+  return shape.side ** 2;
+}
+
+// Without a discriminant, the `in` operator narrows instead:
+type LegacyShape = { radius: number } | { side: number };
+function legacyArea(shape: LegacyShape): number {
+  if ("radius" in shape) return Math.PI * shape.radius ** 2;
+  return shape.side ** 2;
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">assertion-function.ts</div>      <pre><code>function assertIsNumber(value: unknown): asserts value is number {
+  if (typeof value !== "number") {
+    throw new Error("Expected a number");
+  }
+}
+
+function double(value: unknown) {
+  assertIsNumber(value);
+  return value * 2; // narrowed to number for the rest of the function
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>typeof</code> narrows primitives; <code>instanceof</code> narrows classes; a discriminant property narrows tagged unions.</li>
-        <li>Custom type guards (<code>value is Type</code>) let you teach TypeScript about narrowing logic it can't infer on its own.</li>
-        <li>Narrowing only applies within the scope where the check was performed — it doesn't persist across function boundaries.</li>
-        <li>Discriminated unions (a shared 'kind' or 'type' field) are the most robust pattern for narrowing complex unions.</li>
+        <li><code>typeof</code> narrows primitives; <code>instanceof</code> narrows classes; a discriminant property narrows tagged unions; <code>in</code> narrows by property presence.</li>
+        <li>Custom type guards (<code>value is Type</code>) let you teach TypeScript about narrowing logic it can't infer from built-in checks on its own.</li>
+        <li>Narrowing only applies within the scope where the check was performed — it doesn't persist across a function boundary or after reassignment.</li>
+        <li>Discriminated unions (a shared 'kind' or 'type' field) are the most robust pattern for narrowing complex object unions with several members.</li>
+        <li>The <code>in</code> operator narrows object unions by property presence, useful when the members don't share a common discriminant field.</li>
+        <li>Assertion functions (<code>asserts value is Type</code>) narrow by throwing on failure instead of returning a boolean to check in an <code>if</code>.</li>
+        <li>A helper function that performs a check without being written as a type guard does not narrow the caller's variable, even if the logic is correct.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that accepts a union of Circle | Square (with a discriminant 'kind' field) and returns the correct area calculation for each, using narrowing.</p>
+      <p>Write a function that accepts a union of Circle and Square (with a discriminant kind field) and returns the correct area calculation for each, using narrowing. Then write a standalone custom type guard for one of the shapes and an assertion function that throws for invalid input, using each inside a small demo function.</p>
     </div>
   </article>
 

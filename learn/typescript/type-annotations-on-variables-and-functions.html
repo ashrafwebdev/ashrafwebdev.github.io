@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Function signatures benefit the most from annotations: typing each parameter and the return value documents the contract directly in the code, and TypeScript will flag any call site that doesn't match it.</p>
-    <p>When a variable's initial value already makes its type obvious, explicit annotation is optional — TypeScript's inference handles it. Annotate when the type isn't obvious, or when you want to lock in a wider type than inference would pick.</p>
+    <p class="lead">Function signatures benefit the most from annotations: typing each parameter and the return value documents the contract directly in the code, and TypeScript will flag any call site that doesn't match it — no separate documentation, no reading the implementation to guess what's expected, just the signature itself.</p>
+    <p>When a variable's initial value already makes its type obvious, explicit annotation is optional — TypeScript's inference handles it automatically. Annotate when the type isn't obvious from the right-hand side, when you're declaring a variable before assigning it a value, or when you deliberately want a wider type than inference would pick on its own.</p>
+    <p>Parameters must always be annotated, because TypeScript has no call site to infer them from at the point the function is defined — without an annotation, an unannotated parameter in a non-strict config silently becomes <code>any</code>, quietly reintroducing the exact unsafety typed code is meant to prevent. Enabling <code>noImplicitAny</code> (bundled into <code>strict</code>) turns this into a compile error instead of a silent gap.</p>
+    <p>Return types are inferred from a function's body by default, which is usually fine for small private functions, but explicitly annotating the return type on anything exported or public is good practice: it acts as a safety net that catches you accidentally returning the wrong thing after refactoring, rather than letting the inferred return type silently drift to match a bug.</p>
+    <p>Object and array destructuring parameters need their own annotation syntax, since the types can't simply follow each destructured name the way they would for a plain parameter — the type goes after the whole destructuring pattern, describing the shape being pulled apart.</p>
+    <p>Widening is a subtlety worth knowing: a <code>let</code> variable initialized to a string literal like <code>"active"</code> is inferred as the general <code>string</code> type, not the narrow literal type <code>"active"</code>, because <code>let</code> variables are assumed reassignable. A <code>const</code> with the same initializer, by contrast, infers the narrower literal type, since it can never change.</p>
     <div class="code-block">
 <div class="cap">annotations.ts</div>      <pre><code>function calculateTotal(price: number, quantity: number): number {
   return price * quantity;
@@ -122,18 +126,44 @@
 
 let count = 0; // inferred as number, no annotation needed</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">destructuring-and-widening.ts</div>      <pre><code>function printCoords({ x, y }: { x: number; y: number }): void {
+  console.log(`(${x}, ${y})`);
+}
+
+let status1 = "active";       // inferred as string (widened, since let is reassignable)
+const status2 = "active";     // inferred as "active" (the exact literal type)
+
+let pending: number; // declared before assignment, annotation required here
+pending = 5;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">implicit-any-mistake.ts</div>      <pre><code>// Without noImplicitAny, this parameter silently becomes 'any':
+function double(x) {
+  return x * 2;
+}
+
+double("hello"); // no compile error, but produces NaN at runtime
+
+// With noImplicitAny (part of strict mode) this is a compile error instead,
+// forcing you to write: function double(x: number) { ... }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Annotate function parameters always — TypeScript can't infer them from a call site.</li>
-        <li>Return type annotations are optional (TypeScript infers them) but valuable as explicit documentation on public functions.</li>
-        <li>Over-annotating obvious variables adds noise without adding safety — trust inference where it's clear.</li>
-        <li>A type error is caught the moment you save the file, long before the code ever runs.</li>
+        <li>Annotate function parameters always — TypeScript can't infer them from a call site the way it can for a variable's initializer.</li>
+        <li>Return type annotations are optional (TypeScript infers them) but valuable as explicit documentation and a safety net on exported or public functions.</li>
+        <li>Over-annotating obvious variables adds noise without adding safety — trust inference where the right-hand side already makes the type clear.</li>
+        <li><code>noImplicitAny</code> (part of <code>strict</code>) turns an unannotated parameter into a compile error instead of a silent <code>any</code>.</li>
+        <li>A type error is caught the moment you save the file or run the compiler, long before the code ever executes.</li>
+        <li>Destructured parameters are annotated by placing the type after the whole destructuring pattern, not after each individual name.</li>
+        <li><code>let</code> initializers widen to the general type (<code>string</code>); <code>const</code> initializers keep the narrow literal type, since they can never be reassigned.</li>
+        <li>Declaring a variable before assigning it a value (<code>let x: number;</code>) requires an explicit annotation, since there's no initializer to infer from.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a fully-annotated function that takes a name (string) and an age (number) and returns a greeting string, then try calling it with wrong argument types to see the compiler error.</p>
+      <p>Write a fully-annotated function that takes a name (string) and an age (number) and returns a greeting string, then try calling it with wrong argument types to see the compiler error. Afterward, declare the same greeting as both a let and a const variable and use hover-info or a type query to confirm the let version widens to string while the const version keeps its literal type.</p>
     </div>
   </article>
 

@@ -110,26 +110,59 @@
   </div>
 
   <article>
-    <p class="lead">A declaration file (<code>.d.ts</code>) contains only type information, no implementation — it describes the shape of JavaScript code so TypeScript can type-check against it, without needing that code to be written in TypeScript itself.</p>
-    <p>Many popular libraries ship their own <code>.d.ts</code> files, or the community maintains them at DefinitelyTyped (installed as <code>@types/package-name</code>). When neither exists, you can write a minimal declaration file yourself.</p>
+    <p class="lead">A declaration file (<code>.d.ts</code>) contains only type information, no implementation — it describes the shape of JavaScript code so TypeScript can type-check against it and give you autocomplete for it, without that underlying code needing to be written in TypeScript itself, or even readable by the compiler at all.</p>
+    <p>Many popular libraries ship their own <code>.d.ts</code> files bundled directly alongside their JavaScript, referenced via a <code>types</code> field in their package.json — when that's the case, TypeScript picks up the types automatically the moment you install the package, with no extra setup required.</p>
+    <p>When a library doesn't ship its own types, the community-maintained DefinitelyTyped project usually has them instead, installable as a separate <code>@types/package-name</code> package — TypeScript automatically looks for a matching <code>@types</code> package for any untyped import, so installing it alongside the library is usually the entire fix.</p>
+    <p>When neither exists, you can write a minimal declaration file yourself, using <code>declare module "package-name"</code> to describe just the exports you actually use — it doesn't need to be exhaustive on day one, and even a rough, partial declaration covering only your own usage is far better than falling back to a blanket <code>any</code> for the whole library.</p>
+    <p>Ambient declarations (declarations with no accompanying implementation, using the <code>declare</code> keyword) aren't limited to whole modules — you can also use <code>declare global</code> to add properties to global objects like <code>Window</code>, or a bare <code>declare const</code>/<code>declare function</code> to describe a value that's expected to exist at runtime through some other mechanism, like a script tag loaded outside your module system entirely.</p>
+    <p>It's worth knowing that a hand-written declaration file is a trust boundary: TypeScript takes what you declare at face value and checks everything against it, but it never verifies the declaration actually matches the real JavaScript implementation underneath — a wrong or outdated hand-written <code>.d.ts</code> produces confident, fully type-checked code that still crashes at runtime, since the compiler has no way to know the declaration itself is inaccurate.</p>
     <div class="code-block">
 <div class="cap">my-untyped-lib.d.ts</div>      <pre><code>declare module "my-untyped-lib" {
   export function doSomething(input: string): number;
   export const version: string;
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ambient-global-and-value.d.ts</div>      <pre><code>// Augmenting a global object
+declare global {
+  interface Window {
+    analyticsId: string;
+  }
+}
+
+// Describing a value loaded outside your module system,
+// e.g. via a &lt;script&gt; tag that sets a global variable
+declare const APP_VERSION: string;
+
+export {}; // makes this file a module so `declare global` works correctly</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">the-trust-boundary-risk.d.ts</div>      <pre><code>// Hand-written, but WRONG — the real function actually returns a Promise
+declare module "legacy-api" {
+  export function fetchUser(id: number): { name: string };
+}
+
+// import { fetchUser } from "legacy-api";
+// const user = fetchUser(1);
+// console.log(user.name.toUpperCase());
+// Compiles cleanly -- but crashes at runtime, since fetchUser
+// actually returns a Promise, not the plain object declared above.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>@types/package-name</code> packages provide community-maintained types for JavaScript-only libraries via DefinitelyTyped.</li>
-        <li>A hand-written <code>.d.ts</code> only needs to describe the public API shape — it doesn't need to be exhaustive on day one.</li>
+        <li>A library that bundles its own <code>.d.ts</code> (referenced via package.json's <code>types</code> field) needs no extra setup at all.</li>
+        <li>A hand-written <code>.d.ts</code> only needs to describe the public API shape you actually use — it doesn't need to be exhaustive on day one.</li>
         <li><code>declare module "name"</code> is the pattern for typing an entire untyped npm package.</li>
+        <li><code>declare global</code> augments global objects like <code>Window</code>; a bare <code>declare const</code>/<code>function</code> describes a value expected to exist at runtime through some other mechanism.</li>
         <li>Even a rough, partial declaration file is far better than falling back to <code>any</code> for an entire library.</li>
+        <li>A hand-written declaration file is a trust boundary — TypeScript checks against it but never verifies it actually matches the real implementation, so an inaccurate declaration produces confident code that still fails at runtime.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a small untyped JavaScript function (real or hypothetical) and write a .d.ts declaration file describing its parameters and return type.</p>
+      <p>Pick a small untyped JavaScript function (real or hypothetical) and write a .d.ts declaration file describing its parameters and return type. Then deliberately make the declaration slightly wrong (say, the wrong return type) and notice how TypeScript still compiles cleanly against your own incorrect declaration.</p>
     </div>
   </article>
 

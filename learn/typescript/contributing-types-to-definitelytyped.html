@@ -110,21 +110,28 @@
   </div>
 
   <article>
-    <p class="lead">DefinitelyTyped is the massive community repository behind the <code>@types/*</code> packages on npm — when a JavaScript library has no built-in types, this is almost always where the community-maintained types live instead.</p>
-    <p>Contributing means writing or improving a <code>.d.ts</code> file for a real, untyped (or under-typed) package, following DefinitelyTyped's contribution guidelines, including their required test file format that verifies the types actually work as intended.</p>
+    <p class="lead">DefinitelyTyped is the massive community repository behind the <code>@types/*</code> packages on npm — when a JavaScript library has no built-in types of its own, this is almost always where the community-maintained types live instead, and it's one of the largest, most actively maintained open-source repositories in existence purely due to how many packages it covers.</p>
+    <p>Contributing means writing or improving a <code>.d.ts</code> file for a real, untyped (or under-typed) package, following DefinitelyTyped's contribution guidelines closely, including their required test file format that verifies the types actually behave correctly when exercised, rather than merely compiling without error — a declaration file that compiles cleanly can still describe the wrong shape entirely, so the test file is what actually catches that.</p>
+    <p>Start with a small, well-scoped package rather than a massive, actively-changing one for a first contribution — a large, popular package's types tend to already be extensively maintained by several regular contributors with strong opinions about API design decisions, which makes for a much harder first pull request to land than a smaller, less-attended package with an open, uncontested gap.</p>
+    <p>Existing <code>@types</code> packages with open issues are often a genuinely easier entry point than starting a brand-new package's types entirely from scratch — an existing declaration file gives you a working structure and test format to extend, and a specific, already-reported problem gives you a clear, scoped goal rather than needing to reverse-engineer an entire library's public API surface yourself from its source or documentation.</p>
+    <p>The DefinitelyTyped review process typically involves both automated checks (the type tests, plus <code>dtslint</code> or the newer <code>tsc</code>-based linting it's since migrated toward) and human maintainer review, and it can take real back-and-forth before a contribution merges — this is normal for a shared community resource where a mistake in a widely-used declaration file would affect a large number of downstream projects at once.</p>
+    <p>This is genuinely high-leverage, low-glamour work: a good type definition helps every downstream user of that package silently, forever, without ever needing to thank the original contributor or even know their declaration file exists — it's a form of open-source contribution that's easy to overlook precisely because, when done well, nobody notices it at all.</p>
 
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>DefinitelyTyped requires a companion test file (using <code>dtslint</code> or similar) proving your types behave correctly, not just that they compile.</li>
+        <li>DefinitelyTyped requires a companion test file (using <code>dtslint</code> or a similar tool) proving your types behave correctly, not just that they compile.</li>
         <li>Start with a small, well-scoped package rather than a massive, actively-changing one for your first contribution.</li>
         <li>Existing @types packages with open issues are often an easier entry point than starting a brand-new package's types from scratch.</li>
-        <li>This is a genuinely high-leverage contribution — a good type definition helps every downstream user of that package, silently, forever.</li>
+        <li>A declaration file that compiles cleanly can still describe the wrong shape entirely — the required test file is what actually catches that.</li>
+        <li>The review process combines automated type-testing tools with human maintainer review, and can take genuine back-and-forth before merging.</li>
+        <li>This is genuinely high-leverage, low-glamour open-source work — a good type definition helps every downstream consumer silently and permanently.</li>
+        <li>A large, popular package's types are typically already actively maintained, making a smaller or less-attended package an easier first contribution target.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Find a small npm package you use that lacks TypeScript types, check if an @types package already exists with open issues, and attempt a fix or a new minimal declaration file.</p>
+      <p>Find a small npm package you use that lacks TypeScript types, check if an @types package already exists with open issues, and attempt a fix or a new minimal declaration file. Write the accompanying type test file the contribution guidelines require, and note in your own words what it verifies that a plain successful compile would not have caught on its own.</p>
     </div>
   </article>
 

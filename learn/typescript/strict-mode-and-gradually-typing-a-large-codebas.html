@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Migrating a large existing JavaScript codebase to strict TypeScript all at once is rarely realistic. TypeScript supports incremental adoption: start with loose settings, convert files one at a time, and tighten <code>tsconfig.json</code> flags gradually as coverage grows.</p>
-    <p><code>// @ts-expect-error</code> and per-file <code>// @ts-nocheck</code> comments let you silence specific known issues temporarily during migration without blocking the whole build, while still tracking what's left to fix.</p>
+    <p class="lead">Migrating a large existing JavaScript codebase to strict TypeScript all at once is rarely realistic — the number of type errors that surface the moment strict mode is enabled on unconverted code is typically enormous, and trying to fix them all before shipping anything else brings feature work to a halt for far too long to be practical on a real team.</p>
+    <p>TypeScript supports incremental adoption by design: start with loose settings (<code>allowJs</code> and a non-strict config), convert files one at a time from <code>.js</code> to <code>.ts</code>, and tighten individual <code>tsconfig.json</code> flags gradually as coverage and confidence grow, rather than flipping every strict check on at once across the whole project on day one.</p>
+    <p><code>noImplicitAny</code> is usually the single most valuable individual flag to turn on early, even before full <code>strict</code> mode, since it catches the exact case where an unconverted or under-annotated function is silently providing zero type safety at all — flushing those out first tends to surface the highest-value, lowest-effort fixes early in a migration.</p>
+    <p><code>// @ts-expect-error</code> and per-file <code>// @ts-nocheck</code> comments let you silence specific known issues temporarily during migration without blocking the whole build, while still actively tracking what's left to fix — critically, <code>// @ts-expect-error</code> itself becomes an error if the line it's suppressing stops actually having a type error, which prevents these suppression comments from silently going stale and hiding a real problem that's since resurfaced differently.</p>
+    <p><code>checkJs</code>, paired with <code>allowJs</code>, lets you type-check plain <code>.js</code> files using JSDoc comments instead of converting them to <code>.ts</code> syntax outright — this is a genuinely useful intermediate step for files that are too risky or too large to rewrite immediately, letting you add real type safety without touching the file's actual runtime code at all.</p>
+    <p>Migration progress is worth tracking with dedicated tooling (a type-coverage report, or simply counting remaining <code>any</code>s and suppression comments over time) rather than relying on team memory of what's left — a large migration that loses visibility into its own progress is at real risk of stalling out somewhere in the middle, with the codebase left in a permanently half-migrated, worst-of-both-worlds state.</p>
     <div class="code-block">
 <div class="cap">A staged tsconfig.json</div>      <pre><code>{
   "compilerOptions": {
@@ -122,18 +126,42 @@
   }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">suppressing-a-known-issue.ts</div>      <pre><code>// @ts-expect-error — legacy payload shape, tracked in JIRA-1234
+const total: number = legacyApi.getTotal();
+
+// If legacyApi.getTotal() is later fixed to actually return a number,
+// this comment itself becomes a compile error: "Unused '@ts-expect-error'
+// directive" -- forcing you to notice and remove the now-stale suppression.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">typed-jsdoc-in-plain-js.js</div>      <pre><code>// @ts-check
+/**
+ * @param {number} price
+ * @param {number} quantity
+ * @returns {number}
+ */
+function calculateTotal(price, quantity) {
+  return price * quantity;
+}
+
+calculateTotal("10", 2); // flagged by tsc even though this is a plain .js file</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>allowJs</code> lets .js and .ts files coexist during a gradual migration.</li>
         <li>Turn on individual strict flags (<code>noImplicitAny</code> first, usually) rather than flipping <code>strict: true</code> all at once on a large codebase.</li>
         <li><code>// @ts-expect-error</code> documents a known, temporary issue and will itself error if the underlying problem gets fixed and the comment becomes stale.</li>
-        <li>Track migration progress with tooling (type-coverage reports) rather than relying on memory of what's left.</li>
+        <li><code>checkJs</code> plus <code>allowJs</code> type-checks plain .js files via JSDoc comments, without needing to convert them to .ts syntax outright.</li>
+        <li>Track migration progress with tooling (type-coverage reports, or counting remaining suppressions over time) rather than relying on memory of what's left.</li>
+        <li>A stalled, half-migrated codebase combines the worst of both worlds — real conversion effort spent, but without full type safety to show for it.</li>
+        <li><code>// @ts-nocheck</code> silences an entire file, useful for very large or risky files you aren't ready to fix piece by piece yet.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take an existing JavaScript file, rename it to .ts, and fix type errors one at a time until it compiles cleanly under strict mode.</p>
+      <p>Take an existing JavaScript file, rename it to .ts, and fix type errors one at a time until it compiles cleanly under strict mode. Then, on a separate plain .js file, add a @ts-check comment and JSDoc type annotations instead, and confirm tsc still catches a deliberately introduced type mismatch without any file rename at all.</p>
     </div>
   </article>
 

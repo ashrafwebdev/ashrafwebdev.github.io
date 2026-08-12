@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Conditional types let a type depend on a check, using syntax that mirrors a ternary: <code>T extends U ? X : Y</code>. This enables types that adapt based on what's passed to them, computed entirely at compile time.</p>
-    <p>Mapped types transform every property of an existing type using a consistent rule — this is literally how built-in utilities like <code>Partial</code> and <code>Readonly</code> are implemented internally.</p>
+    <p class="lead">Conditional types let a type depend on a check, using syntax that mirrors a ternary expression: <code>T extends U ? X : Y</code>. This enables types that adapt based on what's passed to them, computed entirely at compile time — the check itself is really asking 'is T assignable to U', not a strict equality test, which matters for how these types behave with unions and subtypes.</p>
+    <p>Mapped types transform every property of an existing type using one consistent rule, written with a syntax like <code>{ [K in keyof T]: ... }</code> that iterates over every key of <code>T</code> and produces a new property for each — this is literally how the built-in utilities like <code>Partial</code> and <code>Readonly</code> are implemented internally, not a separate special-cased compiler feature.</p>
+    <p>Conditional types distribute automatically over a union when the type being checked is a bare type parameter — passing a union like <code>string | number</code> into a conditional type effectively runs the check separately for each union member and unions the results back together, which is usually exactly what you want, but occasionally surprises people expecting the union to be checked as a single whole.</p>
+    <p>The <code>infer</code> keyword inside a conditional type lets you extract and name a piece of a type you're checking against, rather than merely testing whether it matches — this is how utility types like <code>ReturnType</code> pull the return type out of a function type, or <code>Awaited</code> pulls the resolved value type out of a Promise, without you needing to know or write out the underlying type structure explicitly yourself.</p>
+    <p>Mapped types support modifiers beyond adding <code>readonly</code>: prefixing a modifier with <code>-</code> (as in <code>-readonly</code> or <code>-?</code>) removes it instead of adding it, which is how the built-in <code>Required</code> utility strips optionality that <code>Partial</code> added, and how <code>Mutable</code>-style helper types (not built in, but easy to write) strip readonly-ness from a type.</p>
+    <p>These features are genuinely what makes TypeScript's type system Turing-complete in a formal sense — powerful enough to express real computation at the type level — but that power is easy to overuse into deeply nested, unreadable type gymnastics; using conditional and mapped types for real, recurring problems (as most utility types do) is very different from reaching for them reflexively wherever a simpler union or interface would do the job just as well.</p>
     <div class="code-block">
 <div class="cap">conditionalTypes.ts</div>      <pre><code>type IsString&lt;T&gt; = T extends string ? true : false;
 type A = IsString&lt;"hello"&gt;; // true
@@ -122,18 +126,41 @@ type MyReadonly&lt;T&gt; = {
   readonly [K in keyof T]: T[K];
 };</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">infer-and-distribution.ts</div>      <pre><code>// A simplified reimplementation of the built-in ReturnType utility
+type MyReturnType&lt;T&gt; = T extends (...args: any[]) =&gt; infer R ? R : never;
+
+function greet(): string { return "hi"; }
+type Greeting = MyReturnType&lt;typeof greet&gt;; // string
+
+// Conditional types distribute over unions automatically:
+type ToArray&lt;T&gt; = T extends any ? T[] : never;
+type Result = ToArray&lt;string | number&gt;; // string[] | number[], not (string | number)[]</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">removing-modifiers.ts</div>      <pre><code>// A simplified reimplementation of the built-in Required utility
+type MyRequired&lt;T&gt; = {
+  [K in keyof T]-?: T[K]; // the '-?' strips optionality instead of adding it
+};
+
+interface Draft { title?: string; }
+type Published = MyRequired&lt;Draft&gt;; // { title: string }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Conditional types (<code>T extends U ? X : Y</code>) compute a different resulting type based on a compile-time check.</li>
+        <li>Conditional types (<code>T extends U ? X : Y</code>) compute a different resulting type based on a compile-time assignability check.</li>
         <li>Mapped types (<code>{ [K in keyof T]: ... }</code>) transform every property of a type using one consistent rule.</li>
-        <li>Built-in utility types like <code>Partial</code>, <code>Readonly</code>, and <code>Record</code> are themselves just mapped/conditional types.</li>
-        <li>These features are what make TypeScript's type system Turing-complete — powerful, but easy to overuse into unreadable complexity.</li>
+        <li>Built-in utility types like <code>Partial</code>, <code>Readonly</code>, and <code>Record</code> are themselves just mapped/conditional types, not special compiler features.</li>
+        <li>A conditional type checking a bare type parameter automatically distributes over a union, checking and combining each member separately.</li>
+        <li>The <code>infer</code> keyword lets a conditional type extract and name a piece of the type it's checking, as used internally by <code>ReturnType</code> and <code>Awaited</code>.</li>
+        <li>Prefixing a mapped type modifier with <code>-</code> (like <code>-readonly</code> or <code>-?</code>) removes that modifier instead of adding it.</li>
+        <li>These features make the type system genuinely Turing-complete, but that power is easy to overuse into unreadable, deeply nested type expressions.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write your own simplified version of the built-in Partial utility type using a mapped type with an optional modifier.</p>
+      <p>Write your own simplified version of the built-in Partial utility type using a mapped type with an optional modifier. Then write a conditional type using infer that extracts the element type out of an array type, and verify it behaves correctly when given both an array type and a non-array type.</p>
     </div>
   </article>
 
