@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Express is the most widely used Node web framework — a thin, unopinionated layer for defining routes and handling HTTP requests/responses. A route pairs an HTTP method and a path with a handler function.</p>
-    <p><code>express.json()</code> middleware parses incoming JSON request bodies into <code>req.body</code> automatically — without it, POST/PUT bodies arrive as a raw, unparsed stream.</p>
+    <p class="lead">Express is the most widely used Node web framework — a thin, unopinionated layer for defining routes and handling HTTP requests/responses. A route pairs an HTTP method and a path with a handler function that receives a request object and a response object.</p>
+    <p><code>express.json()</code> middleware parses incoming JSON request bodies into <code>req.body</code> automatically — without it, POST/PUT bodies arrive as a raw, unparsed stream and <code>req.body</code> is <code>undefined</code>, a very common source of confusing early bugs.</p>
+    <p>The response object offers several ways to end a request: <code>res.json(data)</code> sends JSON with the correct <code>Content-Type</code> header, <code>res.send()</code> sends a string, buffer, or object, and <code>res.status(code)</code> sets the HTTP status — these are typically chained together as <code>res.status(201).json(data)</code>. Only one of these should be called per request; calling a response method twice throws an <code>"ERR_HTTP_HEADERS_SENT"</code> error.</p>
+    <p>A very common bug is forgetting to <code>return</code> after sending a response inside a branch — if a handler sends a response in an <code>if</code> block but keeps executing afterward and sends a second one later, Express throws precisely that headers-already-sent error. Always <code>return res.status(...).json(...)</code> rather than calling it as a bare statement inside conditional branches.</p>
+    <p><code>express.static()</code> serves an entire directory of files (images, CSS, a built frontend) directly, without writing individual routes for each file — commonly used to serve a compiled single-page app alongside an API, or to expose an uploads folder.</p>
+    <p>Express itself doesn't validate input at all — pair it with a library like <code>zod</code> or <code>joi</code> for real request validation, since trusting <code>req.body</code> or <code>req.params</code> blindly is how malformed or malicious input ends up deep inside your application logic.</p>
     <div class="code-block">
 <div class="cap">server.js</div>      <pre><code>const express = require("express");
 const app = express();
@@ -127,18 +131,54 @@ app.post("/users", (req, res) =&gt; {
 
 app.listen(3000, () =&gt; console.log("Listening on port 3000"));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">items.js (a small in-memory CRUD API)</div>      <pre><code>const items = [];
+
+app.get("/items", (req, res) =&gt; {
+  res.json(items);
+});
+
+app.post("/items", (req, res) =&gt; {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: "name is required" }); // note the return!
+  }
+  const item = { id: items.length + 1, name };
+  items.push(item);
+  res.status(201).json(item);
+});
+
+app.get("/items/:id", (req, res) =&gt; {
+  const item = items.find((i) =&gt; i.id === Number(req.params.id));
+  if (!item) return res.status(404).json({ error: "Not found" });
+  res.json(item);
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">double-send-bug.js (a mistake worth recognizing)</div>      <pre><code>// BROKEN — sends two responses when name is missing
+app.post("/items", (req, res) =&gt; {
+  if (!req.body.name) {
+    res.status(400).json({ error: "name required" }); // missing return!
+  }
+  res.status(201).json({ created: req.body }); // runs anyway -&gt; crash
+});
+// Error: Cannot set headers after they are sent to the client</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Route parameters (<code>:id</code>) become available on <code>req.params</code>.</li>
         <li>Always set the correct status code (<code>res.status(201)</code> for creation, <code>404</code> for not found) — defaulting to 200 for everything hides real problems from API consumers.</li>
         <li><code>express.json()</code> must run before any route that reads <code>req.body</code>.</li>
+        <li>Always <code>return</code> a response call inside conditional branches — forgetting to causes a 'headers already sent' crash if code keeps running afterward.</li>
+        <li><code>express.static()</code> serves a whole directory of files without individual routes for each one.</li>
+        <li>Only one response method should run per request — calling <code>res.json()</code> or <code>res.send()</code> twice throws an error.</li>
         <li>Express itself doesn't validate input — pair it with a library like <code>zod</code> or <code>joi</code> for real request validation.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build an Express server with GET and POST routes for a simple in-memory list of items (no database needed yet).</p>
+      <p>Build an Express server with GET and POST routes for a simple in-memory list of items (no database needed yet), including a GET route for a single item by id that returns 404 when it's missing. Then deliberately introduce the missing-return double-response bug in one handler, observe the crash, and fix it.</p>
     </div>
   </article>
 

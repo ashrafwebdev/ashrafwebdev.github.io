@@ -110,9 +110,39 @@
   </div>
 
   <article>
-    <p class="lead">Node.js itself is developed in the open on GitHub, with a formal contribution process (including a Collaborator Guide) — everything from documentation improvements to actual C++/JavaScript core changes is welcomed and needed.</p>
-    <p>For most developers, contributing to a major framework you already use (Express, Fastify, NestJS) is the more approachable entry point — smaller, more focused codebases with maintainers actively looking for help on specific labeled issues.</p>
+    <p class="lead">Node.js itself is developed in the open on GitHub, with a formal contribution process (including a Collaborator Guide) — everything from documentation improvements to actual C++/JavaScript core changes is welcomed and needed, and the project explicitly labels beginner-friendly issues to make that first step less intimidating.</p>
+    <p>For most developers, contributing to a major framework you already use (Express, Fastify, NestJS) is the more approachable entry point — smaller, more focused codebases than Node core itself, with maintainers actively looking for help on specific labeled issues like <code>good first issue</code> or <code>help wanted</code>.</p>
+    <p>Documentation contributions are just as valuable as code, and a much lower-friction way to start: fixing an unclear explanation, adding a missing example, or correcting an outdated instruction in a README is a genuinely useful contribution that doesn't require deep familiarity with the project's internals first.</p>
+    <p>A minimal, reliable bug reproduction is often the single most useful thing you can hand a maintainer — a small, self-contained script that reliably triggers the bug (ideally with as few dependencies and as little unrelated code as possible) is far more actionable than a description of symptoms, and writing one is itself a genuinely useful contribution even without a fix attached.</p>
+    <p>The typical contribution workflow is consistent across most open-source JavaScript projects: fork the repository, create a focused branch for your change, make the smallest reasonable change that addresses the issue, add or update tests covering it, and open a pull request that clearly explains what changed and why — a PR that mixes an unrelated refactor into a bug fix is much harder for a maintainer to review and more likely to stall.</p>
+    <p>Reading a framework's core source code — even without contributing anything back — is one of the fastest ways to level up your own Node architecture skills, since it exposes you to real patterns (error handling, middleware design, API surface decisions) that a well-maintained, widely-used project has already worked through under real-world pressure.</p>
+    <div class="code-block">
+<div class="cap">Terminal (typical contribution workflow)</div>      <pre><code>git clone https://github.com/your-username/express.git
+cd express
+git checkout -b fix/query-parsing-edge-case
 
+# ...make the change, add/update a test...
+npm test
+
+git add .
+git commit -m "fix: handle empty query string in req.query parsing"
+git push origin fix/query-parsing-edge-case
+# then open a pull request from your fork on GitHub</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">repro.js (a minimal bug reproduction)</div>      <pre><code>// A good bug report includes something like this: small, self-contained,
+// no unrelated dependencies, and it reliably shows the problem.
+const express = require("express");
+const app = express();
+
+app.get("/search", (req, res) =&gt; {
+  res.json({ query: req.query }); // BUG: crashes on a specific malformed query string
+});
+
+app.listen(3000, () =&gt; {
+  console.log("Reproduce with: curl 'localhost:3000/search?a[=1'");
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -120,11 +150,14 @@
         <li>Documentation contributions are just as valuable as code, and a much lower-friction way to start.</li>
         <li>A minimal, reliable bug reproduction is often the single most useful thing you can hand a maintainer.</li>
         <li>Reading a framework's core source code (even without contributing) is one of the fastest ways to level up your own Node architecture skills.</li>
+        <li>A focused pull request that changes only what's needed for the issue at hand is far easier to review than one mixing in unrelated changes.</li>
+        <li>Adding or updating a test alongside a bug fix is usually expected, not optional, in a well-maintained project's contribution process.</li>
+        <li>Look for labels like <code>good first issue</code> or <code>help wanted</code> as a starting point rather than guessing which issues are approachable.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Node.js framework or library you use regularly, find an open issue labeled 'good first issue', and submit a fix or a clear, reproducible bug report.</p>
+      <p>Pick a Node.js framework or library you use regularly, find an open issue labeled good first issue or help wanted, and either submit a fix with an accompanying test or write a clear, minimal, reproducible bug report for an issue that doesn't have one yet. Before opening a pull request, read the project's CONTRIBUTING guide and confirm your change follows its expected commit message and testing conventions.</p>
     </div>
   </article>
 

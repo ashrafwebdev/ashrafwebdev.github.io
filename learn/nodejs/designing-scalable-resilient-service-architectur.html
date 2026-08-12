@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Resilience means a system keeps functioning, degraded but alive, when a dependency fails — rather than cascading into a full outage. Patterns like circuit breakers (stop calling a failing dependency temporarily) and timeouts (never wait forever) are essential, not optional, at scale.</p>
-    <p>Observability — structured logging, metrics, and distributed tracing across services — becomes essential once a single user request might touch five different services; without it, debugging a production issue is close to guesswork.</p>
+    <p class="lead">Resilience means a system keeps functioning, degraded but alive, when a dependency fails — rather than cascading into a full outage. Patterns like circuit breakers (stop calling a failing dependency temporarily) and timeouts (never wait forever) are essential, not optional, at scale, where some dependency failing at any given moment is closer to a certainty than an edge case.</p>
+    <p>Never call a dependency without a timeout — an unresponsive downstream service otherwise can hang your own service indefinitely, tying up whatever resources (a connection, a worker thread, a request slot) were waiting on that call, which can cascade into your own service becoming unresponsive too even though the actual bug is somewhere else entirely.</p>
+    <p>Circuit breakers stop retrying a known-failing dependency for a cooldown period, preventing retry storms from making an outage worse — without one, every one of your instances retrying a struggling downstream service simultaneously can be exactly what pushes it from struggling into fully down, a pattern sometimes called a 'thundering herd'.</p>
+    <p>Retries themselves need care: naive immediate retries amplify load on an already-struggling dependency, so exponential backoff (waiting progressively longer between attempts) combined with jitter (adding small randomness to the wait time) spreads retries out over time instead of every client hammering the dependency again at the exact same moment.</p>
+    <p>The bulkhead pattern — named after a ship's watertight compartments — isolates resources (connection pools, thread pools, rate limits) per dependency, so one dependency being slow or overloaded can't exhaust resources that other, unrelated parts of your system also need; without isolation, a single slow dependency can starve everything else of the same shared pool.</p>
+    <p>Graceful shutdown matters as much as graceful degradation: on receiving <code>SIGTERM</code> (what most orchestration platforms send before killing a container), a service should stop accepting new requests, finish in-flight ones, close database connections cleanly, and exit — an abrupt kill risks dropped requests and half-written data, and structured logging plus distributed tracing across services is what actually makes debugging these kinds of multi-service failure scenarios tractable in the first place.</p>
     <div class="code-block">
 <div class="cap">A basic timeout pattern</div>      <pre><code>async function fetchWithTimeout(url, ms = 3000) {
   const controller = new AbortController();
@@ -123,18 +127,46 @@
   }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">retryWithBackoff.js (exponential backoff + jitter)</div>      <pre><code>async function retryWithBackoff(fn, maxAttempts = 4) {
+  for (let attempt = 1; attempt &lt;= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (attempt === maxAttempts) throw err;
+      const base = 2 ** attempt * 100;         // exponential
+      const jitter = Math.random() * 100;       // spreads out simultaneous retries
+      await new Promise((r) =&gt; setTimeout(r, base + jitter));
+    }
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">gracefulShutdown.js</div>      <pre><code>const server = app.listen(3000);
+
+process.on("SIGTERM", async () =&gt; {
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() =&gt; console.log("HTTP server closed")); // stop new requests
+  await pool.end();       // close db connections
+  await redisClient.quit();
+  process.exit(0);
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Never call a dependency without a timeout — an unresponsive downstream service otherwise can hang your own service indefinitely.</li>
         <li>Circuit breakers stop retrying a known-failing dependency for a cooldown period, preventing retry storms from making an outage worse.</li>
+        <li>Exponential backoff with jitter spreads retries out over time instead of every client hammering a struggling dependency at once.</li>
+        <li>The bulkhead pattern isolates resources per dependency so one slow dependency can't starve resources needed by unrelated parts of the system.</li>
         <li>Structured logging (JSON logs with request IDs) and distributed tracing are what actually make debugging a multi-service system tractable.</li>
         <li>Design for graceful degradation: a non-critical dependency failing (like a recommendations service) shouldn't take down checkout.</li>
+        <li>Handle <code>SIGTERM</code> for graceful shutdown — stop accepting new requests, finish in-flight ones, then close connections cleanly before exiting.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a timeout to an external API call in your app using AbortController, and confirm the request fails cleanly instead of hanging when the timeout is hit.</p>
+      <p>Add a timeout to an external API call in your app using AbortController, and confirm the request fails cleanly instead of hanging when the timeout is hit. Then wrap that same call in a retryWithBackoff helper using exponential backoff and jitter, and add a SIGTERM handler to your server that stops accepting new connections and closes any open database pool before the process exits.</p>
     </div>
   </article>
 

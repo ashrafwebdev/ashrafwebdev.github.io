@@ -111,7 +111,11 @@
 
   <article>
     <p class="lead">As an Express app grows, a consistent error-handling strategy matters: throwing or passing errors to <code>next(err)</code> routes them to a centralized error-handling middleware, instead of scattering try/catch and inconsistent error responses across every route.</p>
-    <p>Async route handlers need explicit error forwarding — an error thrown inside an <code>async</code> function isn't automatically caught by Express's default error handling the way a synchronous throw is, unless you wrap it or use a helper.</p>
+    <p>Async route handlers need explicit error forwarding — an error thrown inside an <code>async</code> function isn't automatically caught by Express's default synchronous error handling the way a plain <code>throw</code> in a regular function is, unless you wrap it or use a helper (Express 5 fixes this specific gap, but most apps in production still run Express 4).</p>
+    <p>It's worth distinguishing operational errors — bad input, a resource that doesn't exist, a failed external call — from programming errors, which are actual bugs (a typo, a null reference, a logic mistake). Operational errors deserve a clean, expected error response to the client; programming errors deserve to be logged loudly and often shouldn't be exposed to the client in detail, since the response might leak internal implementation details.</p>
+    <p>Custom error classes that extend <code>Error</code> and carry a status code make this distinction concrete in code: throwing a <code>NotFoundError</code> or <code>ValidationError</code> lets a single centralized handler pick the right HTTP status automatically, instead of every route hardcoding <code>res.status(404)</code> and duplicating that logic everywhere.</p>
+    <p>A catch-all 404 handler belongs after every real route but before the error-handling middleware — Express falls through to it only when nothing else matched the request, and it should itself call <code>next()</code> with a suitable error object so it flows through the same centralized error-handling path as everything else.</p>
+    <p>Process-level safety nets matter too: an <code>unhandledRejection</code> or <code>uncaughtException</code> listener on <code>process</code> catches errors that escaped everything else, letting you log them properly and shut down gracefully rather than leaving the process in an unknown, possibly corrupted state — Node itself will eventually terminate the process on an uncaught exception regardless.</p>
     <div class="code-block">
 <div class="cap">errorHandling.js</div>      <pre><code>function asyncHandler(fn) {
   return (req, res, next) =&gt; Promise.resolve(fn(req, res, next)).catch(next);
@@ -128,18 +132,63 @@ app.use((err, req, res, next) =&gt; {
   res.status(500).json({ error: err.message });
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">AppError.js (typed errors with status codes)</div>      <pre><code>class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+    this.isOperational = true; // distinguishes expected errors from bugs
+  }
+}
+
+class NotFoundError extends AppError {
+  constructor(resource) { super(`${resource} not found`, 404); }
+}
+
+app.get("/users/:id", asyncHandler(async (req, res) =&gt; {
+  const user = await findUser(req.params.id);
+  if (!user) throw new NotFoundError("User");
+  res.json(user);
+}));
+
+app.use((err, req, res, next) =&gt; {
+  const status = err.statusCode || 500;
+  if (!err.isOperational) console.error("Unexpected error:", err); // log bugs loudly
+  res.status(status).json({ error: err.message });
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">notFoundAndSafetyNet.js</div>      <pre><code>// After all real routes, before the error handler:
+app.use((req, res, next) =&gt; {
+  next(new NotFoundError("Route"));
+});
+
+app.use((err, req, res, next) =&gt; { /* ...centralized handler... */ });
+
+// Process-level safety net for anything that still slipped through
+process.on("unhandledRejection", (reason) =&gt; {
+  console.error("Unhandled rejection:", reason);
+});
+process.on("uncaughtException", (err) =&gt; {
+  console.error("Uncaught exception, shutting down:", err);
+  process.exit(1);
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>An error-handling middleware must have exactly four parameters — that's how Express distinguishes it from regular middleware.</li>
-        <li>Async route handlers need explicit error forwarding (an <code>asyncHandler</code> wrapper, or newer Express versions' built-in support).</li>
+        <li>Async route handlers need explicit error forwarding (an <code>asyncHandler</code> wrapper, or Express 5's built-in support).</li>
         <li>Centralizing error responses ensures a consistent API error shape, instead of every route inventing its own.</li>
-        <li>Distinguish operational errors (bad input, not found) from programming errors (bugs) — they usually deserve different logging and response strategies.</li>
+        <li>Distinguish operational errors (bad input, not found) from programming errors (bugs) — they deserve different logging and response strategies.</li>
+        <li>Custom error classes carrying a status code let the centralized handler pick the right HTTP response automatically.</li>
+        <li>A catch-all 404 handler belongs after all real routes but before the error-handling middleware.</li>
+        <li><code>process.on("unhandledRejection")</code> and <code>process.on("uncaughtException")</code> are last-resort safety nets, not a substitute for handling errors properly closer to where they happen.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add an asyncHandler wrapper and a centralized error-handling middleware to an Express app, and confirm a thrown error in an async route returns a clean JSON error response.</p>
+      <p>Add an asyncHandler wrapper, a custom NotFoundError class, and a centralized error-handling middleware to an Express app, and confirm a thrown error in an async route returns a clean JSON error response with the right status code. Then add a catch-all 404 handler for unmatched routes and a process-level unhandledRejection listener, and verify all three paths produce sensible, distinct output.</p>
     </div>
   </article>
 

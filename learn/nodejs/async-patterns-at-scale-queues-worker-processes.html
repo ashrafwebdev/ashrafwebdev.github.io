@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Not all work belongs inside a request handler — sending emails, processing images, or generating reports can take seconds or minutes, far too slow to make a user wait on. A message queue (like BullMQ backed by Redis, or SQS) lets you hand off that work to be processed separately.</p>
-    <p>Worker processes pull jobs off the queue and execute them independently from your web server, which can then respond to the original request immediately and let the job finish whenever it finishes.</p>
+    <p class="lead">Not all work belongs inside a request handler — sending emails, processing images, or generating reports can take seconds or minutes, far too slow to make a user wait on. A message queue (like BullMQ backed by Redis, or a cloud service like SQS) lets you hand off that work to be processed separately from the request/response cycle.</p>
+    <p>Worker processes pull jobs off the queue and execute them independently from your web server, which can then respond to the original request immediately (often with something like <code>{ status: "queued" }</code>) and let the job finish whenever it finishes, entirely decoupled from how long the actual work takes.</p>
+    <p>Queues decouple 'accepting the request' from 'doing the slow work', keeping response times fast and predictable — and worker processes can be scaled independently from your web servers based on how deep the queue is getting, rather than scaling both together even when only one side is under load.</p>
+    <p>Failed jobs should be retried with backoff (waiting progressively longer between attempts) rather than immediately, and eventually moved to a dead-letter queue for manual inspection rather than retried forever — a job that fails because of a genuine bug will just keep failing no matter how many times it's retried, and silently retrying forever hides that problem instead of surfacing it.</p>
+    <p>Idempotency matters a great deal here — a job might run more than once (e.g. after a worker crashes mid-processing and the job gets picked up again), so jobs should be designed to produce the same end result whether they run once or several times, for example by checking 'has this already been done' before doing it, rather than assuming exactly-once execution.</p>
+    <p>Beyond one-off background jobs, queues also support delayed jobs (run this 24 hours from now) and repeating jobs (run every night at 2am) — useful for reminder emails, scheduled reports, or periodic cleanup tasks — and most queue libraries let you cap concurrency (how many jobs a single worker processes at once) to avoid overwhelming a downstream resource like a rate-limited third-party API.</p>
     <div class="code-block">
 <div class="cap">A BullMQ job</div>      <pre><code>const { Queue, Worker } = require("bullmq");
 
@@ -125,6 +129,31 @@ new Worker("emails", async (job) =&gt; {
   console.log("Sending email to", job.data.to);
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">retries-and-idempotency.js</div>      <pre><code>await emailQueue.add(
+  "welcome",
+  { to: user.email, userId: user.id },
+  { attempts: 5, backoff: { type: "exponential", delay: 2000 } }
+);
+
+new Worker("emails", async (job) =&gt; {
+  const alreadySent = await hasWelcomeEmailBeenSent(job.data.userId);
+  if (alreadySent) return; // idempotent — safe if this job runs twice
+
+  await sendEmail(job.data.to);
+  await markWelcomeEmailSent(job.data.userId);
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">scheduled-and-limited.js</div>      <pre><code>// Runs once, 24 hours from now
+await reminderQueue.add("reminder", { userId: user.id }, { delay: 24 * 60 * 60 * 1000 });
+
+// Repeats every night at 2am (cron syntax)
+await reportQueue.add("nightly-report", {}, { repeat: { pattern: "0 2 * * *" } });
+
+// Cap concurrency so we don't hammer a rate-limited API
+new Worker("emails", processJob, { concurrency: 5 });</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,11 +161,14 @@ new Worker("emails", async (job) =&gt; {
         <li>Worker processes can be scaled independently from your web servers based on queue depth.</li>
         <li>Failed jobs should be retried with backoff, and eventually moved to a dead-letter queue for manual inspection rather than retried forever.</li>
         <li>Idempotency matters — a job might run more than once (e.g. after a crash mid-processing), so design jobs to handle that safely.</li>
+        <li>Queues support delayed jobs (run later) and repeating jobs (cron-like schedules), not just immediate background work.</li>
+        <li>Capping a worker's concurrency prevents it from overwhelming a downstream rate-limited resource, like a third-party API.</li>
+        <li>A job that fails due to a real bug will keep failing on every retry — a dead-letter queue surfaces that instead of hiding it behind silent infinite retries.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Set up a simple BullMQ (or similar) queue and worker: a route that enqueues a job, and a separate worker script that processes it and logs the result.</p>
+      <p>Set up a simple BullMQ (or similar) queue and worker: a route that enqueues a job, and a separate worker script that processes it and logs the result. Then make the job idempotent by tracking completion state, configure retries with exponential backoff, and add a delayed job that fires a few seconds after being enqueued to confirm the delay option works.</p>
     </div>
   </article>
 

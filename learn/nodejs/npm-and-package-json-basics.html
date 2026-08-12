@@ -110,13 +110,46 @@
   </div>
 
   <article>
-    <p class="lead">npm is Node's package manager, bundled with every Node install. <code>package.json</code> is a project's manifest — its name, version, dependencies, and custom scripts (like <code>npm run build</code>) all live there.</p>
-    <p><code>npm install package-name</code> downloads a package into <code>node_modules</code> and records it in <code>package.json</code>'s dependencies. <code>node_modules</code> should never be committed to git — it's regenerated from <code>package.json</code> and <code>package-lock.json</code>.</p>
+    <p class="lead">npm is Node's package manager, bundled with every Node install. <code>package.json</code> is a project's manifest — its name, version, dependencies, and custom scripts (like <code>npm run build</code>) all live there, making it the single source of truth for what a project needs to run.</p>
+    <p><code>npm install package-name</code> downloads a package into <code>node_modules</code> and records it in <code>package.json</code>'s dependencies. <code>node_modules</code> should never be committed to git — it's fully regenerated from <code>package.json</code> and <code>package-lock.json</code>, and can easily balloon to hundreds of megabytes.</p>
+    <p>Version numbers in <code>package.json</code> use semantic versioning ranges by default: a caret (<code>^1.2.3</code>) allows minor and patch updates but not a new major version, while a tilde (<code>~1.2.3</code>) allows only patch updates. An exact version with no prefix pins that dependency completely, which is sometimes desirable for critical packages.</p>
+    <p>The <code>scripts</code> field defines shortcuts (<code>npm run dev</code>, <code>npm test</code>) that every contributor can rely on without memorizing raw commands or tool-specific flags. Scripts named <code>pretest</code> or <code>postinstall</code> run automatically before/after their matching script, and <code>npx</code> runs a package's binary without installing it globally — handy for one-off tool usage like scaffolding a new project.</p>
+    <p><code>package-lock.json</code> records the exact resolved version of every dependency (including nested ones), which is what makes installs reproducible across machines. <code>npm ci</code> installs strictly from the lock file, deleting <code>node_modules</code> first and failing if the lock file is out of sync with <code>package.json</code> — it's what CI pipelines and deployments should use instead of plain <code>npm install</code>.</p>
+    <p><code>dependencies</code> are needed at runtime in production; <code>devDependencies</code> (test runners, linters, build tools) are only needed while developing. Keeping this split accurate matters because production installs can skip devDependencies entirely, shrinking deploy size and install time.</p>
     <div class="code-block">
-<div class="cap">Terminal</div>      <pre><code>npm init -y                 # creates a starter package.json
-npm install express         # adds a dependency
-npm install --save-dev vitest  # adds a dev-only dependency
-npm run start                # runs the "start" script from package.json</code></pre>
+<div class="cap">Terminal</div>      <pre><code>npm init -y                    # creates a starter package.json
+npm install express             # adds a runtime dependency
+npm install --save-dev vitest   # adds a dev-only dependency
+npm run start                   # runs the "start" script from package.json
+npx create-vite my-app          # runs a package without installing it globally</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">package.json</div>      <pre><code>{
+  "name": "my-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0"
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal (CI vs local)</div>      <pre><code># On a laptop, exploring / adding packages:
+npm install
+
+# In CI or a deploy pipeline — fast, reproducible, strict:
+npm ci
+
+# Skip devDependencies in a production build:
+npm ci --omit=dev</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -124,12 +157,16 @@ npm run start                # runs the "start" script from package.json</code><
         <li><code>package.json</code> is the source of truth for a project's dependencies and metadata — always commit it.</li>
         <li><code>package-lock.json</code> pins exact dependency versions for reproducible installs — commit this too.</li>
         <li><code>node_modules</code> belongs in <code>.gitignore</code>, always — it's fully regenerable from the lock file.</li>
-        <li>The <code>scripts</code> field defines shortcuts (<code>npm run dev</code>, <code>npm test</code>) that every contributor can rely on without memorizing raw commands.</li>
+        <li>Caret (<code>^</code>) allows minor/patch updates, tilde (<code>~</code>) allows only patch updates, and no prefix pins an exact version.</li>
+        <li>The <code>scripts</code> field defines shortcuts (<code>npm run dev</code>, <code>npm test</code>) every contributor can rely on.</li>
+        <li><code>dependencies</code> ship to production; <code>devDependencies</code> are dev-only tools like test runners and linters.</li>
+        <li><code>npm ci</code> is the reproducible, strict install command CI/CD pipelines should use instead of <code>npm install</code>.</li>
+        <li><code>npx</code> runs a package's CLI without a permanent global install — good for scaffolding tools you use rarely.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Run npm init -y in a new folder, install a small package like chalk, and add a custom npm script that runs a hello-world file.</p>
+      <p>Run npm init -y in a new folder, install a small package like chalk as a runtime dependency and vitest as a dev dependency, then add a custom npm script that runs a hello-world file. Finally, delete node_modules and recreate it using npm ci to see the difference from npm install.</p>
     </div>
   </article>
 

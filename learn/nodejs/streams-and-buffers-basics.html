@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A stream processes data incrementally, in chunks, rather than loading an entire file or response into memory at once — essential for handling large files or long-lived connections efficiently.</p>
-    <p>A Buffer represents raw binary data — what you get, for instance, when reading a file without specifying a text encoding. Streams of data (like a file being read) emit Buffer chunks that you can process as they arrive.</p>
+    <p class="lead">A stream processes data incrementally, in chunks, rather than loading an entire file or response into memory at once — essential for handling large files or long-lived connections efficiently, since a naive <code>readFile</code> on a multi-gigabyte file would try to hold the whole thing in memory.</p>
+    <p>A Buffer represents raw binary data — what you get, for instance, when reading a file without specifying a text encoding. Streams of data (like a file being read) emit Buffer chunks that you can process as they arrive, and <code>Buffer.from()</code>/<code>Buffer.alloc()</code> let you create buffers directly when working with binary protocols or encodings.</p>
+    <p>Node has four stream types: Readable (a source of data, like a file being read), Writable (a destination, like a file being written or an HTTP response), Duplex (both, like a TCP socket), and Transform (a duplex stream that modifies data as it passes through, like a gzip compressor). Most application code works with the first two.</p>
+    <p><code>.pipe()</code> connects a readable stream directly to a writable one — reading a file and streaming it as an HTTP response, for example — and automatically manages backpressure: pausing the readable side when the writable side can't keep up, which prevents memory from ballooning if, say, a slow network connection can't consume data as fast as a fast local disk can produce it.</p>
+    <p>The modern, more robust alternative to chaining <code>.pipe()</code> calls manually is <code>stream.pipeline()</code> (or its promise version), which forwards errors from any stream in the chain and guarantees all streams are properly closed afterward — plain <code>.pipe()</code> notoriously does *not* automatically forward errors or clean up on failure, which is a common source of resource leaks in production code.</p>
+    <p>HTTP request/response objects in Node are themselves streams — this is how large file uploads and downloads are handled efficiently without buffering the entire body in memory first, and it's why frameworks like Express can support piping a file straight from disk into a response with <code>res.sendFile()</code> or a manual pipe.</p>
     <div class="code-block">
 <div class="cap">streams.js</div>      <pre><code>const fs = require("fs");
 
@@ -123,18 +127,47 @@ readStream.on("data", (chunk) =&gt; {
 
 readStream.on("end", () =&gt; console.log("Done reading"));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">copy-with-pipeline.js</div>      <pre><code>const { pipeline } = require("stream/promises");
+const fs = require("fs");
+const zlib = require("zlib");
+
+async function compressFile(input, output) {
+  await pipeline(
+    fs.createReadStream(input),
+    zlib.createGzip(),           // a Transform stream
+    fs.createWriteStream(output)
+  );
+  // pipeline() forwards errors from any stage and cleans up all streams
+}
+
+compressFile("large-file.txt", "large-file.txt.gz")
+  .then(() =&gt; console.log("Compressed successfully"))
+  .catch((err) =&gt; console.error("Failed:", err));</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">buffers.js</div>      <pre><code>const buf = Buffer.from("hello", "utf-8");
+console.log(buf);            // &lt;Buffer 68 65 6c 6c 6f&gt;
+console.log(buf.toString()); // "hello"
+console.log(buf.length);     // 5 (bytes, not characters — matters for multi-byte text)
+
+const empty = Buffer.alloc(4); // 4 zeroed bytes, useful as a fixed-size binary buffer</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Streams process data in chunks, keeping memory usage low regardless of the total file/data size.</li>
-        <li><code>.pipe()</code> connects a readable stream directly to a writable one (e.g. reading a file and streaming it as an HTTP response).</li>
+        <li><code>.pipe()</code> connects a readable stream directly to a writable one and automatically manages backpressure.</li>
         <li>A Buffer holds raw bytes; specify an encoding when you want text instead.</li>
+        <li>There are four stream types — Readable, Writable, Duplex, and Transform — most app code only needs the first two.</li>
+        <li>Plain <code>.pipe()</code> doesn't forward errors or guarantee cleanup — prefer <code>stream.pipeline()</code> (or its promise version) in real code.</li>
         <li>HTTP request/response objects in Node are themselves streams — this is how large file uploads/downloads are handled efficiently.</li>
+        <li>Backpressure is the mechanism that prevents a fast producer from overwhelming a slow consumer's memory.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Use fs.createReadStream and fs.createWriteStream together with .pipe() to copy a large file without loading it entirely into memory.</p>
+      <p>Use fs.createReadStream and fs.createWriteStream together with stream.pipeline() (not raw .pipe()) to copy a large file without loading it entirely into memory. Then insert a zlib gzip Transform stream into the pipeline so the copy is compressed on the way through, and confirm errors (e.g. from a missing source file) are properly surfaced by the pipeline's promise rejection.</p>
     </div>
   </article>
 

@@ -110,14 +110,32 @@
   </div>
 
   <article>
-    <p class="lead">A microservice architecture splits an application into multiple small, independently deployable services, each owning a specific piece of functionality — instead of one large ('monolithic') application handling everything.</p>
-    <p>This trades simplicity (one codebase, one deploy) for independent scalability and deployability, at the real cost of new complexity: network calls between services, distributed data consistency, and more operational overhead than a monolith needs.</p>
+    <p class="lead">A microservice architecture splits an application into multiple small, independently deployable services, each owning a specific piece of functionality — instead of one large ('monolithic') application handling everything in a single codebase and deployment.</p>
+    <p>This trades simplicity (one codebase, one deploy) for independent scalability and deployability, at the real cost of new complexity: network calls between services, distributed data consistency, and meaningfully more operational overhead (more things to deploy, monitor, and debug) than a monolith needs.</p>
+    <p>Service-to-service calls introduce network failure modes a monolith's in-process function calls never had — a call across the network can time out, fail partway through, or simply be slow in ways an in-process function call basically never is — so timeouts and retries become essential rather than optional.</p>
+    <p>Each service typically owns its own database, avoiding a shared database that would recouple services meant to be independent — if two services both read and write the same tables directly, you've mostly recreated a monolith's tight coupling with extra network hops, without gaining the actual benefit of independence.</p>
+    <p>Services can talk to each other synchronously (a direct HTTP/gRPC call, waiting for a response) or asynchronously (publishing an event to a message broker like Kafka or RabbitMQ, which other services consume independently). Synchronous calls are simpler to reason about but couple the caller's availability to the callee's; asynchronous, event-driven communication is more resilient to a downstream service being temporarily down, at the cost of eventual (not immediate) consistency.</p>
+    <p>Don't start a new project as microservices by default — most teams are better served starting with a well-organized monolith and splitting later if genuinely needed, once real scaling or team-ownership boundaries make the added complexity clearly worth it. Splitting too early, before you understand where your actual service boundaries should be, tends to produce services that are too tightly coupled to be independently useful anyway.</p>
     <div class="code-block">
-<div class="cap">One service calling another</div>      <pre><code>// Inside the "orders" service, calling the "users" service:
+<div class="cap">One service calling another (synchronous)</div>      <pre><code>// Inside the "orders" service, calling the "users" service:
 async function getUserForOrder(userId) {
-  const response = await fetch(`http://users-service/users/${userId}`);
+  const response = await fetch(`http://users-service/users/${userId}`, {
+    signal: AbortSignal.timeout(3000), // never call without a timeout
+  });
+  if (!response.ok) throw new Error(`users-service returned ${response.status}`);
   return response.json();
 }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Event-driven communication (asynchronous)</div>      <pre><code>// "orders" service publishes an event, doesn't wait for consumers
+await eventBus.publish("order.created", { orderId, userId, total });
+
+// "notifications" service, running independently, reacts to it later
+eventBus.subscribe("order.created", async (event) =&gt; {
+  await sendOrderConfirmationEmail(event.userId, event.orderId);
+});
+// If notifications-service is down, orders-service is unaffected —
+// the event is simply processed once it comes back up.</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -125,12 +143,15 @@ async function getUserForOrder(userId) {
         <li>Microservices trade monolith simplicity for independent deployability and scaling — it's a real cost/benefit trade-off, not a free upgrade.</li>
         <li>Service-to-service calls introduce network failure modes a monolith's in-process function calls never had — timeouts and retries become essential.</li>
         <li>Each service typically owns its own database, avoiding a shared database that would recouple services meant to be independent.</li>
+        <li>Synchronous calls (HTTP/gRPC) are simpler but couple the caller's availability to the callee's; async messaging is more resilient but eventually consistent.</li>
+        <li>A message broker (Kafka, RabbitMQ) lets services communicate without being directly, synchronously dependent on each other.</li>
         <li>Don't start a new project as microservices by default — most teams are better served starting with a well-organized monolith and splitting later if genuinely needed.</li>
+        <li>Splitting services too early, before real boundaries are understood, tends to produce services that are tightly coupled anyway — just with network overhead added.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Split a small Express app into two separate services (e.g. users and orders) that communicate over HTTP, and run both locally on different ports.</p>
+      <p>Split a small Express app into two separate services (e.g. users and orders) that communicate over HTTP, and run both locally on different ports, making sure the calling service always sets a timeout. Then, as a comparison, add a very simple in-process event emitter standing in for a message broker, and rework one of the calls to be asynchronous/event-driven instead of a direct HTTP call.</p>
     </div>
   </article>
 

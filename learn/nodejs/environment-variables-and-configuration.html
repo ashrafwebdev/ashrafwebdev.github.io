@@ -110,16 +110,42 @@
   </div>
 
   <article>
-    <p class="lead">Environment variables keep configuration (database URLs, API keys, secrets) out of your source code, so different environments (local, staging, production) can run the same code with different settings — and secrets never end up committed to git.</p>
-    <p><code>process.env</code> gives access to environment variables at runtime. The <code>dotenv</code> package loads variables from a local <code>.env</code> file during development, mimicking how they'd be set in production.</p>
+    <p class="lead">Environment variables keep configuration (database URLs, API keys, secrets) out of your source code, so different environments (local, staging, production) can run the same code with different settings — and secrets never end up committed to git in the first place.</p>
+    <p><code>process.env</code> gives access to environment variables at runtime. The <code>dotenv</code> package loads variables from a local <code>.env</code> file during development, mimicking how they'd be set directly by the hosting platform in production — it should typically only be loaded when <code>NODE_ENV</code> isn't <code>"production"</code>.</p>
+    <p><code>process.env.NODE_ENV</code> is a widely-used convention (not built into Node itself, but respected by Express and most frameworks/libraries) for distinguishing <code>"development"</code>, <code>"test"</code>, and <code>"production"</code> behavior — for example, disabling verbose error stack traces in responses once in production.</p>
+    <p><code>process.env</code> values are always strings, even when they look like numbers or booleans — <code>process.env.PORT</code> is the string <code>"3000"</code>, not the number <code>3000</code>, and <code>process.env.DEBUG === false</code> is always false since the left side is a string. Convert explicitly (<code>Number(process.env.PORT)</code>, <code>process.env.DEBUG === "true"</code>) rather than assuming JavaScript will coerce it usefully.</p>
+    <p>For anything beyond a couple of variables, validating configuration at startup — checking that required variables exist and parsing them into the right types, often with a schema library like <code>zod</code> — turns a missing or malformed environment variable into a clear startup error instead of a confusing runtime failure deep inside the app hours later.</p>
+    <p>Never log <code>process.env</code> wholesale, and be careful with error-reporting tools that might capture it automatically — a stray <code>console.log(process.env)</code> during debugging is a surprisingly common way secrets leak into log files or error-tracking dashboards.</p>
     <div class="code-block">
 <div class="cap">.env / config.js</div>      <pre><code># .env (never commit this file)
 DATABASE_URL=postgres://localhost/myapp
 PORT=3000
 
 // config.js
-require("dotenv").config();
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 const port = process.env.PORT || 3000;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">config.js (validated with zod)</div>      <pre><code>const { z } = require("zod");
+
+const schema = z.object({
+  PORT: z.coerce.number().default(3000),
+  DATABASE_URL: z.string().url(),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+});
+
+// Throws a clear error at startup if anything required is missing/invalid
+const env = schema.parse(process.env);
+module.exports = env;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">.env.example (safe to commit)</div>      <pre><code># Copy this file to .env and fill in real values locally
+DATABASE_URL=
+PORT=3000
+JWT_SECRET=
+NODE_ENV=development</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -128,11 +154,14 @@ const port = process.env.PORT || 3000;</code></pre>
         <li><code>process.env</code> values are always strings — convert numbers/booleans explicitly (<code>Number(process.env.PORT)</code>).</li>
         <li>Always provide sensible fallback defaults for non-secret configuration (<code>process.env.PORT || 3000</code>).</li>
         <li>In production, environment variables are typically set by the hosting platform directly, not read from a .env file.</li>
+        <li><code>NODE_ENV</code> is a widely-respected convention for switching behavior between development, test, and production.</li>
+        <li>Validate required environment variables at startup (with a schema library) so a missing secret fails fast and clearly, not deep inside a request handler.</li>
+        <li>Never log <code>process.env</code> wholesale — it's an easy way for secrets to leak into logs or error trackers.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a .env file with a PORT variable, load it with dotenv, and use it (with a fallback default) when starting your Express server.</p>
+      <p>Add a .env file with a PORT and a fake DATABASE_URL variable, load it with dotenv only outside production, and use PORT (with a fallback default) when starting your Express server. Then add zod-based validation that throws a clear startup error if DATABASE_URL is missing, and confirm that removing it from .env actually produces that error.</p>
     </div>
   </article>
 

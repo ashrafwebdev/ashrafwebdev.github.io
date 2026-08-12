@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">The built-in <code>fs</code> module reads and writes files. Every method has a callback-based version, a synchronous version (suffixed <code>Sync</code>), and — the modern preferred choice — a Promise-based version via <code>fs/promises</code>.</p>
-    <p>Synchronous methods block the entire Node process until they finish, which is fine for one-off scripts but should be avoided inside a server handling concurrent requests.</p>
+    <p class="lead">The built-in <code>fs</code> module reads and writes files. Every method has a callback-based version, a synchronous version (suffixed <code>Sync</code>), and — the modern preferred choice — a Promise-based version via <code>fs/promises</code>, which pairs naturally with <code>async</code>/<code>await</code>.</p>
+    <p>Synchronous methods block the entire Node process until they finish, which is fine for one-off scripts but should be avoided inside a server handling concurrent requests — a single slow synchronous file read would stall every other request the process is currently handling.</p>
+    <p>Always specify an encoding (<code>"utf-8"</code>) when reading text files, or you'll get a raw <code>Buffer</code> object back instead of a string. Writing has similar options: <code>fs.writeFile</code> overwrites a file completely by default, while <code>fs.appendFile</code> adds to the end without touching existing content — mixing these up is a common source of accidentally destroyed data.</p>
+    <p>The related <code>path</code> module is worth using alongside <code>fs</code> for building file paths: <code>path.join()</code> combines segments using the correct separator for the current operating system (<code>/</code> on Linux/macOS, <code>\</code> on Windows), which raw string concatenation gets wrong on at least one platform.</p>
+    <p>File operations fail in predictable, named ways — a missing file throws an error with <code>code === "ENOENT"</code>, a permissions problem throws <code>"EACCES"</code>, and so on. Checking the error's <code>code</code> property lets you handle 'file doesn't exist yet' differently from a genuine unexpected failure, rather than treating every error identically.</p>
+    <p>For watching a file or directory for changes, <code>fs.watch()</code> emits events on modification, but it's notoriously platform-inconsistent (double-firing events, different behavior on macOS vs Linux vs Windows) — for anything production-critical, a dedicated library like <code>chokidar</code> smooths over those differences.</p>
     <div class="code-block">
 <div class="cap">files.js</div>      <pre><code>const fs = require("fs/promises");
 
@@ -123,18 +127,51 @@ async function main() {
 
 main();</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">safeRead.js (handling missing files)</div>      <pre><code>const fs = require("fs/promises");
+
+async function readConfig(path) {
+  try {
+    const raw = await fs.readFile(path, "utf-8");
+    return JSON.parse(raw);
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      return {}; // no config yet — use defaults
+    }
+    throw err; // anything else is a real, unexpected problem
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">append-and-list.js</div>      <pre><code>const fs = require("fs/promises");
+const path = require("path");
+
+async function logEvent(message) {
+  const logPath = path.join(__dirname, "events.log");
+  await fs.appendFile(logPath, `${new Date().toISOString()} ${message}\n`);
+}
+
+async function listFiles(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  return entries.filter((e) =&gt; e.isFile()).map((e) =&gt; e.name);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Prefer <code>fs/promises</code> with async/await over callback-based or Sync methods in modern code.</li>
         <li>Sync methods (<code>readFileSync</code>) block the whole process — fine for CLI scripts, risky in a server.</li>
         <li>Always specify an encoding (<code>"utf-8"</code>) when reading text files, or you'll get a raw Buffer back instead of a string.</li>
+        <li><code>fs.writeFile</code> overwrites a file entirely; <code>fs.appendFile</code> adds to the end — know which one you actually want.</li>
+        <li>Check <code>err.code</code> (e.g. <code>"ENOENT"</code>) to distinguish expected failures (missing file) from genuinely unexpected ones.</li>
+        <li>Use the <code>path</code> module (<code>path.join</code>) instead of manual string concatenation for cross-platform-correct file paths.</li>
         <li><code>fs.existsSync()</code> is handy for quick checks, but a try/catch around the actual read/write is usually more robust against race conditions.</li>
+        <li><code>fs.watch()</code> is platform-inconsistent — reach for a library like chokidar for production file-watching needs.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that writes a JSON object to a file with fs/promises, then reads it back and parses it.</p>
+      <p>Write a script that writes a JSON object to a file with fs/promises, then reads it back and parses it. Then extend it to handle the case where the file doesn't exist yet by checking err.code, and add a second function that appends a timestamped log line to a separate file each time it runs.</p>
     </div>
   </article>
 
