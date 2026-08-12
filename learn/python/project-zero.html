@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convertible: a terminal calculator and unit converter that never quits mid-task — Python capstone project — Learn to Code</title>
+<meta name="description" content="Convertible: a terminal calculator and unit converter that never quits mid-task — the Zero-stage capstone project for Python, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/python/project-zero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#python">Python</a> / Zero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">01</span> Zero stage capstone</span>
+    <h1>Convertible: a terminal calculator and unit converter that never quits mid-task</h1>
+    <p class="lang-line"><b>Python</b> &middot; ties together everything in the Zero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">The five Zero-stage topics — syntax and data types, control flow, functions with default arguments, the core collection types, and reading input while printing formatted output — all exist to support one basic shape of program: read something from the user, decide what to do with it, and print a result, over and over, until the user is done. This project makes you build that shape for real, as a single command-line program that acts as both a calculator and a unit converter.</p>
+    <p>The twist that makes this a genuine test of the stage rather than a toy exercise is the menu loop: the program has to keep running, showing the same set of options, until the user explicitly chooses to quit — which forces you to actually use a <code>while</code> loop for something with real state (a running history of results) instead of a single pass through some code.</p>
+    <p>Nothing here needs a class, a file, or a library beyond the built-ins. That's deliberate — the constraint proves you can structure a non-trivial, stateful program using nothing but functions, conditionals, loops, and Python's built-in collection types.</p>
+    <ul class="used-topics">
+      <li><a href="syntax-variables-and-data-types.html">Syntax, variables, and data types</a></li>
+      <li><a href="control-flow.html">Control flow: if/elif/else, loops</a></li>
+      <li><a href="functions-and-default-arguments.html">Functions and default arguments</a></li>
+      <li><a href="lists-dictionaries-tuples-sets.html">Lists, dictionaries, tuples, sets</a></li>
+      <li><a href="reading-input-and-printing-output.html">Reading input and printing output</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>A menu, printed every time the loop repeats, listing numbered options: at least four arithmetic operations (add, subtract, multiply, divide), at least three unit conversions (for example kilometers to miles, Celsius to Fahrenheit, and kilograms to pounds), a "view history" option, and a "quit" option.</li>
+        <li>Every operation and every conversion is its own function — no operation's logic is written directly inline in the menu loop. Function names should read clearly, like <code>fahrenheit_to_celsius</code>, not <code>calc2</code>.</li>
+        <li>The divide function checks for a zero denominator using <code>if</code>/<code>else</code> and prints a friendly message instead of letting the program crash with a <code>ZeroDivisionError</code>.</li>
+        <li>Every value read with <code>input()</code> that's meant to be a number is explicitly converted with <code>int()</code> or <code>float()</code> before being used in a calculation.</li>
+        <li>A running history: every completed calculation or conversion is appended to a list (as a formatted string, or as a small tuple of the inputs and result), and choosing "view history" prints all of them so far, most recent last.</li>
+        <li>Results are printed using an f-string with a format spec that fixes the number of decimal places shown, so a result like 3.333333333333 prints as 3.33.</li>
+        <li>The program only exits when the user selects the quit option from the menu, at which point it prints a goodbye message and stops — no other way to end the program should be required.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Write and test one calculation function on its own first — for example <code>add(a, b)</code> — calling it directly with hardcoded numbers, before building any menu around it.</li>
+        <li>Build the menu loop next, but keep every branch trivial at first (just a <code>print("picked option 1")</code> placeholder for each choice) so you can confirm the loop reads a choice, dispatches correctly, and quits cleanly before any real logic exists.</li>
+        <li>Fill in the arithmetic functions one at a time, wiring each into its menu branch and testing it before moving to the next, adding the zero-division guard as you write <code>divide</code>.</li>
+        <li>Add the unit conversion functions the same way, one at a time, converting the input string to a float before passing it in.</li>
+        <li>Add the history list last: append to it inside each branch that successfully completes a calculation, then wire up the "view history" option to print it.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Let the user type a whole expression on one line, like <code>12 + 5</code>, and write a small function that splits the string on spaces and figures out which operation to call.</li>
+        <li>Add a "clear history" menu option, and a "undo last" option that removes the most recent history entry using <code>list.pop()</code>.</li>
+        <li>Revisit the <code>safe_input.py</code> pattern from the Reading Input and Printing Output lesson and wrap your numeric conversions in <code>try</code>/<code>except ValueError</code> so mistyped input produces a friendly re-prompt instead of a crash.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="reading-input-and-printing-output.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Reading input and printing output</span></a>
+    <a class="next" href="../python/object-oriented-python.html"><span class="dir">Next stage &rarr;</span><span class="ttl">Object-oriented Python: classes, inheritance</span></a>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,6 +119,7 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Methods and blocks</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="syntax-variables-and-control-flow.html">Syntax, variables, and control flow</a></p>
   </div>
 
   <article>
@@ -175,6 +188,7 @@ uses_lambda</code></pre>
       <span class="ex-label">Try it yourself</span>
       <p>Write a method that takes an array and a block, and yields each element to the block, then use it to print each element doubled. Next, write a second method demonstrating the difference between a proc and a lambda by having each attempt a return from inside a loop, and explain in a comment why their behavior differs.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">
