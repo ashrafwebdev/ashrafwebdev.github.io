@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Beyond the classic Gang-of-Four patterns learned earlier, large Java systems lean on patterns that manage complexity at scale: the <b>Repository pattern</b> abstracts data access behind an interface so business logic doesn't depend on a specific database technology, and the <b>CQRS</b> pattern separates the models used for writing data from those used for reading it, which can be optimized independently.</p>
-    <p>The <b>Builder pattern</b>, often combined with method chaining, is common for constructing complex immutable objects step by step, avoiding constructors with a dozen parameters. The <b>Strategy pattern</b> lets you swap an algorithm's implementation at runtime by depending on an interface rather than a concrete class.</p>
-    <p>At scale, the goal of any pattern is the same: isolate the part of the system likely to change behind a stable interface, so that change doesn't ripple through the rest of the codebase.</p>
+    <p class="lead">Beyond the classic Gang-of-Four patterns learned earlier, large Java systems lean on patterns that manage complexity at scale: the <b>Repository pattern</b> abstracts data access behind an interface so business logic doesn't depend on a specific database technology, and the <b>CQRS</b> (Command Query Responsibility Segregation) pattern separates the models used for writing data from those used for reading it, which can be optimized and scaled independently &mdash; the write model enforces business invariants, while the read model can be a denormalized, cache-friendly shape optimized purely for fast queries.</p>
+    <p>The <b>Builder pattern</b>, often combined with method chaining, is common for constructing complex immutable objects step by step, avoiding constructors with a dozen parameters where it's easy to accidentally swap two arguments of the same type; a builder makes each field's intent explicit at the call site instead of relying on positional argument order.</p>
+    <p>The <b>Strategy pattern</b> lets you swap an algorithm's implementation at runtime by depending on an interface rather than a concrete class; in modern Java this is often implemented with a lambda or method reference instead of a full named class per strategy, since a strategy is frequently just a single method's worth of behavior.</p>
+    <p>The <b>Observer pattern</b> (and its more modern relative, event-driven/message-based architecture) decouples the producer of an event from its consumers, letting new consumers subscribe without the producer needing to know they exist; at scale this often becomes a message broker (like Kafka) rather than an in-process listener list, which also adds durability and lets consumers process events independently and at their own pace.</p>
+    <p>The <b>Decorator pattern</b> wraps an object to add behavior (like logging, caching, or retry logic) without modifying the original class or its callers, and composes cleanly &mdash; multiple decorators can be layered on top of each other, each adding one orthogonal concern, which keeps individual classes focused on a single responsibility.</p>
+    <p>At scale, the goal of any pattern is the same: isolate the part of the system likely to change behind a stable interface, so that change doesn't ripple through the rest of the codebase. Applying a pattern where the added indirection isn't earning its keep is itself a mistake &mdash; patterns are a tool for managing real, anticipated variability, not a checklist to apply everywhere out of habit.</p>
     <div class="code-block">
 <div class="cap">PricingStrategy.java</div>      <pre><code>interface PricingStrategy {
     double priceFor(double baseAmount);
@@ -132,18 +135,58 @@ class Checkout {
     double total(double baseAmount) { return strategy.priceFor(baseAmount); }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">OrderBuilder.java</div>      <pre><code>final class Order {
+    private final String customerId;
+    private final String shippingAddress;
+    private final boolean giftWrapped;
+    private final String notes;
+
+    private Order(Builder b) {
+        this.customerId = b.customerId;
+        this.shippingAddress = b.shippingAddress;
+        this.giftWrapped = b.giftWrapped;
+        this.notes = b.notes;
+    }
+
+    static class Builder {
+        private final String customerId;      // required
+        private final String shippingAddress;  // required
+        private boolean giftWrapped = false;    // optional, defaulted
+        private String notes = "";              // optional, defaulted
+
+        Builder(String customerId, String shippingAddress) {
+            this.customerId = customerId;
+            this.shippingAddress = shippingAddress;
+        }
+
+        Builder giftWrapped(boolean value) { this.giftWrapped = value; return this; }
+        Builder notes(String value) { this.notes = value; return this; }
+        Order build() { return new Order(this); }
+    }
+}
+
+// Usage: fluent, self-documenting, no ambiguous positional args
+// Order order = new Order.Builder("cust-1", "221B Baker St")
+//     .giftWrapped(true)
+//     .notes("Leave at front door")
+//     .build();</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>The Repository pattern hides data-access details behind an interface, decoupling business logic from storage.</li>
-        <li>CQRS splits read and write models so each can be scaled or optimized independently.</li>
-        <li>The Builder pattern constructs complex objects step by step, avoiding unwieldy constructors.</li>
-        <li>The Strategy pattern swaps algorithm implementations at runtime through a shared interface.</li>
+        <li>CQRS splits read and write models so each can be scaled or optimized independently, with the read side often denormalized for speed.</li>
+        <li>The Builder pattern constructs complex immutable objects step by step, avoiding unwieldy or error-prone constructors.</li>
+        <li>The Strategy pattern swaps algorithm implementations at runtime through a shared interface, often as a lambda in modern code.</li>
+        <li>The Observer/event-driven pattern decouples producers from consumers; at scale this often becomes a durable message broker.</li>
+        <li>The Decorator pattern layers additional behavior (logging, caching, retries) around an object without modifying its original class.</li>
+        <li>A pattern should be applied because it manages real anticipated variability, not applied by default as a checklist item.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Refactor a hypothetical ShippingCalculator that has an if/else chain for shipping methods into a Strategy pattern with one class per shipping method.</p>
+      <p>Refactor a hypothetical ShippingCalculator that has an if/else chain for shipping methods into a Strategy pattern with one class per shipping method. Then write a Builder for an immutable Order class with two required fields and two optional fields with sensible defaults, and add a LoggingShippingStrategy decorator that wraps any PricingStrategy and logs the computed price before returning it unchanged.</p>
     </div>
   </article>
 

@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Production performance problems rarely show up the same way they do in development: connection pool exhaustion, lock contention between concurrent transactions, and cache invalidation storms are all classes of problems that only surface under real concurrent load.</p>
-    <p>Monitoring slow query logs, tracking p95/p99 query latency (not just averages, which can hide painful outliers), and watching for lock waits are standard practices for catching degradation before it becomes an outage, rather than reacting only after users complain.</p>
-    <p>Connection pooling (via something like PgBouncer for PostgreSQL) is often as important as query-level tuning at scale, since opening a new raw database connection per request is expensive and can exhaust the database's own connection limit under high concurrency.</p>
+    <p class="lead">Production performance problems rarely show up the same way they do in development: connection pool exhaustion, lock contention between concurrent transactions, and cache invalidation storms are all classes of problems that only surface under real concurrent load, precisely the load a single developer testing locally never generates.</p>
+    <p>Monitoring slow query logs, tracking p95/p99 query latency (not just averages, which can hide painful outliers experienced by a meaningful fraction of real users), and watching for lock waits are standard practices for catching degradation before it becomes an outage, rather than reacting only after users complain.</p>
+    <p>Lock contention shows up as queries that individually look fast in isolation but pile up waiting on each other under concurrency; a long-running transaction holding a row or table lock while other transactions queue behind it is a classic cause, and it's often invisible until you specifically query the database's own view of currently held locks and blocked sessions.</p>
+    <p>Connection pooling (via something like PgBouncer for PostgreSQL) is often as important as query-level tuning at scale, since opening a new raw database connection per request is expensive (each connection consumes real memory and setup time on the database server) and can exhaust the database's own connection limit under high concurrency, causing cascading failures unrelated to any individual query's speed.</p>
+    <p>A cache invalidation storm happens when a popular cached value expires (or is evicted) and a burst of concurrent requests all miss the cache at once and hit the database simultaneously to recompute the same expensive query, briefly multiplying load far beyond steady state; techniques like staggered expiration times or a lock around recomputation (so only one request recomputes while others wait for the fresh value) mitigate this.</p>
+    <p>Vacuuming and table bloat matter specifically for MVCC-based engines like PostgreSQL: because updates and deletes don't immediately reclaim space (they leave old row versions behind for other in-flight transactions to potentially still see), a table under heavy write load that isn't vacuumed regularly can bloat significantly, degrading both storage efficiency and query performance over time.</p>
     <div class="code-block">
 <div class="cap">postgresql.conf</div>      <pre><code># Enable slow query logging for anything over 200ms
 log_min_duration_statement = 200
@@ -123,18 +126,40 @@ FROM pg_stat_activity
 WHERE state != 'idle'
 ORDER BY duration DESC;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">lock_investigation.sql</div>      <pre><code>-- Find sessions that are currently blocked, and what's blocking them
+SELECT blocked.pid AS blocked_pid,
+       blocked.query AS blocked_query,
+       blocking.pid AS blocking_pid,
+       blocking.query AS blocking_query
+FROM pg_stat_activity AS blocked
+JOIN pg_locks bl ON bl.pid = blocked.pid AND NOT bl.granted
+JOIN pg_locks kl ON kl.locktype = bl.locktype AND kl.granted
+JOIN pg_stat_activity AS blocking ON blocking.pid = kl.pid;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">bloat_check.sql</div>      <pre><code>-- Rough dead-tuple check to spot vacuum-starved tables
+SELECT relname, n_live_tup, n_dead_tup,
+       round(n_dead_tup::numeric / GREATEST(n_live_tup, 1), 3) AS dead_ratio
+FROM pg_stat_user_tables
+ORDER BY dead_ratio DESC
+LIMIT 10;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Lock contention and connection exhaustion are production-only failure modes rarely seen in dev.</li>
         <li>Track p95/p99 latency, not just averages, since averages hide painful outliers.</li>
+        <li>Long-running transactions holding locks are a classic, often invisible cause of contention pileups.</li>
         <li>Connection pooling (e.g. PgBouncer) is often as impactful as query tuning at high concurrency.</li>
+        <li>Cache invalidation storms multiply load briefly when a popular cache entry expires under concurrency.</li>
+        <li>MVCC engines like PostgreSQL need regular vacuuming or dead row versions bloat tables over time.</li>
         <li>Slow query logs and active-query monitoring catch degradation before it becomes a full outage.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a query against pg_stat_activity (or your database's equivalent) that lists currently running queries older than 5 seconds, ordered by duration.</p>
+      <p>Write a query against pg_stat_activity (or your database's equivalent) that lists currently running queries older than 5 seconds, ordered by duration. Then describe, in a couple of sentences, how you'd distinguish a genuinely slow query from a fast query that's merely stuck waiting behind a lock held by something else.</p>
     </div>
   </article>
 

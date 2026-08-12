@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Contributing meaningfully starts with reading before writing: study the project's <code>CONTRIBUTING.md</code>, its coding style conventions, its issue tracker, and recent merged pull requests to understand what reviewers expect before you write a single line of code.</p>
-    <p>Start small and build trust: a well-tested bug fix or documentation improvement is a better first contribution than a large new feature, since maintainers can review it quickly and it demonstrates you follow the project's conventions and testing standards.</p>
-    <p>Every substantial pull request should come with tests that would have caught the bug or that exercise the new behavior, and a clear description explaining <b>why</b> the change is needed, not just what it does &mdash; that context is what lets a busy maintainer approve confidently.</p>
+    <p class="lead">Contributing meaningfully starts with reading before writing: study the project's <code>CONTRIBUTING.md</code>, its coding style conventions, its issue tracker, and recent merged pull requests to understand what reviewers expect before you write a single line of code. Skipping this step is the single most common reason a first pull request gets a lot of review friction instead of a quick merge.</p>
+    <p>Start small and build trust: a well-tested bug fix or documentation improvement is a better first contribution than a large new feature, since maintainers can review it quickly and it demonstrates you follow the project's conventions and testing standards before you ask them to trust you with something bigger and riskier to the codebase.</p>
+    <p>Before opening a pull request for anything non-trivial, it's usually worth opening an issue (or commenting on an existing one) describing the change you intend to make and why. This gives maintainers a chance to say "we already tried that and it didn't work" or "we'd prefer a different approach" before you've invested hours writing code that ultimately can't be merged.</p>
+    <p>Every substantial pull request should come with tests that would have caught the bug or that exercise the new behavior, and a clear description explaining <b>why</b> the change is needed, not just what it does &mdash; that context is what lets a busy maintainer approve confidently without having to reverse-engineer your reasoning from the diff alone.</p>
+    <p>Most active projects also expect a clean commit history: focused commits with clear messages, following whatever commit message convention the project uses (some enforce Conventional Commits, some just want a clear one-line summary), and a pull request that's rebased on the latest main branch rather than containing unrelated merge commits.</p>
+    <p>Code review on a large project is a conversation, not a verdict: expect several rounds of feedback, respond to each comment (even just to say you addressed it or explain why you didn't), and avoid taking requested changes personally &mdash; reviewers are protecting the codebase's long-term health, and engaging constructively with feedback is itself part of what earns you standing as a contributor over time.</p>
     <div class="code-block">
 <div class="cap">workflow</div>      <pre><code># Typical open-source contribution workflow
 $ git clone https://github.com/you/project-fork.git
@@ -126,18 +129,37 @@ $ git commit -m "Fix NPE when parsing empty config section"
 $ git push origin fix-null-check-in-parser
 # open a pull request against the upstream repository</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">workflow-rebase</div>      <pre><code># Keeping your branch current before requesting review
+$ git remote add upstream https://github.com/project-org/project.git
+$ git fetch upstream
+$ git rebase upstream/main
+
+# resolve any conflicts, then continue
+$ git rebase --continue
+
+# force-push your own feature branch (never main, never a shared branch)
+$ git push --force-with-lease origin fix-null-check-in-parser
+
+# after review feedback, address it in a follow-up commit and push again
+$ git commit -am "Address review feedback: extract helper method"
+$ git push origin fix-null-check-in-parser</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Read CONTRIBUTING.md, style guides, and recent merged PRs before writing code.</li>
         <li>Small, well-scoped, well-tested fixes are the easiest way to earn maintainer trust.</li>
+        <li>For non-trivial changes, discuss the approach in an issue before investing time writing the code.</li>
         <li>Every PR should include tests and explain why the change matters, not just what changed.</li>
+        <li>A clean, rebased commit history with clear messages is expected on most active projects.</li>
         <li>Running the full existing test suite locally before submitting avoids obvious review friction.</li>
+        <li>Treat code review as an ongoing conversation, responding to every comment rather than going silent.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Java open-source project you use, read its CONTRIBUTING guide, and write down three concrete conventions it expects from contributors (style, testing, commit format, etc).</p>
+      <p>Pick a Java open-source project you use, read its CONTRIBUTING guide, and write down three concrete conventions it expects from contributors (style, testing, commit format, etc). Then find one open, well-scoped "good first issue" in its tracker, outline in a few sentences how you would approach discussing the fix in the issue before writing any code, and describe what you'd include in the pull request description to give reviewers enough context to approve confidently.</p>
     </div>
   </article>
 

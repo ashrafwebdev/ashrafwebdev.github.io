@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A <b>foreign key</b> is a column (or set of columns) in one table that references a primary key in another, enforced by the database so you cannot insert an order with a customer_id that doesn't actually exist in the customers table &mdash; this guarantee is called <b>referential integrity</b>.</p>
-    <p>When a referenced row would be deleted, the foreign key's <code>ON DELETE</code> behavior decides what happens to dependent rows: <code>CASCADE</code> deletes them too, <code>SET NULL</code> nulls out the reference, and <code>RESTRICT</code> (the strictest, often the default) blocks the delete entirely while dependents still exist.</p>
-    <p>Enforcing these rules in the database, rather than only in application code, means the constraint holds no matter which application, script, or person is writing to the database &mdash; a much stronger guarantee than trusting every caller to remember to check first.</p>
+    <p class="lead">A <b>foreign key</b> is a column (or set of columns) in one table that references a primary key in another, enforced by the database so you cannot insert an order with a customer_id that doesn't actually exist in the customers table &mdash; this guarantee is called <b>referential integrity</b>, and it holds regardless of which application or script performs the write.</p>
+    <p>When a referenced row would be deleted, the foreign key's <code>ON DELETE</code> behavior decides what happens to dependent rows: <code>CASCADE</code> deletes them too, <code>SET NULL</code> nulls out the reference (only valid if the foreign key column is nullable), <code>SET DEFAULT</code> resets it to a configured default value, and <code>RESTRICT</code> or <code>NO ACTION</code> (the strictest, often the default) blocks the delete entirely while dependents still exist.</p>
+    <p><code>ON UPDATE</code> mirrors <code>ON DELETE</code> but triggers when the referenced primary key's value itself changes rather than being deleted &mdash; rare in practice since primary keys are usually immutable once assigned, but relevant for schemas that use a natural key that could plausibly change.</p>
+    <p>Enforcing these rules in the database, rather than only in application code, means the constraint holds no matter which application, script, or person is writing to the database &mdash; a much stronger guarantee than trusting every caller to remember to check first, and it catches bugs immediately at write time rather than surfacing as mysterious orphaned rows discovered much later.</p>
+    <p>Foreign key columns are commonly indexed too, and this matters for more than just JOIN speed: without an index on the referencing column, deleting a row from the referenced table can force a full scan of the dependent table to check whether any row still points at it, which gets slow fast as the dependent table grows.</p>
+    <p>A self-referencing foreign key, where a table references its own primary key, is a common pattern for hierarchical data such as an employee table with a manager_id column pointing back to another row in the same table, or a category table supporting nested subcategories.</p>
     <div class="code-block">
 <div class="cap">schema.sql</div>      <pre><code>CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
@@ -121,18 +124,38 @@
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">set_null_and_index.sql</div>      <pre><code>CREATE TABLE reviews (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    reviewer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+    body TEXT NOT NULL
+);
+
+CREATE INDEX idx_reviews_reviewer_id ON reviews (reviewer_id);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">self_referencing.sql</div>      <pre><code>CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    manager_id INTEGER REFERENCES employees(id) ON DELETE SET NULL
+);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A foreign key guarantees a column's value always matches an existing row in another table.</li>
-        <li>ON DELETE CASCADE, SET NULL, and RESTRICT control what happens to dependents when a referenced row is deleted.</li>
+        <li>ON DELETE CASCADE, SET NULL, SET DEFAULT, and RESTRICT control what happens when a referenced row is deleted.</li>
+        <li>ON UPDATE mirrors ON DELETE but fires when the referenced key's value itself changes.</li>
         <li>Enforcing integrity in the database protects data correctness regardless of which client writes to it.</li>
-        <li>Foreign key columns are commonly indexed too, since they're frequently used in JOINs.</li>
+        <li>Foreign key columns are commonly indexed too, both for JOIN speed and for fast delete-time checks.</li>
+        <li>SET NULL only works when the foreign key column is itself nullable.</li>
+        <li>A self-referencing foreign key models hierarchical data like org charts or nested categories.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a CREATE TABLE statement for a reviews table with a foreign key to a products table, using ON DELETE CASCADE, and explain in one sentence what that clause does.</p>
+      <p>Write a CREATE TABLE statement for a reviews table with a foreign key to a products table, using ON DELETE CASCADE, and explain in one sentence what that clause does. Then design a self-referencing employees table with a manager_id column using ON DELETE SET NULL, and explain why SET NULL requires the column to be nullable.</p>
     </div>
   </article>
 

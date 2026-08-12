@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A <b>class</b> is a blueprint; an <b>object</b> is an instance created from that blueprint with the <code>new</code> keyword. Classes group together <b>fields</b> (state) and <b>methods</b> (behavior) that operate on that state.</p>
-    <p>A <b>constructor</b> is a special method, named after the class, that runs when an object is created and typically initializes its fields. If you write no constructor at all, Java supplies a no-argument default one automatically.</p>
-    <p>The keyword <code>this</code> refers to the current instance, most commonly used to disambiguate a field from a constructor parameter that shares its name.</p>
+    <p class="lead">A <b>class</b> is a blueprint; an <b>object</b> is an instance created from that blueprint with the <code>new</code> keyword. Classes group together <b>fields</b> (state) and <b>methods</b> (behavior) that operate on that state, and each object created from a class gets its own independent copy of the instance fields.</p>
+    <p>A <b>constructor</b> is a special method, named after the class with no return type, that runs when an object is created and typically initializes its fields. If you write no constructor at all, Java supplies a no-argument default one automatically; but as soon as you write any constructor yourself, that automatic default disappears and must be written explicitly if you still want it.</p>
+    <p>The keyword <code>this</code> refers to the current instance, most commonly used to disambiguate a field from a constructor parameter that shares its name (<code>this.title = title</code>), but it can also be used to call another constructor in the same class as the first statement (<code>this(defaultValue)</code>), a technique called constructor chaining.</p>
+    <p>Encapsulation &mdash; keeping fields <code>private</code> and exposing controlled access through methods &mdash; is a core Java habit, not just a style preference. It lets a class validate input in a setter, change its internal representation later without breaking callers, and clearly separate what an object promises to do (its public API) from how it does it (its private implementation).</p>
+    <p>Java objects are compared with <code>==</code> by reference identity by default (do the two variables point to the exact same object?), not by content. To compare objects by their logical content you must override <code>equals</code> (and, whenever you override <code>equals</code>, also override <code>hashCode</code> so the object still behaves correctly inside hash-based collections like <code>HashMap</code>).</p>
+    <p>Overriding <code>toString()</code> lets you control how an object prints, which is invaluable for debugging: instead of the default unhelpful <code>Book@1b6d3586</code>, a well-written <code>toString</code> returns something like <code>Book{title='Clean Code', pages=464}</code>.</p>
     <div class="code-block">
 <div class="cap">Book.java</div>      <pre><code>public class Book {
     private String title;
@@ -133,18 +136,55 @@
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Product.java</div>      <pre><code>import java.util.Objects;
+
+public class Product {
+    private final String sku;
+    private double price;
+
+    public Product(String sku) {
+        this(sku, 0.0); // constructor chaining
+    }
+
+    public Product(String sku, double price) {
+        this.sku = sku;
+        setPrice(price);
+    }
+
+    public void setPrice(double price) {
+        if (price &lt; 0) throw new IllegalArgumentException("price cannot be negative");
+        this.price = price;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Product other)) return false;
+        return sku.equals(other.sku);
+    }
+
+    @Override
+    public int hashCode() { return Objects.hash(sku); }
+
+    @Override
+    public String toString() { return "Product{sku='" + sku + "', price=" + price + "}"; }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Fields marked <code>private</code> are accessible only inside the class, which protects internal state.</li>
-        <li>A constructor initializes an object's fields when it is created with <code>new</code>.</li>
+        <li>Fields marked <code>private</code> are accessible only inside the class, which protects internal state and lets validation live in setters.</li>
+        <li>A constructor initializes an object's fields when it is created with <code>new</code>; writing any constructor removes the automatic no-arg default.</li>
         <li><code>this.field = field</code> is the standard pattern for assigning a constructor parameter to a field of the same name.</li>
-        <li>Methods that only read fields and return a derived value are a common, safe way to expose state.</li>
+        <li><code>this(...)</code> as the first line of a constructor chains to another constructor in the same class.</li>
+        <li><code>==</code> compares reference identity for objects; override <code>equals</code> to compare by logical content.</li>
+        <li>Whenever you override <code>equals</code>, also override <code>hashCode</code>, or the object will misbehave in HashMap/HashSet.</li>
+        <li>Overriding <code>toString</code> gives you a readable, debuggable representation instead of the default class@hashcode form.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Person class with private name and age fields, a constructor, and a method greet() that returns a friendly introduction sentence.</p>
+      <p>Write a Person class with private name and age fields, a constructor, and a method greet() that returns a friendly introduction sentence. Then add a second constructor that takes only a name and chains to the first with a default age of 0, and override equals, hashCode, and toString so two Person objects with the same name and age are considered equal.</p>
     </div>
   </article>
 

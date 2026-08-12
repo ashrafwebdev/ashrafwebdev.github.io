@@ -111,8 +111,11 @@
 
   <article>
     <p class="lead"><code>GROUP BY</code> collapses rows sharing the same value in specified columns into a single summary row, typically paired with an <b>aggregate function</b> like <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, or <code>MAX</code> to compute something across each group.</p>
-    <p>Every column in the <code>SELECT</code> list must either be included in the <code>GROUP BY</code> clause or wrapped in an aggregate function &mdash; SQL enforces this because a non-aggregated, non-grouped column would have multiple different values within a single summary row, which is ambiguous.</p>
-    <p><code>HAVING</code> filters groups <b>after</b> aggregation, unlike <code>WHERE</code> which filters individual rows before grouping happens &mdash; use <code>HAVING COUNT(*) > 5</code> to keep only groups with more than five rows, something <code>WHERE</code> cannot express.</p>
+    <p>Every column in the <code>SELECT</code> list must either be included in the <code>GROUP BY</code> clause or wrapped in an aggregate function &mdash; SQL enforces this because a non-aggregated, non-grouped column would have multiple different values within a single summary row, which is ambiguous. Some engines (notably older MySQL configurations) historically allowed violating this rule and silently picked an arbitrary value, which is a trap rather than a feature.</p>
+    <p><code>COUNT(*)</code> counts every row in a group including ones with NULLs, while <code>COUNT(column)</code> counts only rows where that specific column is not NULL &mdash; the difference matters whenever the counted column can itself be missing, and mixing them up produces a subtly wrong count that's easy to miss in review.</p>
+    <p><code>HAVING</code> filters groups <b>after</b> aggregation, unlike <code>WHERE</code> which filters individual rows before grouping happens &mdash; use <code>HAVING COUNT(*) > 5</code> to keep only groups with more than five rows, something <code>WHERE</code> cannot express, since WHERE runs before the aggregate values even exist.</p>
+    <p>You can group by multiple columns at once, which produces one summary row per unique combination of those columns rather than one row per single column's value &mdash; grouping by both category and year, for example, gives yearly totals broken out per category.</p>
+    <p>It's worth remembering the logical order these clauses actually run in, even though they're written in a fixed textual order: FROM and JOIN first, then WHERE, then GROUP BY, then HAVING, then SELECT, then ORDER BY. That's exactly why WHERE can't reference an aggregate and HAVING can &mdash; by the time HAVING runs, the aggregates already exist.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT category, COUNT(*) AS product_count, AVG(price) AS avg_price
 FROM products
@@ -120,18 +123,36 @@ GROUP BY category
 HAVING COUNT(*) &gt; 5
 ORDER BY avg_price DESC;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">multi_column_group.sql</div>      <pre><code>SELECT category, EXTRACT(YEAR FROM sold_at) AS sale_year, SUM(quantity) AS units_sold
+FROM sales
+WHERE sold_at &gt;= '2023-01-01'
+GROUP BY category, EXTRACT(YEAR FROM sold_at)
+HAVING SUM(quantity) &gt; 100
+ORDER BY sale_year, units_sold DESC;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">count_star_vs_column.sql</div>      <pre><code>-- Counts every row, including rows where discount is NULL
+SELECT category, COUNT(*) AS total_rows FROM products GROUP BY category;
+
+-- Counts only rows where discount actually has a value
+SELECT category, COUNT(discount) AS rows_with_discount FROM products GROUP BY category;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>GROUP BY collapses rows sharing a value into one summary row per group.</li>
         <li>COUNT, SUM, AVG, MIN, and MAX are the core aggregate functions.</li>
+        <li>COUNT(*) counts all rows in a group; COUNT(column) skips rows where that column is NULL.</li>
         <li>Every selected column must be grouped or aggregated, since ungrouped columns would be ambiguous.</li>
         <li>HAVING filters groups after aggregation; WHERE filters rows before grouping.</li>
+        <li>Grouping by multiple columns produces one row per unique combination of those columns.</li>
+        <li>Logical execution order is FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY, regardless of writing order.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a query that groups orders by customer_id, computes the total amount spent per customer with SUM, and keeps only customers who have spent more than $100.</p>
+      <p>Write a query that groups orders by customer_id, computes the total amount spent per customer with SUM, and keeps only customers who have spent more than $100. Then extend it to also group by order year, and explain in one sentence why the count of orders and COUNT(discount_code) on the same rows could give different numbers.</p>
     </div>
   </article>
 

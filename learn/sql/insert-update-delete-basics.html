@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><code>INSERT INTO table (col1, col2) VALUES (v1, v2);</code> adds a new row, and listing column names explicitly (rather than relying on column order) protects the statement from breaking if the table's schema changes later.</p>
-    <p><code>UPDATE table SET col = value WHERE condition;</code> modifies existing rows matching the condition. Omitting the <code>WHERE</code> clause updates every single row in the table, which is one of the most common and costly SQL mistakes in production.</p>
-    <p><code>DELETE FROM table WHERE condition;</code> removes matching rows, and carries the exact same danger &mdash; a <code>DELETE</code> with no <code>WHERE</code> clause empties the entire table. Testing the equivalent <code>SELECT</code> with the same <code>WHERE</code> clause first is a common safety habit before running an UPDATE or DELETE.</p>
+    <p class="lead"><code>INSERT INTO table (col1, col2) VALUES (v1, v2);</code> adds a new row, and listing column names explicitly (rather than relying on column order) protects the statement from breaking if the table's schema changes later, such as a new column being added in between existing ones.</p>
+    <p>Most engines also support inserting several rows in a single statement by listing multiple value tuples separated by commas, which is both faster and more atomic than issuing one INSERT per row, since the whole batch either succeeds or fails together rather than leaving the table in a partially-written state.</p>
+    <p><code>UPDATE table SET col = value WHERE condition;</code> modifies existing rows matching the condition, and can set several columns at once separated by commas. Omitting the <code>WHERE</code> clause updates every single row in the table, which is one of the most common and costly SQL mistakes in production.</p>
+    <p><code>DELETE FROM table WHERE condition;</code> removes matching rows, and carries the exact same danger &mdash; a <code>DELETE</code> with no <code>WHERE</code> clause empties the entire table. Testing the equivalent <code>SELECT</code> with the same <code>WHERE</code> clause first, and checking the row count it would affect, is a common safety habit before running an UPDATE or DELETE.</p>
+    <p>Many engines support an <code>UPDATE ... RETURNING</code> or <code>DELETE ... RETURNING</code> clause (PostgreSQL) that hands back the affected rows' values in the same statement, which avoids a separate round-trip query when the application needs to know exactly what changed.</p>
+    <p><code>TRUNCATE TABLE</code> is a faster alternative to <code>DELETE</code> with no WHERE clause for wiping an entire table &mdash; it skips per-row logging and cannot be filtered with a condition, and in many databases it also resets any auto-incrementing ID counter, which a plain DELETE does not.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>INSERT INTO products (name, price, category)
 VALUES ('Wireless Mouse', 24.99, 'electronics');
@@ -124,18 +127,39 @@ WHERE name = 'Wireless Mouse';
 DELETE FROM products
 WHERE category = 'discontinued';</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">batch_and_returning.sql</div>      <pre><code>INSERT INTO products (name, price, category) VALUES
+    ('USB Cable', 8.99, 'electronics'),
+    ('Notebook', 3.50, 'office'),
+    ('Desk Lamp', 22.00, 'office');
+
+UPDATE products
+SET price = price * 0.9
+WHERE category = 'office'
+RETURNING id, name, price;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">unsafe_mistake.sql</div>      <pre><code>-- DANGER: no WHERE clause updates every row in the table
+UPDATE products SET price = 0;
+
+-- Always test the condition as a SELECT first
+SELECT count(*) FROM products WHERE price = 0;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Always list explicit column names in INSERT to protect against future schema changes.</li>
+        <li>A single INSERT can add several rows at once using comma-separated value tuples.</li>
         <li>UPDATE and DELETE without a WHERE clause affect every row in the table.</li>
-        <li>Test the WHERE clause with a SELECT first before running a destructive UPDATE or DELETE.</li>
+        <li>Test the WHERE clause with a SELECT COUNT first before running a destructive UPDATE or DELETE.</li>
+        <li>RETURNING hands back affected rows' values without a separate follow-up query.</li>
+        <li>TRUNCATE clears an entire table faster than DELETE but cannot be filtered with a WHERE clause.</li>
         <li>Most databases support wrapping these statements in a transaction to allow rolling back mistakes.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write an INSERT for a new product, an UPDATE that changes its price, and a DELETE that removes it, each using explicit column names and a safe WHERE clause.</p>
+      <p>Write an INSERT for a new product, an UPDATE that changes its price, and a DELETE that removes it, each using explicit column names and a safe WHERE clause. Then rewrite the INSERT to add three products in one statement, and add a RETURNING clause to the UPDATE so it hands back the updated id and new price.</p>
     </div>
   </article>
 

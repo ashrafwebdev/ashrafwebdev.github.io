@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><b>Normalization</b> is the process of structuring tables to minimize data duplication and avoid certain kinds of update anomalies. <b>First normal form (1NF)</b> requires every column to hold a single, atomic value &mdash; no comma-separated lists crammed into one text column.</p>
-    <p><b>Second normal form (2NF)</b> requires that every non-key column depend on the entire primary key, not just part of it, which mostly matters for tables with composite (multi-column) primary keys. <b>Third normal form (3NF)</b> requires that non-key columns depend only on the primary key, not on each other &mdash; storing a customer's city and zip code together on an orders table, where zip determines city, would violate 3NF.</p>
-    <p>In practice, most well-designed application databases target 3NF by default, and deliberately <b>denormalize</b> only specific tables afterward for performance reasons, once profiling shows the normalized structure is genuinely a bottleneck.</p>
+    <p class="lead"><b>Normalization</b> is the process of structuring tables to minimize data duplication and avoid certain kinds of update anomalies &mdash; situations where updating one fact requires touching many rows, or where deleting one row accidentally destroys information that should have survived independently. <b>First normal form (1NF)</b> requires every column to hold a single, atomic value &mdash; no comma-separated lists crammed into one text column, and no repeating groups of columns like tag1, tag2, tag3.</p>
+    <p><b>Second normal form (2NF)</b> requires that every non-key column depend on the entire primary key, not just part of it, which mostly matters for tables with composite (multi-column) primary keys. A table keyed on (order_id, product_id) that also stores product_name directly violates 2NF, since product_name really depends only on product_id, not on the full pair.</p>
+    <p><b>Third normal form (3NF)</b> requires that non-key columns depend only on the primary key, not on each other &mdash; storing a customer's city and zip code together on an orders table, where zip determines city, would violate 3NF, since city is really a fact about the zip code rather than a fact about the order itself.</p>
+    <p>Each of these anomalies has a concrete symptom worth recognizing: an <b>update anomaly</b> is when the same fact is duplicated across many rows and updating it means finding and changing every copy; a <b>deletion anomaly</b> is when deleting a row (say, the last order for a customer) accidentally erases customer information that had nowhere else to live; an <b>insertion anomaly</b> is when you can't record a fact (like a new product that has no orders yet) because the only table that could hold it is keyed around something else entirely.</p>
+    <p>In practice, most well-designed application databases target 3NF by default, and deliberately <b>denormalize</b> only specific tables afterward for performance reasons, once profiling shows the normalized structure is genuinely a bottleneck &mdash; premature denormalization trades away correctness guarantees for a performance benefit you haven't actually confirmed you need.</p>
+    <p>Beyond 3NF, forms like <b>Boyce-Codd Normal Form (BCNF)</b> and higher normal forms exist to handle rarer edge cases involving overlapping candidate keys, but most working developers never need to reason about them explicitly; getting comfortable with 1NF through 3NF covers the overwhelming majority of real schema design decisions.</p>
     <div class="code-block">
 <div class="cap">schema.sql</div>      <pre><code>-- Violates 1NF: multiple values crammed into one column
 -- tags VARCHAR: 'electronics,sale,new'
@@ -124,18 +127,36 @@ CREATE TABLE product_tags (
     PRIMARY KEY (product_id, tag)
 );</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">2nf_and_3nf.sql</div>      <pre><code>-- Violates 2NF: product_name depends only on product_id, not the full composite key
+-- order_items(order_id, product_id, product_name, quantity)
+
+-- Violates 3NF: city depends on zip, not directly on the order
+-- orders(id, customer_id, zip, city, total)
+
+-- Normalized to 3NF:
+CREATE TABLE zip_codes (zip VARCHAR(10) PRIMARY KEY, city VARCHAR(100) NOT NULL);
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customers(id),
+    zip VARCHAR(10) NOT NULL REFERENCES zip_codes(zip),
+    total NUMERIC(10, 2) NOT NULL
+);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>1NF requires atomic column values, with no lists packed into a single field.</li>
+        <li>1NF requires atomic column values, with no lists or repeating groups packed into a single field.</li>
         <li>2NF requires non-key columns to depend on the whole primary key, relevant for composite keys.</li>
         <li>3NF requires non-key columns to depend only on the primary key, not on each other.</li>
+        <li>Update, deletion, and insertion anomalies are the concrete symptoms normalization is meant to prevent.</li>
         <li>Denormalize deliberately, and only after profiling shows normalization is an actual bottleneck.</li>
+        <li>BCNF and higher normal forms exist but rarely come up in everyday application schema design.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take a hypothetical orders table storing customer_name, customer_email, product_name, and product_price directly, and redesign it into normalized tables up to 3NF.</p>
+      <p>Take a hypothetical orders table storing customer_name, customer_email, product_name, and product_price directly, and redesign it into normalized tables up to 3NF. Then describe, in one sentence each, an update anomaly and a deletion anomaly that the original unnormalized table would have suffered from.</p>
     </div>
   </article>
 

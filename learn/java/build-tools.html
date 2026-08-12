@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Real Java projects rarely compile files by hand; they use a build tool to manage dependencies, compilation, testing, and packaging. <b>Maven</b> describes a project declaratively in an XML file named <code>pom.xml</code>, listing dependencies by group, artifact, and version, and follows a strict conventional folder layout (<code>src/main/java</code>, <code>src/test/java</code>).</p>
-    <p><b>Gradle</b> covers the same ground but uses a more flexible, script-based configuration (Groovy or Kotlin DSL, in <code>build.gradle</code> or <code>build.gradle.kts</code>), and is generally faster thanks to incremental builds and caching.</p>
-    <p>Both tools resolve dependencies automatically from repositories like Maven Central, so declaring a library in one line pulls in the correct JAR and its transitive dependencies, instead of you having to hunt down and manage JAR files by hand.</p>
+    <p class="lead">Real Java projects rarely compile files by hand; they use a build tool to manage dependencies, compilation, testing, and packaging. <b>Maven</b> describes a project declaratively in an XML file named <code>pom.xml</code>, listing dependencies by group, artifact, and version, and follows a strict conventional folder layout (<code>src/main/java</code>, <code>src/test/java</code>, <code>src/main/resources</code>) that every Maven project shares, which makes it easy to jump into an unfamiliar Maven project and immediately know where things live.</p>
+    <p><b>Gradle</b> covers the same ground but uses a more flexible, script-based configuration (Groovy or Kotlin DSL, in <code>build.gradle</code> or <code>build.gradle.kts</code>), and is generally faster thanks to incremental builds, build caching, and a daemon process that stays warm between invocations instead of starting a fresh JVM every time.</p>
+    <p>Both tools resolve dependencies transitively and automatically from repositories like Maven Central: declaring a library in one line pulls in the correct JAR and its own dependencies, instead of you having to hunt down and manage JAR files by hand. This transitive resolution can also cause version conflicts when two dependencies pull in different versions of the same third library, which both tools resolve using their own conflict-resolution rules (Maven: nearest wins; Gradle: highest version wins by default).</p>
+    <p>Both tools organize work into a <b>lifecycle</b> or set of <b>tasks</b>. Maven's standard lifecycle phases run in a fixed order &mdash; <code>validate</code>, <code>compile</code>, <code>test</code>, <code>package</code>, <code>verify</code>, <code>install</code>, <code>deploy</code> &mdash; and running a later phase automatically runs the earlier ones first. Gradle instead builds a dependency graph of named tasks (<code>compileJava</code>, <code>test</code>, <code>build</code>) and only re-runs a task if its inputs have actually changed since the last run.</p>
+    <p>Dependency <b>scope</b> matters: a dependency needed only for running tests (like JUnit) is declared with <code>test</code> scope in Maven or <code>testImplementation</code> in Gradle, so it never ends up bundled into the final production artifact and doesn't bloat the shipped JAR or introduce an unnecessary runtime dependency.</p>
+    <p>Both ecosystems support multi-module builds, where a large project is split into several sub-projects (for example, an <code>api</code> module and a <code>core</code> module) that can depend on each other and be built together, which scales much better than one giant monolithic source tree as a codebase grows.</p>
     <div class="code-block">
 <div class="cap">pom.xml</div>      <pre><code>&lt;project&gt;
   &lt;groupId&gt;com.example&lt;/groupId&gt;
@@ -132,18 +135,50 @@ $ mvn compile
 $ mvn test
 $ mvn package</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">build.gradle.kts</div>      <pre><code>plugins {
+    java
+    application
+}
+
+group = "com.example"
+version = "1.0.0"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+}
+
+application {
+    mainClass.set("com.example.app.Main")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+// $ ./gradlew build
+// $ ./gradlew test
+// $ ./gradlew run</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Maven configures a project declaratively in <code>pom.xml</code> and follows a fixed folder convention.</li>
-        <li>Gradle uses a script-based build file and tends to build faster via incremental compilation.</li>
-        <li>Both tools fetch dependencies automatically from repositories such as Maven Central.</li>
-        <li>Standard lifecycle commands (<code>compile</code>, <code>test</code>, <code>package</code>) work the same way across most projects using that tool.</li>
+        <li>Maven configures a project declaratively in pom.xml and follows a fixed folder convention shared by every Maven project.</li>
+        <li>Gradle uses a script-based build file and tends to build faster via incremental compilation and a warm daemon process.</li>
+        <li>Both tools fetch dependencies transitively and automatically from repositories such as Maven Central.</li>
+        <li>Transitive dependency version conflicts are resolved differently by each tool (nearest-wins vs highest-version-wins).</li>
+        <li>Maven runs fixed lifecycle phases in order; Gradle runs a dependency graph of tasks and skips up-to-date ones.</li>
+        <li>Test-only dependencies use test scope (Maven) or testImplementation (Gradle) so they never ship in the production artifact.</li>
+        <li>Both support multi-module builds, splitting a large codebase into interdependent sub-projects.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a minimal pom.xml for a project named task-tracker with one test dependency on JUnit, then describe what running mvn package would produce.</p>
+      <p>Create a minimal pom.xml for a project named task-tracker with one test dependency on JUnit, then describe what running mvn package would produce. Then write the equivalent build.gradle.kts for the same project, and explain in a couple of sentences one concrete situation where you'd prefer Gradle's incremental task graph over Maven's fixed lifecycle.</p>
     </div>
   </article>
 

@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Java source code (<code>.java</code>) is compiled by <code>javac</code> into platform-independent <b>bytecode</b> (<code>.class</code> files), which the <b>Java Virtual Machine</b> then executes with the <code>java</code> command. This two-step compile-then-run model is what lets the same compiled bytecode run unchanged on Windows, Linux, or macOS.</p>
-    <p>For a single file with one public class, <code>javac Main.java</code> produces <code>Main.class</code>, and <code>java Main</code> runs it. Modern JDKs (11+) also support running a single source file directly with <code>java Main.java</code>, skipping the explicit compile step for quick scripts.</p>
-    <p>Real projects almost never compile files by hand; they use a build tool such as Maven or Gradle (covered in a later lesson) to manage compilation, dependencies, and packaging into a distributable JAR file.</p>
+    <p class="lead">Java source code (<code>.java</code>) is compiled by <code>javac</code> into platform-independent <b>bytecode</b> (<code>.class</code> files), which the <b>Java Virtual Machine</b> then executes with the <code>java</code> command. This two-step compile-then-run model is what lets the same compiled bytecode run unchanged on Windows, Linux, or macOS, as long as a compatible JVM is installed.</p>
+    <p>For a single file with one public class, <code>javac Main.java</code> produces <code>Main.class</code>, and <code>java Main</code> runs it &mdash; note you pass the class name to <code>java</code>, not the file name. If a source file contains multiple top-level classes, <code>javac</code> produces one <code>.class</code> file for each of them, though only one class in the file may be <code>public</code> and it must match the file name.</p>
+    <p>The <code>CLASSPATH</code> tells the JVM where to look for compiled classes and any JAR dependencies at runtime. For anything beyond a single-file toy program, you'll organize source under a package directory structure that mirrors the package declaration (<code>com.example.app.Main</code> lives in <code>com/example/app/Main.java</code>), and compile/run with <code>-d</code> and <code>-cp</code> flags pointing at those directories.</p>
+    <p>Modern JDKs (11+) also support running a single source file directly with <code>java Main.java</code>, which compiles the file in memory and runs it immediately without ever writing a <code>.class</code> file to disk &mdash; ideal for quick scripts, throwaway experiments, or teaching examples, though not something production builds rely on.</p>
+    <p>The JDK includes several other command-line tools worth knowing: <code>jar</code> packages compiled classes and resources into a distributable <code>.jar</code> archive, <code>javadoc</code> generates HTML API documentation from specially formatted comments, and <code>jshell</code> (since Java 9) gives you an interactive REPL for trying out snippets of Java without creating a file at all.</p>
+    <p>Real projects almost never compile files by hand; they use a build tool such as Maven or Gradle (covered in a later lesson) to manage compilation, dependencies, and packaging into a distributable JAR file, but understanding the raw <code>javac</code>/<code>java</code> workflow underneath is what makes build-tool output and error messages make sense.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>$ javac Main.java
 $ ls
@@ -124,18 +127,37 @@ Zainab is 30 years old.
 # JDK 11+, single-file shortcut, no separate compile step:
 $ java Main.java</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">terminal-packages</div>      <pre><code># Package-based project layout
+$ find . -name '*.java'
+src/com/example/app/Main.java
+src/com/example/app/util/StringHelper.java
+
+# Compile into an 'out' directory, preserving package structure
+$ javac -d out src/com/example/app/Main.java src/com/example/app/util/StringHelper.java
+
+# Run using the fully-qualified class name and the classpath
+$ java -cp out com.example.app.Main
+
+# Package everything into a runnable JAR
+$ jar --create --file app.jar --main-class com.example.app.Main -C out .
+$ java -jar app.jar</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>javac</code> compiles source into bytecode; <code>java</code> runs that bytecode on the JVM.</li>
-        <li>Bytecode is platform-independent &mdash; "write once, run anywhere".</li>
-        <li>The public class name must match the source file name exactly.</li>
-        <li>JDK 11+ supports running a single .java file directly for quick experiments.</li>
+        <li>Bytecode is platform-independent &mdash; "write once, run anywhere" &mdash; given a compatible JVM.</li>
+        <li>The public class name must match the source file name exactly; other, non-public classes in the same file get their own .class files too.</li>
+        <li><code>java</code> is invoked with a class name (or JAR), not a file name, once code has been compiled.</li>
+        <li>Package declarations must match the folder structure on disk (<code>com.example.app</code> lives under <code>com/example/app</code>).</li>
+        <li>JDK 11+ supports running a single .java file directly for quick experiments, with no .class file written to disk.</li>
+        <li><code>jar</code> packages compiled output into a distributable archive; <code>jshell</code> gives an interactive REPL.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a small Main.java on your machine, compile it with javac, run the resulting class file with java, then try the single-file java Main.java shortcut and compare.</p>
+      <p>Write a small Main.java on your machine, compile it with javac, run the resulting class file with java, then try the single-file java Main.java shortcut and compare. Next, move it into a com.example package folder, recompile with -d, run it with the fully-qualified class name and -cp, and package the result into a runnable app.jar with the jar tool.</p>
     </div>
   </article>
 

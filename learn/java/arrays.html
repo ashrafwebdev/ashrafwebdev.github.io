@@ -111,8 +111,11 @@
 
   <article>
     <p class="lead">A Java array is a fixed-size, ordered collection of elements of a single type, declared with square brackets, such as <code>int[] scores</code>. Once created with <code>new int[5]</code>, its length cannot change; if you need a resizable collection you reach for <code>ArrayList</code> instead, covered later.</p>
-    <p>Arrays are zero-indexed, and accessing an index outside the valid range throws an <code>ArrayIndexOutOfBoundsException</code> at runtime rather than silently producing garbage, which is a deliberate safety feature of the language.</p>
-    <p>Multi-dimensional arrays are simply arrays of arrays, declared as <code>int[][] grid = new int[3][3]</code>, and the built-in <code>java.util.Arrays</code> class provides helpers like <code>Arrays.sort</code> and <code>Arrays.toString</code> for common operations.</p>
+    <p>Arrays are zero-indexed, and accessing an index outside the valid range throws an <code>ArrayIndexOutOfBoundsException</code> at runtime rather than silently producing garbage or a wrong value, which is a deliberate safety feature of the language compared to lower-level languages that let you read whatever memory happens to be there.</p>
+    <p>An array of a reference type, such as <code>String[] names = new String[3]</code>, is initially filled with <code>null</code> in every slot, not empty strings; forgetting this and calling a method on an unassigned slot produces a NullPointerException at the point of use, not at array creation.</p>
+    <p>Multi-dimensional arrays are simply arrays of arrays, declared as <code>int[][] grid = new int[3][3]</code>. Because each inner array is independent, Java also supports <b>jagged arrays</b> where rows have different lengths, such as <code>int[][] triangle = new int[5][]</code> followed by allocating each row separately with a different size.</p>
+    <p>Arrays are passed to methods by reference (the array's contents can be mutated by the callee and the caller sees the change), but the array variable itself is still a normal reference: reassigning the parameter inside the method to a brand-new array does not affect the caller's original variable.</p>
+    <p>The <code>java.util.Arrays</code> class provides helpers for common operations that would otherwise require hand-written loops: <code>Arrays.sort</code>, <code>Arrays.toString</code> (and <code>deepToString</code> for nested arrays), <code>Arrays.equals</code>, <code>Arrays.fill</code>, and <code>Arrays.copyOf</code> for creating a resized copy of an existing array.</p>
     <div class="code-block">
 <div class="cap">Scores.java</div>      <pre><code>import java.util.Arrays;
 
@@ -128,18 +131,58 @@ public class Scores {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Grid.java</div>      <pre><code>import java.util.Arrays;
+
+public class Grid {
+    public static void main(String[] args) {
+        int[][] grid = new int[3][3];
+        for (int r = 0; r &lt; grid.length; r++) {
+            for (int c = 0; c &lt; grid[r].length; c++) {
+                grid[r][c] = r * 3 + c;
+            }
+        }
+        System.out.println(Arrays.deepToString(grid));
+
+        // Jagged array: row lengths differ
+        int[][] triangle = new int[4][];
+        for (int r = 0; r &lt; triangle.length; r++) {
+            triangle[r] = new int[r + 1];
+            Arrays.fill(triangle[r], r);
+        }
+        System.out.println(Arrays.deepToString(triangle));
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">NullSlotBug.java</div>      <pre><code>public class NullSlotBug {
+    public static void main(String[] args) {
+        String[] names = new String[3];
+        names[0] = "Amina";
+        // names[1] and names[2] are still null, not ""
+
+        for (String name : names) {
+            // Throws NullPointerException on the second element
+            System.out.println(name.toUpperCase());
+        }
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Array length is fixed at creation time and is read via the <code>.length</code> field, not a method.</li>
         <li>Out-of-bounds access throws <code>ArrayIndexOutOfBoundsException</code> rather than failing silently.</li>
-        <li><code>java.util.Arrays</code> offers <code>sort</code>, <code>toString</code>, <code>equals</code>, and more.</li>
+        <li>Reference-type arrays start filled with <code>null</code>, not empty values, in every slot.</li>
+        <li>Arrays are passed by reference, so mutating elements inside a method is visible to the caller, but reassigning the parameter is not.</li>
+        <li>Multi-dimensional arrays are arrays of arrays and can be jagged, with rows of different lengths.</li>
+        <li><code>java.util.Arrays</code> offers <code>sort</code>, <code>toString</code>/<code>deepToString</code>, <code>equals</code>, <code>fill</code>, and <code>copyOf</code>.</li>
         <li>For a resizable, growable list, use <code>ArrayList</code> instead of a raw array.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a program that fills an int array with 10 random numbers, finds the maximum value with a loop, and prints the sorted array using Arrays.toString.</p>
+      <p>Write a program that fills an int array with 10 random numbers, finds the maximum value with a loop, and prints the sorted array using Arrays.toString. Then build a 5x5 jagged 2D array where row i has i+1 columns filled with the value i, print it with Arrays.deepToString, and add a check that skips any null entries before calling a method on an array of String.</p>
     </div>
   </article>
 

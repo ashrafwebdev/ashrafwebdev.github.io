@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><b>Spring Boot</b> is the dominant framework for building Java web applications and REST APIs, built on top of the wider Spring ecosystem. It emphasizes convention over configuration: a minimal Spring Boot project can start an embedded web server and expose an endpoint with only a few annotations.</p>
-    <p>The core idea is <b>dependency injection</b>: instead of a class constructing its own collaborators, Spring constructs and wires objects (called <b>beans</b>) together automatically based on annotations like <code>@Component</code>, <code>@Service</code>, and <code>@Autowired</code>, which makes code easier to test in isolation.</p>
-    <p><code>@RestController</code> marks a class whose methods handle HTTP requests and return data (typically serialized to JSON automatically), while <code>@GetMapping</code>, <code>@PostMapping</code>, and similar annotations map HTTP routes to specific methods.</p>
+    <p class="lead"><b>Spring Boot</b> is the dominant framework for building Java web applications and REST APIs, built on top of the wider Spring ecosystem. It emphasizes convention over configuration: a minimal Spring Boot project can start an embedded web server (Tomcat by default) and expose an endpoint with only a few annotations, with no external application server to install or configure separately.</p>
+    <p>The core idea underneath Spring is <b>dependency injection</b>: instead of a class constructing its own collaborators with <code>new</code>, Spring constructs and wires objects (called <b>beans</b>) together automatically based on annotations like <code>@Component</code>, <code>@Service</code>, and <code>@Repository</code>, injecting them wherever they're needed &mdash; typically via constructor parameters, which is the recommended style since it makes required dependencies explicit and the class easy to test outside of Spring entirely.</p>
+    <p><code>@RestController</code> marks a class whose methods handle HTTP requests and return data (typically serialized to JSON automatically via an embedded Jackson mapper), while <code>@GetMapping</code>, <code>@PostMapping</code>, <code>@PutMapping</code>, and <code>@DeleteMapping</code> map HTTP routes and verbs to specific methods; <code>@RequestBody</code> deserializes an incoming JSON body into a Java object, and <code>@PathVariable</code>/<code>@RequestParam</code> pull values out of the URL path or query string.</p>
+    <p>Configuration in Spring Boot is typically externalized into an <code>application.properties</code> or <code>application.yml</code> file (database URLs, server port, logging levels), and Spring Boot's <b>auto-configuration</b> mechanism inspects what's on the classpath and configures sensible defaults automatically &mdash; adding the Spring Data JPA dependency, for instance, is enough to get a working database connection pool and repository infrastructure without writing that plumbing by hand.</p>
+    <p>Spring Data JPA layers on top of this to remove most boilerplate database code: declaring an interface that extends <code>JpaRepository&lt;Entity, IdType&gt;</code> automatically gives you working <code>save</code>, <code>findById</code>, <code>findAll</code>, and <code>delete</code> methods, and following a naming convention like <code>findByEmail(String email)</code> generates the corresponding query without writing any SQL at all.</p>
+    <p>Testing a Spring Boot application doesn't require starting the full application context for every test: <code>@WebMvcTest</code> loads only the web layer for testing a controller in isolation with mocked dependencies, while <code>@SpringBootTest</code> loads the complete application context for true end-to-end integration tests, letting you choose the right trade-off between test speed and realism.</p>
     <div class="code-block">
 <div class="cap">GreetingController.java</div>      <pre><code>import org.springframework.web.bind.annotation.*;
 import org.springframework.boot.SpringApplication;
@@ -133,18 +136,55 @@ class GreetingController {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">TaskService.java</div>      <pre><code>import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+record Task(Long id, String title, boolean done) {}
+
+interface TaskRepository extends JpaRepository&lt;Task, Long&gt; {
+    List&lt;Task&gt; findByDone(boolean done); // query generated from the method name
+}
+
+@Service
+class TaskService {
+    private final TaskRepository repository;
+
+    // Constructor injection: Spring supplies the repository bean automatically
+    TaskService(TaskRepository repository) {
+        this.repository = repository;
+    }
+
+    List&lt;Task&gt; pendingTasks() { return repository.findByDone(false); }
+}
+
+@RestController
+@RequestMapping("/tasks")
+class TaskController {
+    private final TaskService service;
+    TaskController(TaskService service) { this.service = service; }
+
+    @GetMapping("/pending")
+    List&lt;Task&gt; pending() { return service.pendingTasks(); }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Spring Boot bundles an embedded server and sensible defaults so apps can run standalone with minimal setup.</li>
-        <li>Dependency injection lets Spring construct and wire objects, decoupling classes from their collaborators.</li>
-        <li><code>@RestController</code> plus mapping annotations turn plain methods into HTTP endpoints.</li>
-        <li>Beans annotated with <code>@Component</code>/<code>@Service</code> are auto-discovered and injected where needed.</li>
+        <li>Dependency injection lets Spring construct and wire beans, decoupling classes from their collaborators; constructor injection is preferred for testability.</li>
+        <li>@RestController plus mapping annotations turn plain methods into HTTP endpoints; @RequestBody and @PathVariable extract request data.</li>
+        <li>Beans annotated with @Component/@Service/@Repository are auto-discovered and injected where needed.</li>
+        <li>Auto-configuration inspects the classpath and wires sensible defaults based on which dependencies are present.</li>
+        <li>Spring Data JPA generates repository implementations and queries from interface method names, removing most CRUD boilerplate.</li>
+        <li>@WebMvcTest tests the web layer in isolation; @SpringBootTest loads the full context for integration testing.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch a Spring Boot controller with a GET endpoint /greet/{name} that returns a JSON-friendly greeting string using a path variable.</p>
+      <p>Sketch a Spring Boot controller with a GET endpoint /greet/{name} that returns a JSON-friendly greeting string using a path variable. Then design a TaskRepository interface extending JpaRepository for a simple Task entity, add a derived query method findByDone(boolean done), and wire it into a service class using constructor injection rather than field injection.</p>
     </div>
   </article>
 
