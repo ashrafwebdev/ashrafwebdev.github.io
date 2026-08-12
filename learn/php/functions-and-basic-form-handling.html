@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">PHP functions are defined with <code>function name(params) { }</code>. Modern PHP supports optional type hints on parameters and return values, which catch mistakes early without giving up PHP's flexibility.</p>
-    <p>PHP was built from the ground up for handling HTML forms — submitted form data arrives automatically in PHP's superglobal arrays, ready to read without any extra parsing step.</p>
+    <p class="lead">PHP functions are defined with <code>function name(params) { }</code>. Modern PHP supports optional type hints on parameters and return values, which catch mistakes early without giving up PHP's flexibility. Parameters can also have default values, letting callers omit arguments for the common case: <code>function greet($name = "friend")</code>.</p>
+    <p>PHP was built from the ground up for handling HTML forms — submitted form data arrives automatically in PHP's superglobal arrays (<code>$_GET</code>, <code>$_POST</code>), ready to read without any extra parsing step. A typical form-handling function accepts that raw array data, validates it, and returns either a clean value or an error to show the user.</p>
+    <p>Functions can accept a variable number of arguments using the variadic operator, <code>function sum(...$numbers)</code>, which collects any number of trailing arguments into a single array inside the function body. The same <code>...</code> spread syntax can expand an array back out into individual arguments when calling a function.</p>
+    <p>By default, arguments are passed by value — a copy is made, so modifying a parameter inside a function does not affect the caller's variable. Prefixing a parameter with an ampersand (<code>function increment(&$value)</code>) passes it by reference instead, letting the function mutate the caller's original variable directly; this is used sparingly since it can make code harder to reason about.</p>
+    <p>Anonymous functions (closures) let you define a function inline and assign it to a variable or pass it directly as an argument: <code>$double = function ($x) { return $x * 2; };</code>. Closures don't automatically see variables from the enclosing scope — you must explicitly import them with <code>use (&$total)</code> (with an ampersand if you need to modify the outer variable).</p>
+    <p>The arrow function syntax, <code>fn($x) => $x * 2</code>, introduced in PHP 7.4, is shorthand for a single-expression closure that automatically captures outer variables by value — much less boilerplate than <code>use()</code> for simple callbacks passed to functions like <code>array_map()</code> or <code>array_filter()</code>.</p>
     <div class="code-block">
 <div class="cap">functions.php</div>      <pre><code>&lt;?php
 function calculateTotal(float $price, int $quantity): float {
@@ -121,6 +125,42 @@ function calculateTotal(float $price, int $quantity): float {
 echo calculateTotal(9.99, 3);
 ?&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">form_handler.php</div>      <pre><code>&lt;?php
+function validateAge(array $formData): int|string {
+    $age = trim($formData['age'] ?? '');
+    if ($age === '' || !ctype_digit($age)) {
+        return "Please enter a valid whole number for age.";
+    }
+    return (int) $age;
+}
+
+$result = validateAge($_POST);
+if (is_string($result)) {
+    echo "Error: $result";
+} else {
+    echo "Age accepted: $result";
+}
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">closures.php</div>      <pre><code>&lt;?php
+$prices = [9.99, 19.99, 4.50];
+
+// Arrow function: implicitly captures $taxRate by value
+$taxRate = 0.08;
+$withTax = array_map(fn($p) =&gt; round($p * (1 + $taxRate), 2), $prices);
+print_r($withTax);
+
+// Traditional closure that mutates an outer variable by reference
+$total = 0;
+$addToTotal = function (float $amount) use (&amp;$total) {
+    $total += $amount;
+};
+array_map($addToTotal, $prices);
+echo $total;
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -128,11 +168,15 @@ echo calculateTotal(9.99, 3);
         <li>PHP functions can have default parameter values, just like many other languages: <code>function greet($name = "friend")</code>.</li>
         <li>A function without an explicit <code>return</code> returns <code>NULL</code>.</li>
         <li>Declare <code>strict_types=1</code> at the top of a file to disable PHP's automatic type coercion for stricter type safety.</li>
+        <li>Variadic parameters (<code>...$args</code>) let a function accept any number of trailing arguments as an array.</li>
+        <li>Arguments pass by value by default; use <code>&$param</code> to pass by reference and let a function modify the caller's variable.</li>
+        <li>Closures need explicit <code>use (...)</code> to access outer-scope variables; arrow functions (<code>fn() =></code>) capture automatically by value.</li>
+        <li>Union return types like <code>int|string</code> (PHP 8+) let a function honestly declare that it can return more than one type, which the caller must then check.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a typed PHP function that calculates a total with tax, given a price and a tax rate, and echo the result.</p>
+      <p>Write a typed PHP function that calculates a total with tax, given a price and a tax rate, and echo the result. Then write a second function that validates a submitted form field (like an email or age) from an array such as $_POST, returning either a cleaned value or an error string, and call it with both valid and invalid sample data to show both paths.</p>
     </div>
   </article>
 

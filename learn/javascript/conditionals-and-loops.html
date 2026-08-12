@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Conditionals (<code>if</code>/<code>else if</code>/<code>else</code>) run different code depending on a condition. <code>switch</code> is an alternative when you're comparing one value against many possibilities.</p>
-    <p>Loops repeat code. <code>for</code> is the classic counted loop; <code>while</code> repeats while a condition holds; <code>for...of</code> is the modern, readable way to loop over array elements directly.</p>
+    <p class="lead">Conditionals let a program take different paths depending on data. <code>if</code>/<code>else if</code>/<code>else</code> chains handle arbitrary boolean conditions, while <code>switch</code> is a more structured alternative when you're comparing a single value against several fixed possibilities — it reads more clearly than a long chain of <code>else if</code> checks once you have more than three or four branches.</p>
+    <p>JavaScript's notion of truthy and falsy matters constantly in conditionals. The only falsy values are <code>false</code>, <code>0</code>, <code>""</code> (empty string), <code>null</code>, <code>undefined</code>, and <code>NaN</code> — literally everything else, including an empty array and an empty object, is truthy. This trips people up: <code>if ([])</code> runs the branch, because an empty array is a truthy object, even though it 'feels' empty.</p>
+    <p>There are several loop constructs, each suited to a different job. The classic <code>for (let i = 0; i &lt; n; i++)</code> loop gives you full control over the index, useful when you need to skip elements or move backward. <code>while</code> repeats as long as a condition holds, useful when you don't know the iteration count in advance. <code>for...of</code> is the modern, readable way to iterate directly over the values of an array, string, Map, or Set. <code>for...in</code> iterates over an object's enumerable property keys — it is rarely what you want for arrays, since it iterates indices as strings and can pick up inherited properties.</p>
+    <p>Ternary expressions (<code>condition ? valueIfTrue : valueIfFalse</code>) are a compact alternative to a short if/else when you're producing a value rather than running a side effect. They're great for a single value assignment but become hard to read quickly once nested — nested ternaries are a common source of code review pushback for good reason.</p>
+    <p><code>break</code> exits a loop (or a switch case) entirely, while <code>continue</code> skips just the current iteration and moves to the next one. Both work with labeled loops too, which lets you break or continue an outer loop from inside a nested one — a rarely-needed but occasionally invaluable escape hatch.</p>
+    <p>A classic infinite-loop bug is forgetting to change the variable a <code>while</code> condition depends on, or getting the loop's increment direction wrong. Always double-check that every path through the loop body eventually makes the exit condition true.</p>
     <div class="code-block">
 <div class="cap">loops.js</div>      <pre><code>const scores = [72, 88, 95, 60];
 
@@ -125,18 +129,62 @@ for (const score of scores) {
   }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">switch-and-labels.js</div>      <pre><code>function describeDay(day) {
+  switch (day) {
+    case "Sat":
+    case "Sun":
+      return "Weekend";
+    case "Mon":
+    case "Tue":
+    case "Wed":
+    case "Thu":
+    case "Fri":
+      return "Weekday";
+    default:
+      return "Unknown";
+  }
+}
+
+// Labeled break to escape a nested loop early
+outer: for (let row = 0; row &lt; 3; row++) {
+  for (let col = 0; col &lt; 3; col++) {
+    if (row === 1 &amp;&amp; col === 1) break outer;
+    console.log(row, col);
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">truthy-gotcha.js</div>      <pre><code>// Common trap: an empty array/object is truthy, unlike an empty string or 0
+function announce(items) {
+  if (items) {
+    console.log("Got items:", items.length); // still runs for []
+  }
+}
+announce([]); // logs "Got items: 0" — probably not what was intended
+
+// Better: check the actual condition you care about
+function announceFixed(items) {
+  if (items.length &gt; 0) {
+    console.log("Got items:", items.length);
+  }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Prefer <code>for...of</code> over the classic <code>for (let i = 0; ...)</code> when you just need each value, not the index.</li>
-        <li><code>switch</code> needs a <code>break</code> in each case or execution 'falls through' to the next one.</li>
-        <li><code>while</code> loops can loop forever if the condition never becomes false — always double check the exit condition.</li>
-        <li><code>continue</code> skips to the next iteration; <code>break</code> exits the loop entirely.</li>
+        <li>Prefer <code>for...of</code> over the classic indexed <code>for</code> loop when you just need each value, not the index.</li>
+        <li><code>for...in</code> iterates object keys, not array values — avoid it for arrays; use <code>for...of</code> or <code>.forEach()</code> instead.</li>
+        <li><code>switch</code> needs a <code>break</code> in each case, or execution 'falls through' into the next case — this is occasionally intentional (grouping cases) but often a bug.</li>
+        <li>The only falsy values are <code>false</code>, <code>0</code>, <code>""</code>, <code>null</code>, <code>undefined</code>, and <code>NaN</code> — an empty array or object is truthy.</li>
+        <li><code>while</code> loops can run forever if the condition never becomes false — always verify the exit path exists.</li>
+        <li><code>continue</code> skips to the next iteration; <code>break</code> exits the loop entirely; labeled versions of both can target an outer loop.</li>
+        <li>Ternaries are great for a single value decision, but nested ternaries hurt readability — reach for if/else once logic gets complex.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a for...of loop over an array of numbers that logs whether each one is even or odd.</p>
+      <p>Write a for...of loop over an array of numbers that logs whether each one is even or odd. Then write a second function using a switch statement that maps a numeric grade (1-5) to a letter description, and a third snippet that demonstrates the empty-array truthy gotcha and how to guard against it correctly.</p>
     </div>
   </article>
 

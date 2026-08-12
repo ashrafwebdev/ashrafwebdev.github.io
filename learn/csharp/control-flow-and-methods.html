@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">C# supports <code>if</code>/<code>else</code>, <code>for</code>, <code>foreach</code>, <code>while</code>, and <code>switch</code>. The modern <b>switch expression</b> (C# 8+) returns a value directly using <code>=></code> arms and supports pattern matching on types and shapes, not just constant values.</p>
-    <p>Methods are declared with an access modifier, a return type, a name, and parameters. C# supports optional parameters with default values and named arguments, so callers can skip parameters or pass them out of order by name.</p>
-    <p><code>foreach</code> is the idiomatic way to iterate any collection implementing <code>IEnumerable</code>, and is generally preferred over an index-based <code>for</code> loop unless you specifically need the index.</p>
+    <p class="lead">C# supports <code>if</code>/<code>else</code>, <code>for</code>, <code>foreach</code>, <code>while</code>, <code>do-while</code>, and <code>switch</code>. The modern <b>switch expression</b> (C# 8+) returns a value directly using <code>=></code> arms and supports pattern matching on types, shapes, and ranges, not just constant values, which replaces many verbose if/else chains with something far more readable.</p>
+    <p>Pattern matching goes beyond switch expressions: <code>is</code> can test and cast in one step (<code>if (shape is Circle c)</code>), and switch arms can match on a type pattern, a property pattern (<code>{ Age: >= 18 }</code>), or combine several with <code>and</code>/<code>or</code>/<code>not</code>. This turns what used to require nested type checks and casts into a single declarative expression.</p>
+    <p>Methods are declared with an access modifier, a return type, a name, and parameters. C# supports optional parameters with default values, named arguments so callers can pass arguments out of order by name, and <code>params</code> arrays for a variable number of trailing arguments &mdash; three separate features that are often combined to design flexible APIs.</p>
+    <p>Parameters can be passed by reference with <code>ref</code> (the argument must already be initialized), by output with <code>out</code> (the method must assign it before returning, commonly seen in <code>TryParse</code>-style methods), or read-only-by-reference with <code>in</code> for large structs you don't want copied. Plain parameters, by contrast, are always passed by value &mdash; even reference types, where it's the reference itself that's copied, not the object it points to.</p>
+    <p><code>foreach</code> is the idiomatic way to iterate any collection implementing <code>IEnumerable</code>, and is generally preferred over an index-based <code>for</code> loop unless you specifically need the index or need to modify the collection while iterating (which <code>foreach</code> forbids and throws an <code>InvalidOperationException</code> for).</p>
+    <p>Local functions &mdash; a method declared inside another method &mdash; are useful for small helper logic that only makes sense in one place, and unlike a separate private method they can capture variables from the enclosing method directly, similar to a closure.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>static string Categorize(int score) =&gt; score switch
 {
@@ -128,18 +131,53 @@ foreach (var s in scores)
     Console.WriteLine($"{s} -&gt; {Categorize(s)}");
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">PatternsAndParams.cs</div>      <pre><code>static string Describe(object shape) =&gt; shape switch
+{
+    Circle { Radius: &lt;= 0 } =&gt; "invalid circle",
+    Circle c =&gt; $"circle, area {c.Radius * c.Radius * Math.PI:F1}",
+    Square s when s.Side &gt; 10 =&gt; "large square",
+    Square =&gt; "square",
+    null =&gt; "nothing",
+    _ =&gt; "unknown shape"
+};
+
+static int Sum(params int[] numbers)
+{
+    int total = 0;
+    foreach (var n in numbers) total += n;
+    return total;
+}
+
+Console.WriteLine(Sum(1, 2, 3, 4)); // params lets any number of args</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">RefOutTryParse.cs</div>      <pre><code>// out parameters: the classic TryParse pattern
+if (int.TryParse("42", out int parsed))
+    Console.WriteLine($"Parsed: {parsed}");
+
+// ref parameters: the argument must already be assigned
+static void Double(ref int n) =&gt; n *= 2;
+int value = 21;
+Double(ref value);
+Console.WriteLine(value); // 42</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Switch expressions with relational patterns (<code>>= 90</code>) replace long if/else chains.</li>
-        <li>Optional parameters and named arguments make method calls more flexible and readable.</li>
-        <li><code>foreach</code> is the idiomatic way to iterate collections implementing IEnumerable.</li>
-        <li>Expression-bodied members (<code>=></code>) offer a concise syntax for simple methods.</li>
+        <li>Property patterns and type patterns let a single switch arm match a shape and its data at once.</li>
+        <li>Optional parameters, named arguments, and <code>params</code> arrays make method calls more flexible and readable.</li>
+        <li><code>out</code> parameters must be assigned by the method; <code>ref</code> parameters must already be assigned by the caller.</li>
+        <li>Ordinary parameters are always passed by value, even for reference types &mdash; it's the reference that's copied.</li>
+        <li><code>foreach</code> is the idiomatic way to iterate collections implementing IEnumerable, but disallows mutating the collection mid-iteration.</li>
+        <li>Local functions can capture enclosing variables directly, unlike a separate private method.</li>
+        <li>Expression-bodied members (<code>=></code>) offer a concise syntax for simple methods and switch expressions alike.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a method Describe(int temperature) using a switch expression with relational patterns to return "freezing", "cool", "warm", or "hot", and call it in a foreach loop.</p>
+      <p>Write a method Describe(int temperature) using a switch expression with relational patterns to return "freezing", "cool", "warm", or "hot", and call it in a foreach loop over an array of sample temperatures. Then write a second method using params to accept any number of ints and return their average, and call it with a TryParse-based loop that reads numeric strings and skips any that fail to parse.</p>
     </div>
   </article>
 

@@ -113,6 +113,9 @@
     <p class="lead"><code>Vec</code> is Rust's resizable array type, created with <code>Vec::new()</code> or the <code>vec!</code> macro, and grown with <code>.push()</code>. Like all Rust collections, it owns its elements, and accessing an out-of-range index with <code>[]</code> panics, while <code>.get()</code> returns an Option instead for safe access.</p>
     <p><code>HashMap</code> associates keys with values, imported from <code>std::collections</code>. Inserting with <code>.insert()</code> and looking up with <code>.get()</code> (which returns an Option, since the key might not exist) follow the same explicit-absence philosophy as the rest of Rust.</p>
     <p>Because collections own their contents, iterating with <code>for item in &vec</code> borrows each element rather than moving it out, which is why the <code>&</code> is idiomatic unless you specifically intend to consume the collection.</p>
+    <p>The standard library offers several other collections worth knowing: <code>VecDeque</code> is a double-ended queue with efficient push and pop at both ends (unlike <code>Vec</code>, which is only efficient at the end), <code>HashSet</code> stores unique unordered values, and <code>BTreeMap</code> is a map that keeps its keys in sorted order at the cost of slightly slower operations than <code>HashMap</code>. Which one to reach for depends on whether you need order, uniqueness, or queue-like access patterns.</p>
+    <p>Idiomatic Rust leans heavily on <b>iterator adapter chains</b>: <code>.iter().filter(...).map(...).collect()</code> transforms a collection functionally rather than through a manual loop with an accumulator. This isn't just a style preference &mdash; iterators are a zero-cost abstraction, meaning the compiler typically compiles a chain like this down to code just as tight as an equivalent hand-written loop.</p>
+    <p>HashMap's <b>entry API</b>, <code>map.entry(key).or_insert(default)</code>, is the idiomatic way to insert-or-update a value in a single step, without a separate <code>contains_key</code> check followed by a conditional insert. It's the standard pattern behind counting occurrences or grouping items by key.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>use std::collections::HashMap;
 
@@ -130,6 +133,37 @@ fn main() {
     println!("{:?}", scores);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">iterator_chain.rs</div>      <pre><code>fn main() {
+    let scores = vec![55, 88, 92, 40, 75, 100];
+
+    let passing: Vec&lt;i32&gt; = scores
+        .iter()
+        .filter(|&amp;&amp;s| s &gt;= 60)
+        .map(|&amp;s| s + 5) // bonus points
+        .collect();
+
+    println!("{:?}", passing);
+
+    let total: i32 = scores.iter().sum();
+    println!("total: {}", total);
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">entry_api.rs</div>      <pre><code>use std::collections::HashMap;
+
+fn main() {
+    let words = vec!["rust", "go", "rust", "python", "go", "rust"];
+    let mut counts: HashMap&lt;&amp;str, i32&gt; = HashMap::new();
+
+    for word in &amp;words {
+        *counts.entry(word).or_insert(0) += 1;
+    }
+
+    let repeated: Vec&lt;(&amp;&amp;str, &amp;i32)&gt; = counts.iter().filter(|(_, &amp;c)| c &gt; 1).collect();
+    println!("{:?}", repeated);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -137,11 +171,15 @@ fn main() {
         <li><code>HashMap</code> pairs keys with values; lookups return an Option since a key might not exist.</li>
         <li>Iterating with <code>&collection</code> borrows elements instead of consuming the collection.</li>
         <li>The <code>{:?}</code> debug format specifier prints a readable representation of most collections.</li>
+        <li><code>VecDeque</code>, <code>HashSet</code>, and <code>BTreeMap</code> round out the standard collection toolbox for queues, uniqueness, and ordering.</li>
+        <li>Iterator adapter chains (<code>filter</code>/<code>map</code>/<code>collect</code>) are idiomatic and typically compile as fast as manual loops.</li>
+        <li>The entry API (<code>.entry(key).or_insert(default)</code>) inserts-or-updates in a single step.</li>
+        <li><code>collect()</code> often needs a target type annotation so the compiler knows what to build.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a HashMap of word to count from a Vec of strings, then print each word and its count sorted by count descending.</p>
+      <p>Given a Vec of strings, use the entry API on a HashMap to count occurrences of each word. Then use an iterator chain with filter and collect to keep only the words that appear more than once, and print the filtered results alongside the original full count map.</p>
     </div>
   </article>
 

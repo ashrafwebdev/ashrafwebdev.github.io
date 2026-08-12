@@ -113,6 +113,9 @@
     <p class="lead"><b>Borrowing</b> lets you access a value without taking ownership of it, using references: <code>&value</code> for an immutable (read-only) borrow, or <code>&mut value</code> for a mutable borrow. This avoids the constant moving and returning of values that pure ownership alone would require.</p>
     <p>The <b>borrow checker</b> enforces one core rule at compile time: for any value, you may have either any number of immutable borrows, or exactly one mutable borrow, but never both at the same time. This single rule is what prevents data races and iterator-invalidation bugs without needing a runtime lock.</p>
     <p><b>Lifetimes</b> (written <code>'a</code>) let the compiler verify that a reference never outlives the data it points to; most of the time lifetimes are inferred automatically, and you only write them explicitly in a handful of situations, like a function returning a reference derived from two different input references.</p>
+    <p>Modern Rust uses <b>non-lexical lifetimes (NLL)</b>: the borrow checker tracks a reference's last actual use in the code, not merely the end of its enclosing lexical scope, so a borrow is considered "finished" as soon as it's no longer needed. This makes many intuitively-safe patterns compile that would have been rejected by the borrow checker in early versions of Rust.</p>
+    <p>Returning a reference to a value created locally inside a function is a compile error, because that local value's memory does not survive the function returning &mdash; the reference would immediately dangle. The fix is almost always to return an owned value (like a <code>String</code> instead of a <code>&str</code> pointing into a local buffer) so ownership transfers cleanly to the caller instead.</p>
+    <p>A common borrow-checker surprise: holding an immutable reference into a <code>Vec</code> while separately trying to <code>.push()</code> onto that same <code>Vec</code> in the same scope is rejected, even though it might look harmless. The reason is that <code>push</code> can trigger a reallocation that moves every existing element to a new memory address, which would leave the earlier reference dangling &mdash; the borrow checker rejects the pattern outright rather than trying to prove it's safe in this particular case.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>fn longest&lt;'a&gt;(x: &amp;'a str, y: &amp;'a str) -&gt; &amp;'a str {
     if x.len() &gt; y.len() { x } else { y }
@@ -132,6 +135,35 @@ fn main() {
     println!("{}", longest(&amp;a, &amp;b));
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">dangling_reference.rs</div>      <pre><code>// fn dangling() -&gt; &amp;String {
+//     let s = String::from("oops");
+//     &amp;s // ERROR: `s` is dropped here, so this reference would dangle
+// }
+
+fn not_dangling() -&gt; String {
+    let s = String::from("ok");
+    s // ownership moves out to the caller instead of a reference
+}
+
+fn main() {
+    println!("{}", not_dangling());
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">vec_borrow_gotcha.rs</div>      <pre><code>fn main() {
+    let mut numbers = vec![1, 2, 3];
+    let first = &amp;numbers[0];
+
+    // numbers.push(4); // ERROR: cannot borrow `numbers` as mutable
+    //                  // while it is also borrowed as immutable (`first`)
+    println!("first: {}", first);
+
+    // after `first`'s last use, the borrow ends (thanks to NLL)
+    numbers.push(4); // fine here
+    println!("{:?}", numbers);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -139,11 +171,15 @@ fn main() {
         <li>The borrow checker enforces these rules entirely at compile time, with no runtime cost.</li>
         <li>Lifetime annotations like <code>'a</code> tell the compiler how long a reference must stay valid.</li>
         <li>Most lifetimes are inferred automatically; explicit annotations are the exception, not the rule.</li>
+        <li>Non-lexical lifetimes track a reference's last real use, not just its enclosing scope's end.</li>
+        <li>Returning a reference to a function-local value is a compile error; return an owned value instead.</li>
+        <li>Holding a reference into a Vec while pushing to it is rejected, since push can reallocate and invalidate it.</li>
+        <li>A reference can never outlive the data it points to &mdash; the borrow checker's entire job is proving this.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that takes a mutable reference to a Vec of i32 and doubles every element in place, then call it and print the resulting vector.</p>
+      <p>Write a function that takes a mutable reference to a Vec of i32 and doubles every element in place, then call it and print the resulting vector. Then write (and comment out) an attempted function that tries to return a reference to a String created inside its own body, and add a comment explaining exactly why the compiler rejects it.</p>
     </div>
   </article>
 

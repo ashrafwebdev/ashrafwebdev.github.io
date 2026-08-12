@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Go's standard library includes a capable HTTP server in <code>net/http</code>, with no external framework required to get started. <code>http.HandleFunc</code> registers a handler function for a route, and <code>http.ListenAndServe</code> starts the server.</p>
-    <p>A handler function receives an <code>http.ResponseWriter</code> to write the response and an <code>*http.Request</code> describing the incoming request; writing to the ResponseWriter and setting headers is how you control the response, with no separate response object to construct and return.</p>
-    <p>Because it's part of the standard library and reasonably fast out of the box, many small to medium Go services use <code>net/http</code> directly rather than reaching for a third-party web framework.</p>
+    <p class="lead">Go's standard library includes a capable HTTP server in <code>net/http</code>, with no external framework required to get started. <code>http.HandleFunc</code> registers a handler function for a route on the default multiplexer, and <code>http.ListenAndServe</code> starts the server, blocking until it's stopped or a fatal error occurs.</p>
+    <p>A handler function receives an <code>http.ResponseWriter</code> to write the response and an <code>*http.Request</code> describing the incoming request; writing to the ResponseWriter and setting headers is how you control the response, with no separate response object to construct and return &mdash; the first call to <code>w.Write</code> (or anything that writes, like <code>fmt.Fprintf(w, ...)</code>) implicitly sends a <code>200 OK</code> status unless you called <code>w.WriteHeader(code)</code> first.</p>
+    <p>Since Go 1.22, <code>http.ServeMux</code> (the router type behind <code>http.HandleFunc</code>) supports method-specific and wildcard patterns directly, like <code>mux.HandleFunc("GET /users/{id}", handler)</code>, closing much of the gap that used to require a third-party router just to read a path parameter or restrict a route to one HTTP method.</p>
+    <p>Reading a JSON request body uses <code>json.NewDecoder(r.Body).Decode(&target)</code>, and writing a JSON response uses <code>json.NewEncoder(w).Encode(value)</code> after setting <code>w.Header().Set("Content-Type", "application/json")</code> &mdash; both stream rather than buffer the whole payload in memory first, which matters for large payloads.</p>
+    <p>Production servers should almost always be constructed with an explicit <code>http.Server</code> value rather than the bare <code>http.ListenAndServe</code> shortcut, since that lets you set <code>ReadTimeout</code>, <code>WriteTimeout</code>, and <code>IdleTimeout</code> &mdash; without them, a slow or malicious client can hold a connection open indefinitely and exhaust server resources.</p>
+    <p>Because it's part of the standard library and reasonably fast out of the box, many small to medium Go services use <code>net/http</code> directly rather than reaching for a third-party web framework; middleware in this style is just a function that wraps a handler and returns a new one, requiring no special framework support.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -134,18 +137,84 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">json_and_server.go</div>      <pre><code>package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+)
+
+type User struct {
+	Name string `json:"name"`
+	Age  int    `json:"age"`
+}
+
+func createUser(w http.ResponseWriter, r *http.Request) {
+	var u User
+	if err := json.NewDecoder(r.Body).Decode(&amp;u); err != nil {
+		http.Error(w, "invalid JSON", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(u)
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /users", createUser)
+
+	srv := &amp;http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+	srv.ListenAndServe()
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">middleware.go</div>      <pre><code>package main
+
+import (
+	"log"
+	"net/http"
+	"time"
+)
+
+func logging(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s took %v", r.Method, r.URL.Path, time.Since(start))
+	})
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ok"))
+	})
+	http.ListenAndServe(":8080", logging(mux))
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>net/http</code> provides a production-capable HTTP server with zero external dependencies.</li>
-        <li>Handlers take an <code>http.ResponseWriter</code> and <code>*http.Request</code>, writing the response directly.</li>
+        <li>Handlers take an <code>http.ResponseWriter</code> and <code>*http.Request</code>, writing the response directly; the first write implicitly sends a 200 unless you called <code>WriteHeader</code> first.</li>
+        <li>Since Go 1.22, <code>http.ServeMux</code> supports method-specific patterns like <code>"GET /users/{id}"</code> without a third-party router.</li>
+        <li><code>json.NewDecoder</code>/<code>json.NewEncoder</code> stream JSON request and response bodies without buffering the whole payload.</li>
+        <li>Use an explicit <code>http.Server</code> with <code>ReadTimeout</code>/<code>WriteTimeout</code>/<code>IdleTimeout</code> set in production instead of the bare <code>ListenAndServe</code> shortcut.</li>
         <li>Query parameters are read via <code>r.URL.Query().Get(...)</code>.</li>
-        <li><code>http.ListenAndServe</code> blocks, running the server until the process is stopped.</li>
+        <li>Middleware is just a function wrapping one <code>http.Handler</code> to return another &mdash; no special framework support required.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a net/http server with two routes: one returning a static JSON message and one that reads a query parameter and echoes it back in the response.</p>
+      <p>Write a net/http server with two routes: one returning a static JSON message and one that reads a query parameter and echoes it back in the response. Then add a logging middleware that wraps the whole mux and prints each request's method, path, and duration, and configure the server with explicit read/write timeouts instead of using the bare ListenAndServe shortcut.</p>
     </div>
   </article>
 

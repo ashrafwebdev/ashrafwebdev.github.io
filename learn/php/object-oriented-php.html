@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">PHP classes look similar to Java or C#: <code>class Name { }</code>, with properties, a <code>__construct()</code> method (PHP's constructor), and regular methods. <code>$this</code> refers to the current instance inside a method.</p>
-    <p>Interfaces define a contract — a set of methods a class promises to implement — without providing any implementation themselves, useful for writing code that depends on behavior rather than a specific concrete class.</p>
+    <p class="lead">PHP classes look similar to Java or C#: <code>class Name { }</code>, with properties, a <code>__construct()</code> method (PHP's constructor), and regular methods. <code>$this</code> refers to the current instance inside a non-static method, giving access to that specific object's properties and other methods.</p>
+    <p>Interfaces define a contract — a set of methods a class promises to implement — without providing any implementation themselves, useful for writing code that depends on behavior rather than a specific concrete class. A single class can implement several interfaces at once, but can only extend one parent class, since PHP does not support multiple inheritance of implementation.</p>
+    <p>Constructor property promotion (<code>private float $radius</code> directly in the constructor signature) removes a lot of PHP class boilerplate in modern versions — before this feature, you had to declare each property separately above the constructor and then manually assign <code>$this->radius = $radius;</code> for every parameter.</p>
+    <p><code>public</code>, <code>protected</code>, and <code>private</code> control visibility of properties and methods: <code>public</code> is accessible from anywhere, <code>protected</code> only from inside the class and its subclasses, and <code>private</code> only from inside the exact class it's declared in — not even a subclass can touch a parent's private members directly.</p>
+    <p>Abstract classes (<code>abstract class</code>) sit between interfaces and regular classes — they can declare abstract methods (signature only, forcing subclasses to implement them) while also providing real, shared implementation for other methods, which plain interfaces cannot do. Traits offer a different kind of code reuse: a trait's methods can be pulled into multiple unrelated classes with <code>use TraitName;</code>, which is useful when several classes need the same behavior but don't share a natural inheritance relationship.</p>
+    <p>Static properties and methods (<code>public static function make()</code>) belong to the class itself rather than to any instance, and are called with <code>ClassName::method()</code>. A subtle gotcha is that <code>self::</code> inside a static method always refers to the class where the method is literally defined, while <code>static::</code> ("late static binding") refers to whichever class was actually called at runtime — this matters when a subclass overrides a static factory method and you want the parent's shared logic to still return an instance of the correct subclass.</p>
     <div class="code-block">
 <div class="cap">classes.php</div>      <pre><code>&lt;?php
 interface Shape {
@@ -130,6 +134,54 @@ $c = new Circle(3);
 echo $c-&gt;area();
 ?&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">abstract_and_traits.php</div>      <pre><code>&lt;?php
+trait Loggable {
+    public function log(string $message): void {
+        echo "[" . static::class . "] $message\n";
+    }
+}
+
+abstract class Shape {
+    use Loggable;
+
+    abstract public function area(): float;
+
+    public function describe(): string {
+        return "This shape has area " . $this-&gt;area(); // shared implementation
+    }
+}
+
+class Square extends Shape {
+    public function __construct(private float $side) {}
+
+    public function area(): float {
+        return $this-&gt;side ** 2;
+    }
+}
+
+$sq = new Square(4);
+echo $sq-&gt;describe();
+$sq-&gt;log("created a square"); // method comes from the trait
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">static_vs_self.php (late static binding gotcha)</div>      <pre><code>&lt;?php
+class Model {
+    public static function create(): static {
+        // static:: resolves to the CALLED class, not always Model
+        return new static();
+    }
+}
+
+class User extends Model {}
+
+$user = User::create();
+echo get_class($user); // "User" — thanks to late static binding
+// If create() had used `new self()` instead of `new static()`,
+// this would incorrectly return a Model instance instead of a User.
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -137,11 +189,15 @@ echo $c-&gt;area();
         <li>A class can implement multiple interfaces but extend only one parent class.</li>
         <li><code>public</code>, <code>protected</code>, and <code>private</code> control visibility of properties and methods, same concepts as most OOP languages.</li>
         <li>Abstract classes (<code>abstract class</code>) can provide partial implementation, unlike interfaces which provide none.</li>
+        <li>Traits let unrelated classes share the same method implementations via <code>use TraitName;</code>, without needing a common parent class.</li>
+        <li>Static members belong to the class, not an instance, and are called with <code>ClassName::method()</code>.</li>
+        <li><code>self::</code> always refers to the class where the code is written; <code>static::</code> refers to the class actually called at runtime — this distinction is late static binding.</li>
+        <li>A private property or method declared in a parent class is invisible to subclasses; use <code>protected</code> instead if subclasses need access.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a Shape interface with an area() method, then Circle and Rectangle classes implementing it, and print both areas.</p>
+      <p>Define a Shape interface with an area() method, then Circle and Rectangle classes implementing it, and print both areas. Next, refactor the shared area-printing logic into an abstract Shape class both classes extend instead, and add a trait with a log() method that both classes can reuse to print a message including their own class name via static::class.</p>
     </div>
   </article>
 

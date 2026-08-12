@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">The DOM (Document Object Model) is the browser's live representation of your HTML as a tree of objects JavaScript can read and change. <code>document.querySelector()</code> finds the first matching element using any CSS selector; <code>querySelectorAll()</code> finds all of them.</p>
-    <p>Once selected, you can change an element's content (<code>.textContent</code>, <code>.innerHTML</code>), its attributes (<code>.setAttribute()</code>), or its classes (<code>.classList.add()</code>/<code>.remove()</code>/<code>.toggle()</code>).</p>
+    <p class="lead">The DOM (Document Object Model) is the browser's live, in-memory representation of your HTML as a tree of objects that JavaScript can read and change. When JavaScript modifies the DOM, the browser re-renders the affected part of the page immediately — this is the entire mechanism behind every dynamic web page that doesn't reload to show new content.</p>
+    <p><code>document.querySelector()</code> finds the first element matching any valid CSS selector and returns <code>null</code> if nothing matches; <code>querySelectorAll()</code> finds every matching element and returns a NodeList. Older methods like <code>getElementById()</code> and <code>getElementsByClassName()</code> still exist and are marginally faster in hot code paths, but <code>querySelector</code>/<code>querySelectorAll</code> are far more flexible since they accept any CSS selector, including combinators and pseudo-classes.</p>
+    <p>Once you've selected an element, you can change its text content (<code>.textContent</code>), its rendered HTML (<code>.innerHTML</code>), its attributes (<code>.getAttribute()</code>/<code>.setAttribute()</code>), inline styles (<code>.style.color = "red"</code>), and its classes via <code>.classList</code>, which has <code>.add()</code>, <code>.remove()</code>, <code>.toggle()</code>, and <code>.contains()</code>.</p>
+    <p><code>.textContent</code> is safer than <code>.innerHTML</code> whenever you're inserting plain text, because <code>innerHTML</code> parses whatever string you give it as HTML — if that string ever comes from user input and you don't sanitize it, you've built a cross-site scripting (XSS) vulnerability. Only use <code>innerHTML</code> when you genuinely need to insert markup, and never with untrusted content.</p>
+    <p>Creating new elements programmatically uses <code>document.createElement()</code>, followed by setting properties and then attaching it to the tree with <code>.appendChild()</code>, <code>.append()</code>, or <code>.insertBefore()</code>. When building many elements at once, building them inside a <code>DocumentFragment</code> and appending that fragment once avoids triggering a separate reflow for every individual insertion, which matters for performance in loops.</p>
+    <p>DOM lookups and DOM writes both cost real time — they're not free operations like a plain variable read. Cache a selected element in a variable rather than re-querying it on every use, and batch multiple style/attribute changes together rather than interleaving them with reads (reading <code>.offsetHeight</code> right after a write forces the browser to recalculate layout early, a performance trap known as layout thrashing).</p>
     <div class="code-block">
 <div class="cap">dom.js</div>      <pre><code>const heading = document.querySelector("h1");
 heading.textContent = "Updated title";
@@ -119,18 +123,48 @@ heading.textContent = "Updated title";
 const items = document.querySelectorAll(".item");
 items.forEach((item) =&gt; item.classList.add("visible"));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">creating-elements.js</div>      <pre><code>const list = document.querySelector("#todo-list");
+const fragment = document.createDocumentFragment();
+
+const todos = ["Buy milk", "Write report", "Call Amina"];
+for (const text of todos) {
+  const li = document.createElement("li");
+  li.textContent = text; // safe: plain text, not parsed as HTML
+  li.classList.add("todo-item");
+  fragment.appendChild(li);
+}
+
+list.appendChild(fragment); // one DOM write instead of three</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">innerHTML-xss-risk.js</div>      <pre><code>// Dangerous: inserting untrusted input as HTML
+function showComment(comment) {
+  const el = document.querySelector("#comment");
+  el.innerHTML = comment; // if comment contains a script tag, it can run
+}
+
+// Safe: textContent never parses its input as markup
+function showCommentSafely(comment) {
+  const el = document.querySelector("#comment");
+  el.textContent = comment;
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>textContent</code> is safer than <code>innerHTML</code> for plain text — innerHTML parses its input as HTML, a common XSS risk if the content is user-supplied.</li>
-        <li><code>querySelectorAll</code> returns a NodeList, not a true array — use <code>Array.from()</code> if you need array methods it lacks.</li>
-        <li><code>classList.toggle()</code> is the cleanest way to flip a class on/off, e.g. for a menu.</li>
+        <li><code>textContent</code> is safer than <code>innerHTML</code> for plain text — <code>innerHTML</code> parses its input as HTML, a common XSS risk if the content is user-supplied.</li>
+        <li><code>querySelectorAll</code> returns a static NodeList, not a true array — most modern browsers support <code>.forEach()</code> on it directly, but use <code>Array.from()</code> if you need array methods it lacks, like <code>.map()</code>.</li>
+        <li><code>classList.toggle()</code> is the cleanest way to flip a class on/off, e.g. for a menu or an active state.</li>
+        <li>Build multiple elements inside a DocumentFragment and append it once, instead of appending each element individually, to avoid repeated reflows.</li>
         <li>DOM lookups aren't free — cache a selected element in a variable rather than re-querying it repeatedly.</li>
+        <li>Interleaving DOM writes with layout-triggering reads (like <code>.offsetHeight</code>) causes layout thrashing — batch reads together, then batch writes together.</li>
+        <li><code>querySelector()</code> returns <code>null</code> when nothing matches — always guard against that before calling a method on the result.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a button that, when clicked, toggles a 'highlighted' CSS class on a paragraph elsewhere on the page.</p>
+      <p>Build a button that, when clicked, toggles a 'highlighted' CSS class on a paragraph elsewhere on the page. Then build a small to-do list: given an array of strings, create a list item for each one inside a DocumentFragment and append it to the page in a single DOM write, and explain in a comment why textContent is the right choice over innerHTML for the item text.</p>
     </div>
   </article>
 

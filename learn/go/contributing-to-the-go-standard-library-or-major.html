@@ -110,32 +110,53 @@
   </div>
 
   <article>
-    <p class="lead">The Go project itself and its major tools (like the Kubernetes ecosystem or Hugo) are open source, with the Go project specifically documenting its process at go.dev/doc/contribute, including its distinctive code-review workflow through Gerrit rather than plain GitHub pull requests.</p>
-    <p>As with most large projects, a strong first contribution is small and well-tested: a documentation fix, a small bug fix with a regression test, or closing a well-scoped "help wanted" issue, rather than a sweeping new feature.</p>
-    <p>Go places significant weight on backward compatibility (the Go 1 compatibility promise) and on <code>gofmt</code>-clean code with accompanying tests, so any contribution should run <code>go vet</code>, <code>go fmt</code>, and the existing test suite before submission.</p>
+    <p class="lead">The Go project itself and its major tools (like the Kubernetes ecosystem, Docker, Terraform, or Hugo) are open source, with the Go project specifically documenting its process at go.dev/doc/contribute, including its distinctive code-review workflow through Gerrit rather than plain GitHub pull requests, and a Contributor License Agreement that must be signed before any patch is accepted.</p>
+    <p>As with most large projects, a strong first contribution is small and well-tested: a documentation fix, a small bug fix with a regression test, or closing a well-scoped "help wanted" issue, rather than a sweeping new feature that requires design consensus most maintainers won't grant to a first-time contributor without prior discussion.</p>
+    <p>Before writing code for anything beyond a trivial fix, it's worth searching existing issues and, for genuinely new functionality in the Go language or standard library itself, checking the formal <b>proposal process</b> (proposal.golang.org) &mdash; significant changes to Go go through public discussion and are tracked as numbered proposals well before any code is written, precisely because of the Go 1 compatibility promise's long-term stakes.</p>
+    <p>Go places significant weight on backward compatibility (the <b>Go 1 compatibility promise</b>, which guarantees code written for Go 1.0 still compiles and runs correctly on modern Go releases) and on <code>gofmt</code>-clean code with accompanying tests, so any contribution should run <code>go vet</code>, <code>go fmt</code>, and the existing test suite before submission, and new behavior must include a test that would fail without the fix.</p>
+    <p>Most other Go ecosystem projects (chi, gin, cobra, and the like) use a conventional GitHub fork-and-pull-request workflow rather than Gerrit, but they typically still expect a linked issue for anything non-trivial, a passing CI run including <code>go vet</code> and the linter configuration the project uses, and a clear, focused diff &mdash; a PR that mixes an unrelated refactor into a bug fix is one of the most common reasons for review friction.</p>
+    <p>Reading a project's <code>CONTRIBUTING.md</code> file and skimming a handful of recently merged pull requests before opening your own is one of the highest-leverage things a new contributor can do &mdash; it reveals unwritten conventions (commit message format, whether tests live alongside code or in a separate directory, how the maintainers prefer discussion to happen) far faster than trial and error.</p>
     <div class="code-block">
-<div class="cap">workflow</div>      <pre><code>$ git clone https://go.googlesource.com/go
+<div class="cap">workflow (Go core, via Gerrit)</div>      <pre><code>$ git clone https://go.googlesource.com/go
 $ cd go/src
 $ ./make.bash
 $ ../bin/go test ./...
 
-# for most other Go tools/projects, the flow is the usual GitHub one:
+# Go core uses Gerrit + golang.org/x/review/git-codereview,
+# not plain GitHub pull requests:
+$ git codereview change my-fix
+$ git codereview mail</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">workflow (typical GitHub-based Go project)</div>      <pre><code>$ git clone https://github.com/you/gin
+$ cd gin
 $ git checkout -b fix-flag-parsing-edge-case
+
+# make focused changes, add a regression test, then:
+$ go fmt ./...
+$ go vet ./...
 $ go test ./...
-$ git push origin fix-flag-parsing-edge-case</code></pre>
+
+$ git add -A
+$ git commit -m "fix: handle empty query param in flag parsing"
+$ git push origin fix-flag-parsing-edge-case
+# then open a PR referencing the linked issue</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>The core Go project uses a Gerrit-based review workflow, distinct from most other Go repositories on GitHub.</li>
-        <li>Small, well-tested fixes are the most approachable way to start contributing.</li>
-        <li>Go's Go 1 compatibility promise means changes must avoid breaking existing programs.</li>
-        <li>Run <code>go fmt</code>, <code>go vet</code>, and the full test suite locally before submitting any change.</li>
+        <li>The core Go project uses a Gerrit-based review workflow via <code>git codereview</code>, distinct from most other Go repositories on GitHub.</li>
+        <li>Small, well-tested fixes are the most approachable way to start contributing; sweeping new features need prior design discussion.</li>
+        <li>Significant changes to the Go language or standard library go through a public, numbered proposal process before code is written.</li>
+        <li>Go's Go 1 compatibility promise means changes must avoid breaking programs written for earlier Go 1.x releases.</li>
+        <li>Run <code>go fmt</code>, <code>go vet</code>, and the full test suite locally before submitting any change, and add a test that fails without your fix.</li>
+        <li>Most non-core Go projects use conventional GitHub pull requests but still expect a linked issue and a focused, single-purpose diff.</li>
+        <li>Reading <code>CONTRIBUTING.md</code> and a few recently merged PRs reveals unwritten project conventions faster than trial and error.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Read the contribution guide for a Go tool you use (or go.dev/doc/contribute) and write down two things about its review process that differ from a typical GitHub project.</p>
+      <p>Read the contribution guide for a Go tool you use (or go.dev/doc/contribute) and write down two things about its review process that differ from a typical GitHub project. Then find one recently merged pull request in that project, and note what its diff, linked issue, and test changes reveal about the maintainers' expectations for a well-formed contribution.</p>
     </div>
   </article>
 

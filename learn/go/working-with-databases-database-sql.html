@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Go's standard library defines a common interface for SQL databases in <code>database/sql</code>, and a specific driver (like <code>github.com/lib/pq</code> for Postgres or <code>github.com/go-sql-driver/mysql</code>) implements it underneath, imported purely for its side-effecting <code>init()</code> registration.</p>
-    <p><code>sql.Open</code> doesn't actually connect immediately; it lazily manages a pool of connections, and <code>db.Ping()</code> is the idiomatic way to verify connectivity eagerly at startup.</p>
-    <p>Queries use placeholder parameters (<code>?</code> or <code>$1</code> depending on the driver) rather than string concatenation, which is essential for preventing SQL injection; <code>QueryRow</code>, <code>Query</code>, and <code>Exec</code> cover single-row, multi-row, and no-result-set statements respectively.</p>
+    <p class="lead">Go's standard library defines a common interface for SQL databases in <code>database/sql</code>, and a specific driver (like <code>github.com/lib/pq</code> for Postgres, <code>github.com/go-sql-driver/mysql</code> for MySQL, or the newer <code>github.com/jackc/pgx</code> for Postgres) implements it underneath, imported purely for its side-effecting <code>init()</code> registration with a blank <code>_</code> import.</p>
+    <p><code>sql.Open</code> doesn't actually connect immediately; it lazily manages a pool of connections and validates the driver name and connection string syntax only, so a typo'd password or unreachable host won't surface until the first real query. <code>db.Ping()</code> is the idiomatic way to verify connectivity eagerly at startup instead of discovering the problem on a user's first request.</p>
+    <p>Queries use placeholder parameters (<code>?</code> for MySQL, <code>$1</code>, <code>$2</code> for Postgres, depending on the driver) rather than string concatenation, which is essential for preventing SQL injection; <code>QueryRow</code>, <code>Query</code>, and <code>Exec</code> cover single-row, multi-row, and no-result-set statements (inserts, updates, deletes) respectively.</p>
+    <p>Rows returned by <code>Query</code> must be closed &mdash; typically with <code>defer rows.Close()</code> right after checking the error &mdash; and iterated with <code>for rows.Next() { ... }</code>, scanning each row into destination variables with <code>rows.Scan(&a, &b)</code>; forgetting to close rows or check <code>rows.Err()</code> after the loop are two of the most common <code>database/sql</code> bugs, since a leaked, unclosed result set can exhaust the connection pool.</p>
+    <p>The connection pool's behavior is tunable via <code>db.SetMaxOpenConns</code>, <code>db.SetMaxIdleConns</code>, and <code>db.SetConnMaxLifetime</code> &mdash; leaving these at their (effectively unbounded) defaults is a common cause of exhausting a database's own connection limit under load, especially in a horizontally-scaled deployment with many service instances each opening their own pool.</p>
+    <p>Multi-statement operations that must succeed or fail together belong in a <code>db.Begin()</code> transaction: run each statement against the returned <code>*sql.Tx</code> instead of <code>db</code> directly, then call <code>tx.Commit()</code> on success or <code>tx.Rollback()</code> on any error &mdash; a common pattern is to <code>defer tx.Rollback()</code> immediately after beginning, since calling Rollback after a successful Commit is a safe no-op, guaranteeing cleanup on every exit path.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -138,18 +141,85 @@ func main() {
 	fmt.Println(name)
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">query_rows_and_pool.go</div>      <pre><code>package main
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+)
+
+type User struct {
+	ID   int
+	Name string
+}
+
+func listActiveUsers(db *sql.DB) ([]User, error) {
+	rows, err := db.Query("SELECT id, name FROM users WHERE active = $1", true)
+	if err != nil {
+		return nil, fmt.Errorf("querying users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&amp;u.ID, &amp;u.Name); err != nil {
+			return nil, fmt.Errorf("scanning row: %w", err)
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err() // check for errors encountered during iteration
+}
+
+func configurePool(db *sql.DB) {
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(5 * time.Minute)
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">transaction.go</div>      <pre><code>package main
+
+import (
+	"database/sql"
+	"fmt"
+)
+
+func transferFunds(db *sql.DB, fromID, toID int, amount float64) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("beginning transaction: %w", err)
+	}
+	defer tx.Rollback() // no-op if Commit succeeds below
+
+	if _, err := tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2", amount, fromID); err != nil {
+		return fmt.Errorf("debiting account: %w", err)
+	}
+	if _, err := tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, toID); err != nil {
+		return fmt.Errorf("crediting account: %w", err)
+	}
+
+	return tx.Commit()
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>database/sql</code> is a driver-agnostic interface; a specific driver package is imported for its side effects.</li>
-        <li><code>sql.Open</code> is lazy &mdash; use <code>db.Ping()</code> to verify connectivity eagerly.</li>
+        <li><code>database/sql</code> is a driver-agnostic interface; a specific driver package is imported for its side effects with a blank <code>_</code> import.</li>
+        <li><code>sql.Open</code> is lazy and doesn't verify connectivity &mdash; use <code>db.Ping()</code> at startup to fail fast instead of on a user's first request.</li>
         <li>Always use placeholder parameters instead of string concatenation to prevent SQL injection.</li>
         <li><code>QueryRow</code>, <code>Query</code>, and <code>Exec</code> map to single-row, multi-row, and no-result statements.</li>
+        <li>Always <code>defer rows.Close()</code> and check <code>rows.Err()</code> after a <code>Query</code> loop &mdash; leaked rows can exhaust the connection pool.</li>
+        <li>Tune <code>SetMaxOpenConns</code>/<code>SetMaxIdleConns</code>/<code>SetConnMaxLifetime</code> rather than leaving the pool at its effectively unbounded defaults.</li>
+        <li>Multi-statement operations that must succeed or fail together belong in a <code>db.Begin()</code> transaction, committed or rolled back explicitly.</li>
+        <li><code>defer tx.Rollback()</code> right after <code>Begin</code> is a safe pattern since it's a no-op after a successful <code>Commit</code>.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write Go code that opens a database/sql connection, queries a users table with a parameterized WHERE clause, and scans the result into a struct.</p>
+      <p>Write Go code that opens a database/sql connection, queries a users table with a parameterized WHERE clause, and scans the results into a slice of structs using rows.Next() and rows.Scan(), remembering to defer rows.Close(). Then write a transferFunds function that debits one account and credits another inside a single db.Begin() transaction, rolling back on any error.</p>
     </div>
   </article>
 

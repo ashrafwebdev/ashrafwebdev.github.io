@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Go organizes code into <b>packages</b>, one per directory, and every source file starts with a <code>package</code> declaration. Names starting with a capital letter (<code>func DoThing()</code>) are exported and visible outside the package; lowercase names are private to it &mdash; there is no separate <code>public</code>/<code>private</code> keyword.</p>
-    <p><code>go run main.go</code> compiles and runs a program in one step, ideal for quick iteration. <code>go build</code> compiles a standalone binary without running it, which is what you'd deploy or distribute.</p>
-    <p><code>go fmt</code> automatically reformats code to Go's single canonical style, and <code>go vet</code> catches common mistakes statically &mdash; both are run routinely as part of everyday Go development, not optional extras.</p>
+    <p class="lead">Go organizes code into <b>packages</b>, one per directory, and every source file starts with a <code>package</code> declaration; all files in the same directory must declare the same package name. Names starting with a capital letter (<code>func DoThing()</code>) are exported and visible outside the package; lowercase names are private to it &mdash; there is no separate <code>public</code>/<code>private</code> keyword, capitalization alone controls visibility.</p>
+    <p><code>go run main.go</code> compiles and runs a program in one step without leaving a binary behind, ideal for quick iteration during development. <code>go build</code> compiles a standalone, statically-linked binary without running it, which is what you'd deploy or distribute &mdash; running that binary requires no separate Go installation on the target machine.</p>
+    <p>A package's <code>init()</code> function, if present, runs automatically before <code>main()</code> &mdash; useful for one-time setup like registering database drivers, but a source of hidden control flow if overused, so idiomatic Go tends to reserve it for genuinely package-level initialization rather than general startup logic.</p>
+    <p><code>go fmt</code> automatically reformats code to Go's single canonical style (spacing, brace placement, import grouping), removing an entire class of style debates that other language communities have, and <code>go vet</code> catches common mistakes statically (like a <code>Printf</code> call whose format verbs don't match its arguments) &mdash; both are run routinely as part of everyday Go development, not optional extras, and most editors run <code>go fmt</code> automatically on save.</p>
+    <p>Internal packages get special treatment: any package under a directory named <code>internal/</code> can only be imported by code inside the module rooted at that <code>internal</code> directory's parent, which the compiler enforces &mdash; a lightweight way to expose an API to the rest of your own module while explicitly forbidding external modules from depending on it.</p>
+    <p><code>go install</code> builds a binary and places it in <code>$GOPATH/bin</code> (or <code>$HOME/go/bin</code> by default), making it directly runnable from the shell's PATH &mdash; the standard way to install command-line tools written in Go, including many of the Go ecosystem's own developer tools.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>$ go run main.go
 Hafsa is 30 years old and paid 19.99
@@ -123,18 +126,48 @@ $ ./myapp
 $ go fmt ./...
 $ go vet ./...</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">mathutil/mathutil.go</div>      <pre><code>package mathutil
+
+// Add is exported: capitalized name.
+func Add(a, b int) int {
+	return a + b
+}
+
+// roundToEven is unexported: lowercase name, private to this package.
+func roundToEven(x float64) int {
+	return int(x + 0.5)
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">main.go</div>      <pre><code>package main
+
+import (
+	"fmt"
+
+	"github.com/you/myapp/mathutil"
+)
+
+func main() {
+	fmt.Println(mathutil.Add(2, 3)) // OK, exported
+	// fmt.Println(mathutil.roundToEven(2.5)) // compile error: unexported
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Capitalized identifiers are exported (public); lowercase ones are package-private.</li>
-        <li><code>go run</code> compiles and runs immediately; <code>go build</code> produces a standalone binary.</li>
-        <li><code>go fmt</code> enforces one canonical formatting style across all Go code.</li>
-        <li><code>go vet</code> statically flags likely bugs before you even run the program.</li>
+        <li>Capitalized identifiers are exported (public); lowercase ones are package-private &mdash; visibility is purely about the first letter.</li>
+        <li><code>go run</code> compiles and runs immediately without a lasting binary; <code>go build</code> produces a standalone, distributable binary.</li>
+        <li>A package's optional <code>init()</code> function runs automatically before <code>main()</code>, useful for setup but easy to overuse.</li>
+        <li><code>go fmt</code> enforces one canonical formatting style across all Go code, ending style debates.</li>
+        <li><code>go vet</code> statically flags likely bugs, such as mismatched <code>Printf</code> format verbs, before you even run the program.</li>
+        <li>Packages under an <code>internal/</code> directory can only be imported from within the same module, enforced by the compiler.</li>
+        <li><code>go install</code> builds and places a binary on your PATH, the standard way to install Go command-line tools.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a small package with one exported and one unexported function, import it from main.go, and build it into a binary with go build.</p>
+      <p>Create a small package with one exported and one unexported function, import it from main.go, and build it into a binary with go build. Then add an internal/ subpackage, import it successfully from within your module, and note in a comment what would happen if an outside module tried to import it.</p>
     </div>
   </article>
 

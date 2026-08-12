@@ -110,17 +110,51 @@
   </div>
 
   <article>
-    <p class="lead">Building your own reusable PHP package means thinking about a stable public API, PSR-4 namespacing, and semantic versioning — the same discipline as any language's package authors, published to Packagist for others to <code>composer require</code>.</p>
-    <p>Maintaining it well means responding to issues, keeping dependencies updated, and communicating breaking changes clearly through version bumps and a changelog, since real projects will depend on your package continuing to work as documented.</p>
+    <p class="lead">Building your own reusable PHP package means thinking about a stable public API, PSR-4 namespacing, and semantic versioning — the same discipline as any language's package authors, published to Packagist for others to <code>composer require</code>. Unlike an application, a package's "users" are other developers calling your code, so its public interface deserves more deliberate design than an internal app's would.</p>
+    <p>A conventional package layout keeps <code>src/</code> for the actual library code, <code>tests/</code> for its test suite, and a top-level <code>README.md</code>, <code>LICENSE</code>, and <code>composer.json</code> at the project root — following this convention means anyone opening the repository for the first time already knows where to look, without needing your specific project explained to them.</p>
+    <p>Writing tests for a package matters even more than for a typical application, since consumers will upgrade versions without reading every line of the diff — a solid test suite, run automatically in CI on every push and pull request, is what lets you (and contributors) change internals with confidence that public behavior hasn't silently broken.</p>
+    <p>Semantic versioning tags (v1.0.0, v1.1.0, v2.0.0) communicate the impact of each release to consumers: a patch release (v1.0.1) should only contain bug fixes, a minor release (v1.1.0) adds backward-compatible functionality, and a major release (v2.0.0) signals breaking changes. Breaking this convention — silently changing behavior in what should be a minor release — erodes the trust that makes semver useful in the first place.</p>
+    <p>A backward compatibility promise is worth being explicit about: rather than removing an old method outright, mark it <code>@deprecated</code> in a minor release (so tools and IDEs can warn callers) and only actually remove it in the next major version. This gives consumers a real window to migrate instead of breaking on an unannounced upgrade.</p>
+    <p>Maintaining a published package well means responding to issues, keeping dependencies updated, and communicating breaking changes clearly through version bumps and a changelog, since real projects will depend on your package continuing to work as documented — an abandoned or unresponsive package is one of the most common reasons teams eventually fork or replace a dependency.</p>
     <div class="code-block">
 <div class="cap">composer.json for a publishable package</div>      <pre><code>{
   "name": "yourname/your-package",
   "description": "A short, clear description",
+  "license": "MIT",
   "autoload": {
     "psr-4": { "YourName\\YourPackage\\": "src/" }
   },
-  "require": { "php": "&gt;=8.1" }
+  "autoload-dev": {
+    "psr-4": { "YourName\\YourPackage\\Tests\\": "tests/" }
+  },
+  "require": { "php": "&gt;=8.1" },
+  "require-dev": { "phpunit/phpunit": "^10.0" }
 }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">A conventional package folder layout</div>      <pre><code>your-package/
+  src/
+    YourClass.php
+  tests/
+    YourClassTest.php
+  composer.json
+  README.md
+  LICENSE
+  CHANGELOG.md</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">.github/workflows/tests.yml (CI running PHPUnit on every push)</div>      <pre><code>name: Tests
+on: [push, pull_request]
+jobs:
+  phpunit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - run: composer install --no-progress
+      - run: vendor/bin/phpunit</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -129,11 +163,15 @@
         <li>Semantic versioning tags (v1.0.0, v1.1.0, v2.0.0) communicate the impact of each release to consumers.</li>
         <li>A well-documented README with install and usage examples matters as much as the code quality itself for adoption.</li>
         <li>Automated tests and CI give you (and consumers) confidence that a new release hasn't silently broken existing behavior.</li>
+        <li>A conventional layout (src/, tests/, README, LICENSE) lets new contributors and users orient themselves without extra explanation.</li>
+        <li>Deprecate old public methods with a clear notice before removing them, giving consumers a real migration window across a major version bump.</li>
+        <li>Breaking semver's contract — sneaking a breaking change into a minor or patch release — erodes the trust the whole versioning scheme depends on.</li>
+        <li>An unmaintained package (unanswered issues, stale dependencies) is one of the most common reasons teams eventually abandon a dependency.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Package a small reusable PHP utility with a proper composer.json, PSR-4 autoloading, and a README, ready to be published to Packagist.</p>
+      <p>Package a small reusable PHP utility with a proper composer.json, PSR-4 autoloading, and a README, ready to be published to Packagist. Add a tests/ folder with at least one PHPUnit test and a GitHub Actions workflow that runs it automatically, then tag a v1.0.0 release and write a short CHANGELOG entry describing what a hypothetical v1.1.0 (new feature) versus v2.0.0 (breaking change) release would each need to contain.</p>
     </div>
   </article>
 

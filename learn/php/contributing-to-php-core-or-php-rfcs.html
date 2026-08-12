@@ -110,9 +110,35 @@
   </div>
 
   <article>
-    <p class="lead">PHP itself evolves through a formal RFC (Request for Comments) process — anyone can propose a language change, and PHP internals developers discuss and vote on it publicly on the php.internals mailing list.</p>
-    <p>For most developers, contributing to a major framework (Laravel, Symfony) or widely-used package is a more approachable path than PHP core itself — the C-level engine work has a steeper barrier to entry than most application-level PHP work.</p>
+    <p class="lead">PHP itself evolves through a formal RFC (Request for Comments) process — anyone can propose a language change, and PHP internals developers discuss and vote on it publicly on the php.internals mailing list. A complete RFC typically includes a stated problem, a concrete proposal, backward compatibility impact, and alternatives that were considered and rejected, so the proposal can be evaluated on its full trade-offs rather than just its surface idea.</p>
+    <p>Voting rules differ by the kind of change being proposed: language changes generally require a two-thirds supermajority to pass, while changes that don't affect the language itself (like adding a new function to the standard library) can pass with a simple majority — a deliberate design to make backward-incompatible or far-reaching changes harder to sneak through than smaller, additive ones.</p>
+    <p>PHP RFCs are public and archived at php.net/rfc — reading past RFCs and their discussions teaches you a great deal about language design trade-offs, since the debate around a proposal (not just its final accepted text) usually surfaces the real reasoning: what alternatives were considered, what backward-compatibility concerns almost sank a proposal, and why the community ultimately landed where it did. Features like named arguments, enums, and the <code>match</code> expression all went through this exact public process.</p>
+    <p>For most developers, contributing to a major framework (Laravel, Symfony) or widely-used package is a more approachable path than PHP core itself — the C-level engine work has a steeper barrier to entry than most application-level PHP work, since php-src is written in C and requires understanding the Zend Engine's internals, not just PHP the language.</p>
+    <p>Getting a local build of php-src running is itself a useful first step even before writing any code — it lets you test a proposed patch, reproduce a reported core bug precisely, or simply see how a language feature is actually implemented under the hood, which is a different (and often more illuminating) kind of understanding than reading the RFC text alone.</p>
+    <p>A well-written bug report against php-src (with a minimal, reliably reproducing example and the exact PHP version it occurs on) is valuable even without a code fix attached — maintainers can triage and often fix a clearly reported bug far faster than a vague one, and clear reproductions are frequently the actual bottleneck, not available maintainer time. Major frameworks like Laravel and Symfony have active, welcoming contributor communities and clearly labeled beginner-friendly issues (often tagged "good first issue"), which is usually the most practical entry point into open source PHP contribution.</p>
+    <div class="code-block">
+<div class="cap">Terminal (building php-src from source)</div>      <pre><code>git clone https://github.com/php/php-src.git
+cd php-src
+./buildconf
+./configure --disable-all --enable-cli
+make -j4
 
+# Test your freshly built binary against a script:
+./sapi/cli/php -v
+./sapi/cli/php test.php</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">A language feature that went through the RFC process (named arguments, PHP 8.0)</div>      <pre><code>&lt;?php
+function createUser(string $name, string $role = 'member', bool $active = true) {
+    // ...
+}
+
+// Before named arguments: had to pass every positional arg in order
+createUser('Amina', 'member', false);
+
+// After the RFC was accepted: skip defaults, name only what you need
+createUser('Amina', active: false);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -120,11 +146,15 @@
         <li>PHP core contributions require C knowledge; framework/package contributions generally don't.</li>
         <li>A well-written bug report against php-src (with a minimal reproduction) is valuable even without a code fix.</li>
         <li>Major frameworks like Laravel and Symfony have active, welcoming contributor communities and clearly labeled beginner-friendly issues.</li>
+        <li>Language-affecting RFCs need a two-thirds supermajority vote; smaller additive changes (like a new standard library function) need only a simple majority.</li>
+        <li>A complete RFC states the problem, the proposal, backward compatibility impact, and alternatives considered — not just the feature itself.</li>
+        <li>Building php-src locally lets you test a patch or reproduce a core bug precisely, which is often more illuminating than reading about the feature alone.</li>
+        <li>Features like named arguments, enums, and match all became part of PHP through this exact public RFC and voting process.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Read one accepted PHP RFC from start to finish (php.net/rfc) and summarize the problem it solved and the trade-offs the community debated.</p>
+      <p>Read one accepted PHP RFC from start to finish (php.net/rfc) and summarize the problem it solved and the trade-offs the community debated. Then find one currently open beginner-friendly issue on the Laravel or Symfony GitHub repository, read through its discussion, and write a short note on what a fix would need to address and why the maintainers haven't simply merged one yet.</p>
     </div>
   </article>
 

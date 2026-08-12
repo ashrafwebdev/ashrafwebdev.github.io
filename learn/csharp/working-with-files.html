@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">The <code>System.IO</code> namespace's <code>File</code> class offers simple static methods for common operations: <code>File.WriteAllText</code>, <code>File.ReadAllText</code>, and <code>File.ReadAllLines</code> cover most small-file needs in a single call.</p>
-    <p>For larger files or streaming, <code>StreamReader</code> and <code>StreamWriter</code> let you process a file line by line without loading it entirely into memory, and both implement <code>IDisposable</code> so they pair naturally with a <code>using</code> block.</p>
-    <p>File operations can throw exceptions like <code>FileNotFoundException</code> or <code>UnauthorizedAccessException</code>, so production file code typically wraps these calls in a try/catch alongside the resource-safe <code>using</code> pattern.</p>
+    <p class="lead">The <code>System.IO</code> namespace's <code>File</code> class offers simple static methods for common operations: <code>File.WriteAllText</code>, <code>File.ReadAllText</code>, and <code>File.ReadAllLines</code> cover most small-file needs in a single call, and their <code>Async</code> counterparts (<code>File.ReadAllTextAsync</code>, etc.) do the same without blocking a thread, which matters in a web application handling many requests concurrently.</p>
+    <p>For larger files or streaming, <code>StreamReader</code> and <code>StreamWriter</code> let you process a file line by line without loading it entirely into memory, and both implement <code>IDisposable</code> so they pair naturally with a <code>using</code> block that guarantees the underlying file handle is released even if an exception occurs partway through.</p>
+    <p>The <code>Path</code> class provides platform-independent helpers for building and inspecting paths &mdash; <code>Path.Combine</code>, <code>Path.GetExtension</code>, <code>Path.GetFileName</code> &mdash; and should always be preferred over manually concatenating strings with <code>/</code> or <code>\</code>, since the correct separator differs between Windows and Unix-like systems.</p>
+    <p><code>Directory</code> and <code>DirectoryInfo</code> cover folder-level operations: creating, deleting, listing files with <code>Directory.GetFiles</code> or <code>EnumerateFiles</code> (the latter streams results lazily instead of building a full array up front, which matters for very large directories), and checking existence before acting on a path.</p>
+    <p>File operations can throw exceptions like <code>FileNotFoundException</code>, <code>UnauthorizedAccessException</code>, or <code>IOException</code> (for instance when another process has the file locked), so production file code typically wraps these calls in a try/catch alongside the resource-safe <code>using</code> pattern rather than assuming a file will always be there and accessible.</p>
+    <p>For structured data, reading and writing JSON with <code>System.Text.Json</code>'s <code>JsonSerializer.Serialize</code>/<code>Deserialize</code> is now built into the framework and is generally preferred over hand-rolled text parsing for anything beyond the simplest line-based formats.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>string path = "notes.txt";
 File.WriteAllText(path, "First line\nSecond line\n");
@@ -126,18 +129,52 @@ using (var reader = new StreamReader(path))
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">PathsAndAsync.cs</div>      <pre><code>string folder = Path.Combine("data", "exports");
+Directory.CreateDirectory(folder); // no-op if it already exists
+
+string filePath = Path.Combine(folder, "report.txt");
+await File.WriteAllTextAsync(filePath, "quarterly totals\n");
+
+foreach (var file in Directory.EnumerateFiles(folder, "*.txt"))
+{
+    Console.WriteLine(Path.GetFileName(file));
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">SafeFileAccess.cs</div>      <pre><code>static string? TryReadConfig(string path)
+{
+    try
+    {
+        return File.ReadAllText(path);
+    }
+    catch (FileNotFoundException)
+    {
+        Console.WriteLine("Config missing, using defaults.");
+        return null;
+    }
+    catch (UnauthorizedAccessException e)
+    {
+        Console.WriteLine($"No permission to read config: {e.Message}");
+        return null;
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>File.WriteAllText</code>/<code>ReadAllText</code> are convenient for small, whole-file operations.</li>
+        <li><code>File.WriteAllText</code>/<code>ReadAllText</code> are convenient for small, whole-file operations; their Async variants avoid blocking.</li>
         <li><code>StreamReader</code>/<code>StreamWriter</code> handle large files line by line without high memory use.</li>
         <li>Both stream classes implement IDisposable and should be wrapped in a <code>using</code> block.</li>
-        <li>File I/O can throw; wrap it in try/catch when the file's existence or permissions aren't guaranteed.</li>
+        <li><code>Path.Combine</code> and friends handle platform-specific path separators correctly, unlike manual string concatenation.</li>
+        <li><code>Directory.EnumerateFiles</code> streams results lazily, which scales better than <code>GetFiles</code> for huge directories.</li>
+        <li>File I/O can throw <code>FileNotFoundException</code>, <code>UnauthorizedAccessException</code>, or <code>IOException</code>; wrap it in try/catch when a file's existence or permissions aren't guaranteed.</li>
+        <li><code>System.Text.Json</code> is the built-in, preferred way to read and write structured JSON data.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a program that writes a list of names to a file one per line using StreamWriter, then reads it back with StreamReader and prints each name numbered.</p>
+      <p>Write a program that writes a list of names to a file one per line using StreamWriter, then reads it back with StreamReader and prints each name numbered. Then extend it to build the file path with Path.Combine into a subfolder you create with Directory.CreateDirectory, and wrap the read step in a try/catch that handles a missing file gracefully.</p>
     </div>
   </article>
 

@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A Go <code>struct</code> groups named fields together, similar to a class's data but with no inheritance. Methods are attached to a struct by declaring a <b>receiver</b>: <code>func (b Book) Summary() string</code> defines a method on <code>Book</code>, and a pointer receiver (<code>func (b *Book) SetTitle(...)</code>) is used when the method needs to mutate the struct.</p>
-    <p>Go <b>interfaces</b> are satisfied <b>implicitly</b> &mdash; a type automatically implements an interface simply by having the required methods, with no <code>implements</code> keyword needed. This is a defining feature of Go's type system and encourages small, focused interfaces defined at the point of use.</p>
-    <p>The empty interface <code>interface{}</code> (or its alias <code>any</code>) can hold a value of any type, though modern Go increasingly prefers generics (covered later) over <code>any</code> when the code needs to stay type-safe.</p>
+    <p class="lead">A Go <code>struct</code> groups named fields together, similar to a class's data but with no inheritance. Methods are attached to a struct by declaring a <b>receiver</b>: <code>func (b Book) Summary() string</code> defines a method on <code>Book</code>, and a pointer receiver (<code>func (b *Book) SetTitle(...)</code>) is used when the method needs to mutate the struct, or when the struct is large enough that copying it on every call would be wasteful.</p>
+    <p>Go <b>interfaces</b> are satisfied <b>implicitly</b> &mdash; a type automatically implements an interface simply by having the required methods, with no <code>implements</code> keyword needed. This is a defining feature of Go's type system and encourages small, focused interfaces defined at the point of use (often by the consumer of an interface, not its implementer), rather than large upfront interface hierarchies designed before any real usage exists.</p>
+    <p>Go supports <b>composition over inheritance</b> through <b>embedding</b>: including one struct (or interface) inside another as an unnamed field promotes its fields and methods to the outer type, so <code>type Manager struct { Employee; Reports []Employee }</code> lets you call <code>m.Name</code> or <code>m.Employee.Name</code> interchangeably. This is not inheritance &mdash; there's no polymorphic dispatch through the embedded type, just automatic field and method promotion.</p>
+    <p>Choosing between a value receiver and a pointer receiver has real consequences: a value receiver method operates on a <b>copy</b> of the struct, so mutations inside it are invisible to the caller, while a pointer receiver operates on the original. A common rule of thumb is that if any method on a type needs a pointer receiver, all methods on that type should use pointer receivers too, for consistency and to avoid confusing mixed behavior.</p>
+    <p>The empty interface <code>interface{}</code> (or its alias <code>any</code>, added in Go 1.18) can hold a value of any type, though modern Go increasingly prefers generics (covered in a later lesson) over <code>any</code> when the code needs to stay type-safe at compile time rather than relying on runtime type assertions.</p>
+    <p>A <b>type assertion</b> (<code>v, ok := i.(SomeType)</code>) extracts a concrete value out of an interface value, and a <b>type switch</b> (<code>switch v := i.(type) { case int: ...; case string: ... }</code>) branches on the concrete type stored inside an interface value &mdash; both are the mechanism for recovering specific behavior when you're holding a value only as its interface type.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -135,18 +138,77 @@ func main() {
 	fmt.Println(s.Area())
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">embedding.go</div>      <pre><code>package main
+
+import "fmt"
+
+type Employee struct {
+	Name string
+	ID   int
+}
+
+func (e Employee) Describe() string {
+	return fmt.Sprintf("%s (#%d)", e.Name, e.ID)
+}
+
+type Manager struct {
+	Employee        // embedded: promotes Name, ID, Describe()
+	Reports []Employee
+}
+
+func main() {
+	m := Manager{
+		Employee: Employee{Name: "Sara", ID: 7},
+		Reports:  []Employee{{Name: "Tom", ID: 12}},
+	}
+	fmt.Println(m.Describe())      // promoted method
+	fmt.Println(m.Name, len(m.Reports))
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">type_switch.go</div>      <pre><code>package main
+
+import "fmt"
+
+func describe(i any) string {
+	switch v := i.(type) {
+	case int:
+		return fmt.Sprintf("int: %d", v)
+	case string:
+		return fmt.Sprintf("string of length %d", len(v))
+	case Circle:
+		return fmt.Sprintf("circle with area %.2f", v.Area())
+	default:
+		return "unknown type"
+	}
+}
+
+type Circle struct{ Radius float64 }
+
+func (c Circle) Area() float64 { return 3.14159 * c.Radius * c.Radius }
+
+func main() {
+	fmt.Println(describe(42))
+	fmt.Println(describe("hello"))
+	fmt.Println(describe(Circle{Radius: 3}))
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Methods are declared with a receiver: value receivers for read-only use, pointer receivers to mutate.</li>
+        <li>Methods are declared with a receiver: value receivers operate on a copy, pointer receivers operate on and can mutate the original.</li>
         <li>A type satisfies an interface implicitly just by implementing its methods &mdash; no declaration needed.</li>
         <li>Small, focused interfaces defined where they're used are idiomatic Go, unlike large upfront interface hierarchies.</li>
+        <li>Embedding a struct or interface promotes its fields and methods to the outer type &mdash; composition, not inheritance.</li>
+        <li>If any method on a type needs a pointer receiver, it's conventional to make all its methods use pointer receivers.</li>
         <li><code>any</code> (alias for <code>interface{}</code>) can hold any value but sacrifices compile-time type safety.</li>
+        <li>A type assertion (<code>v, ok := i.(T)</code>) or type switch (<code>switch v := i.(type)</code>) recovers a concrete type from an interface value.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a Shape interface with Area() and Perimeter(), implement it for a Rectangle struct, and write a function that prints both values for any Shape passed to it.</p>
+      <p>Define a Shape interface with Area() and Perimeter(), implement it for a Rectangle struct, and write a function that prints both values for any Shape passed to it. Then create a Square struct that embeds Rectangle to reuse its methods, and write a type switch function that prints a different message depending on whether it receives a Rectangle or a Square.</p>
     </div>
   </article>
 

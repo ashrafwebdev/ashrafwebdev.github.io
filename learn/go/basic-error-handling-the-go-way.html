@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Go has no exceptions for ordinary error handling. Instead, functions that can fail return an <code>error</code> as their last return value, and callers check it explicitly with <code>if err != nil</code> immediately after the call &mdash; there is no way to accidentally ignore an error silently while still compiling cleanly if you assign it.</p>
-    <p>The built-in <code>errors</code> package provides <code>errors.New</code> for simple errors, and <code>fmt.Errorf</code> with the <code>%w</code> verb lets you <b>wrap</b> an underlying error while adding context, preserving the original for later inspection with <code>errors.Is</code> or <code>errors.As</code>.</p>
-    <p>This explicit, no-magic style is a deliberate design choice: errors are just values, so they flow through the same control-flow constructs (if, return) as everything else in the language, with nothing hidden.</p>
+    <p class="lead">Go has no exceptions for ordinary error handling. Instead, functions that can fail return an <code>error</code> as their last return value, and callers check it explicitly with <code>if err != nil</code> immediately after the call &mdash; there is no way to accidentally ignore an error silently while still compiling cleanly if you assign it, since an unused variable is itself a compile error.</p>
+    <p><code>error</code> is just a built-in interface with one method, <code>Error() string</code>, so any type that implements that method can be used as an error &mdash; the built-in <code>errors</code> package provides <code>errors.New</code> for the common case of a simple, static string-based error.</p>
+    <p><code>fmt.Errorf</code> with the <code>%w</code> verb lets you <b>wrap</b> an underlying error while adding context (<code>fmt.Errorf("loading config: %w", err)</code>), preserving the original for later inspection with <code>errors.Is</code> or <code>errors.As</code>, rather than losing it by converting it to a plain string with <code>%v</code>.</p>
+    <p>A common beginner mistake is checking <code>err != nil</code> against the wrong variable, or discarding an error with <code>_</code> out of impatience during prototyping and forgetting to go back and handle it &mdash; <code>go vet</code> and linters like <code>errcheck</code> specifically catch unchecked errors, and it's worth running one in CI.</p>
+    <p>Panics are reserved for truly unrecoverable situations (a programming bug like an out-of-bounds index, not an expected failure like a missing file), and <code>recover</code> can catch a panic inside a deferred function to prevent a crash &mdash; but idiomatic Go code almost never uses panic/recover for routine control flow the way other languages use exceptions; that's what returned errors are for.</p>
+    <p>This explicit, no-magic style is a deliberate design choice: errors are just values, so they flow through the same control-flow constructs (if, return) as everything else in the language, with nothing hidden, and the repetitive <code>if err != nil</code> pattern &mdash; while it does add visible lines &mdash; makes every point where a function can fail impossible to miss during a code review.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -137,18 +140,72 @@ func main() {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">custom_error_type.go</div>      <pre><code>package main
+
+import "fmt"
+
+type RangeError struct {
+	Value, Min, Max int
+}
+
+func (e *RangeError) Error() string {
+	return fmt.Sprintf("%d is out of range [%d, %d]", e.Value, e.Min, e.Max)
+}
+
+func checkAge(age int) error {
+	if age &lt; 0 || age &gt; 150 {
+		return &amp;RangeError{Value: age, Min: 0, Max: 150}
+	}
+	return nil
+}
+
+func main() {
+	if err := checkAge(-5); err != nil {
+		fmt.Println("validation error:", err)
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">panic_recover.go</div>      <pre><code>package main
+
+import "fmt"
+
+// safeDivide demonstrates recover as a last-resort safety net,
+// NOT as a substitute for returning an error in normal code.
+func safeDivide(a, b int) (result int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recovered from panic: %v", r)
+		}
+	}()
+	return a / b, nil // panics on b == 0 (division by zero)
+}
+
+func main() {
+	result, err := safeDivide(10, 0)
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	fmt.Println(result)
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Functions return an <code>error</code> as the last value; callers check it with <code>if err != nil</code>.</li>
-        <li><code>fmt.Errorf</code> with <code>%w</code> wraps an error while preserving it for later inspection.</li>
+        <li><code>error</code> is just an interface with an <code>Error() string</code> method &mdash; any type implementing it works as an error.</li>
+        <li><code>fmt.Errorf</code> with <code>%w</code> wraps an error while preserving it for later inspection with <code>errors.Is</code> or <code>errors.As</code>.</li>
         <li><code>errors.Is</code> checks whether a wrapped error chain contains a specific sentinel error.</li>
+        <li>Panics are for unrecoverable programming bugs, not expected failures; expected failures should be returned errors, not panics.</li>
+        <li><code>recover</code> inside a deferred function can catch a panic, but idiomatic Go rarely relies on this for routine control flow.</li>
         <li>Errors are ordinary values in Go, not a separate control-flow mechanism like exceptions.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a sentinel error ErrInvalidAge, write a function validateAge(age int) error that wraps it with context for negative ages, then check the result with errors.Is.</p>
+      <p>Define a sentinel error ErrInvalidAge, write a function validateAge(age int) error that wraps it with context for negative ages, then check the result with errors.Is. Next, define a custom error type RangeError with Value, Min, and Max fields implementing the error interface, and write a function that returns it when a value falls outside a valid range.</p>
     </div>
   </article>
 

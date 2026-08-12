@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Every Go program belongs to a <code>package</code>, and an executable program has a <code>package main</code> with a <code>func main()</code> entry point. Go is <b>statically typed</b>: <code>var age int = 30</code> declares a type explicitly, while <code>age := 30</code> uses the short-declaration operator to infer it &mdash; both are checked at compile time.</p>
-    <p>The built-in types include <code>int</code>, <code>float64</code>, <code>bool</code>, and <code>string</code>. Go has no implicit type conversion at all &mdash; mixing an <code>int</code> and a <code>float64</code> in an expression is a compile error, and you must convert explicitly with syntax like <code>float64(x)</code>.</p>
-    <p>Go famously has no unused variables or unused imports allowed &mdash; both are compile errors, not warnings &mdash; which keeps codebases free of dead clutter at the cost of occasional friction while writing exploratory code.</p>
+    <p class="lead">Every Go program belongs to a <code>package</code>, and an executable program has a <code>package main</code> with a <code>func main()</code> entry point. Go is <b>statically typed</b>: <code>var age int = 30</code> declares a type explicitly, while <code>age := 30</code> uses the short-declaration operator to infer it &mdash; both are checked at compile time, and both produce identical code once compiled.</p>
+    <p>The built-in numeric types include sized integers (<code>int8</code> through <code>int64</code>, and their unsigned <code>uint</code> counterparts), <code>float32</code>/<code>float64</code>, and <code>complex64</code>/<code>complex128</code>. The plain <code>int</code> and <code>uint</code> are platform-dependent (32 or 64 bits), so code that must have a guaranteed width should use an explicitly sized type instead. <code>byte</code> is an alias for <code>uint8</code> and <code>rune</code> is an alias for <code>int32</code>, representing a single Unicode code point.</p>
+    <p>Go has no implicit type conversion at all, even between closely related numeric types &mdash; mixing an <code>int</code> and a <code>float64</code>, or even an <code>int32</code> and an <code>int64</code>, in an expression is a compile error, and you must convert explicitly with syntax like <code>float64(x)</code> or <code>int64(y)</code>. This is a deliberate design choice to avoid the subtle bugs that silent widening or narrowing conversions cause in languages like C or JavaScript.</p>
+    <p>Strings in Go are immutable sequences of bytes, conventionally holding UTF-8 encoded text. Indexing a string with <code>s[0]</code> yields a <code>byte</code>, not a character, so iterating with <code>for i, r := range s</code> is the correct way to walk a string rune by rune when it may contain multi-byte characters &mdash; the index jumps by however many bytes the rune occupied.</p>
+    <p>Go famously has no unused variables or unused imports allowed &mdash; both are compile errors, not warnings &mdash; which keeps codebases free of dead clutter at the cost of occasional friction while writing exploratory code. The blank identifier <code>_</code> is the escape hatch: assigning to it discards a value you're required to receive but don't need, such as the index in a range loop you only care about the value from.</p>
+    <p>Constants are declared with <code>const</code> and can be grouped in a block using the special <code>iota</code> identifier, which starts at 0 and increments by one for each line in the block &mdash; the idiomatic way to build enumeration-like sets of related constants without a dedicated enum keyword, which Go doesn't have.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -126,18 +129,64 @@ func main() {
 	fmt.Printf("%s is %d years old and paid %.2f\n", name, age, price)
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">constants.go</div>      <pre><code>package main
+
+import "fmt"
+
+type Weekday int
+
+const (
+	Sunday Weekday = iota // 0
+	Monday                // 1
+	Tuesday               // 2
+	Wednesday             // 3
+	Thursday              // 4
+	Friday                // 5
+	Saturday              // 6
+)
+
+func main() {
+	var d Weekday = Wednesday
+	fmt.Println("day number:", int(d)) // explicit conversion required
+
+	var total int64 = 1000
+	var rate float64 = 0.07
+	// interest := total * rate // compile error: mismatched types int64 and float64
+	interest := float64(total) * rate
+	fmt.Printf("interest: %.2f\n", interest)
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">strings.go</div>      <pre><code>package main
+
+import "fmt"
+
+func main() {
+	s := "caf\u00e9" // "café" - the é is 2 bytes in UTF-8
+
+	fmt.Println("len in bytes:", len(s)) // 5, not 4
+
+	for i, r := range s {
+		fmt.Printf("byte index %d: rune %q\n", i, r)
+	}
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>:=</code> declares and infers a type in one step; <code>var</code> is used when you need an explicit type or a zero value.</li>
-        <li>Go performs no implicit numeric conversions &mdash; convert explicitly between types.</li>
-        <li>Unused variables and unused imports are compile errors in Go.</li>
+        <li>Go performs no implicit numeric conversions, even between two integer types of different sizes &mdash; convert explicitly.</li>
+        <li>Unused variables and unused imports are compile errors in Go; the blank identifier <code>_</code> discards a value you must receive but don't need.</li>
         <li>Every value has a well-defined zero value (0, "", false, nil) instead of being uninitialized.</li>
+        <li><code>byte</code> is an alias for <code>uint8</code> and <code>rune</code> is an alias for <code>int32</code>; strings are immutable UTF-8 byte sequences.</li>
+        <li>Indexing a string yields a byte, not a character &mdash; use <code>for i, r := range s</code> to iterate by rune.</li>
+        <li><code>const</code> blocks with <code>iota</code> are Go's idiomatic substitute for an enum keyword, which the language doesn't have.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Go program that declares an int with var, a float64 with :=, and a string, then prints them together with fmt.Printf using appropriate format verbs.</p>
+      <p>Write a Go program that declares an int with var, a float64 with :=, and a string, then prints them together with fmt.Printf using appropriate format verbs. Then add a const block using iota to define three related status constants (for example StatusPending, StatusActive, StatusDone), and print the numeric value of one of them.</p>
     </div>
   </article>
 

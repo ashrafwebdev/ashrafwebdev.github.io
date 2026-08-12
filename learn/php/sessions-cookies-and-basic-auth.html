@@ -110,18 +110,56 @@
   </div>
 
   <article>
-    <p class="lead">Cookies store small pieces of data directly in the browser, sent with every subsequent request to the same site. Sessions store data server-side, with only a session ID cookie sent to the browser — better for anything sensitive, since the actual data never leaves the server.</p>
-    <p>A basic login flow: verify submitted credentials against a hashed password in the database, then store the user's ID in <code>$_SESSION</code> to mark them as logged in for subsequent requests.</p>
+    <p class="lead">Cookies store small pieces of data directly in the browser, sent with every subsequent request to the same site. Sessions store data server-side, with only a session ID cookie sent to the browser — better for anything sensitive, since the actual data never leaves the server. Cookies are also what make sessions work in the first place: without the session ID cookie, PHP would have no way to associate a request with previously stored session data.</p>
+    <p>A basic login flow: verify submitted credentials against a hashed password in the database, then store the user's ID in <code>$_SESSION</code> to mark them as logged in for subsequent requests. Every protected page then checks whether <code>$_SESSION['user_id']</code> is set before allowing access, redirecting to the login page otherwise.</p>
+    <p>A real security detail often missed: call <code>session_regenerate_id(true)</code> immediately after a successful login, which issues the user a brand-new session ID while keeping their session data. This defends against session fixation attacks, where an attacker tricks a victim into using a session ID the attacker already knows, then hijacks the now-authenticated session once the victim logs in.</p>
+    <p>Cookies accept several security-relevant attributes when set: <code>Secure</code> (only sent over HTTPS), <code>HttpOnly</code> (invisible to JavaScript, blocking a whole class of cookie-theft via XSS), and <code>SameSite</code> (controls whether the cookie is sent on cross-site requests, helping prevent CSRF). PHP's session cookie can be configured with all three via <code>session_set_cookie_params()</code> before <code>session_start()</code>, or in php.ini.</p>
+    <p><code>setcookie(name, value, expire, path, domain, secure, httponly)</code> sets an ordinary cookie directly, independent of sessions — useful for things like a "remember this browser" flag or a non-sensitive user preference. Like any other header, <code>setcookie()</code> must be called before any output is sent to the browser, the same constraint that applies to <code>header()</code>.</p>
+    <p>Logging out means both destroying the server-side session data with <code>session_destroy()</code> and clearing the session cookie itself — destroying the session alone leaves a now-useless cookie in the browser, and forgetting to clear it is a common incomplete-logout bug.</p>
     <div class="code-block">
 <div class="cap">login.php</div>      <pre><code>&lt;?php
 session_start();
 
 // After verifying credentials against the database:
 if (password_verify($submittedPassword, $hashedPasswordFromDb)) {
+    session_regenerate_id(true); // defend against session fixation
     $_SESSION['user_id'] = $user['id'];
     header("Location: /dashboard.php");
     exit;
 }
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">logout.php</div>      <pre><code>&lt;?php
+session_start();
+
+$_SESSION = [];
+
+// Also clear the session cookie itself, not just server-side data
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+}
+
+session_destroy();
+header("Location: /login.php");
+exit;
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">secure_cookie_example.php</div>      <pre><code>&lt;?php
+session_set_cookie_params([
+    'lifetime' =&gt; 0,
+    'path' =&gt; '/',
+    'secure' =&gt; true,   // only sent over HTTPS
+    'httponly' =&gt; true, // invisible to JavaScript
+    'samesite' =&gt; 'Lax',
+]);
+session_start();
+
+// A plain, non-session cookie for a low-stakes preference
+setcookie('theme', 'dark', time() + 60 * 60 * 24 * 30, '/', '', true, true);
 ?&gt;</code></pre>
     </div>
     <div class="key-points">
@@ -131,11 +169,15 @@ if (password_verify($submittedPassword, $hashedPasswordFromDb)) {
         <li>Call <code>exit;</code> right after a <code>header("Location: ...")</code> redirect — code after it still executes otherwise.</li>
         <li>Session data lives server-side; only an opaque session ID is stored in the visitor's cookie.</li>
         <li>Set the session cookie's <code>Secure</code> and <code>HttpOnly</code> flags in production to reduce interception and script-access risk.</li>
+        <li>Call <code>session_regenerate_id(true)</code> right after login to prevent session fixation attacks.</li>
+        <li>Logging out should clear both the server-side session data (<code>session_destroy()</code>) and the cookie itself — clearing only one leaves an incomplete logout.</li>
+        <li><code>setcookie()</code>, like <code>header()</code>, must be called before any output is sent to the browser.</li>
+        <li>The <code>SameSite</code> cookie attribute helps mitigate CSRF by controlling whether a cookie is sent along with cross-site requests.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a minimal login script that checks a submitted password with password_verify against a stored hash, and sets a session variable on success.</p>
+      <p>Build a minimal login script that checks a submitted password with password_verify against a stored hash, and sets a session variable on success. Add session_regenerate_id(true) right after a successful login, then write a matching logout.php that clears both the session data and the session cookie, and confirm that visiting a protected page after logout correctly redirects back to the login form.</p>
     </div>
   </article>
 

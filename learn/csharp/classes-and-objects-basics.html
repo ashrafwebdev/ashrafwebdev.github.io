@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A C# class groups fields and methods together, and objects are created from it with <code>new</code>. <b>Properties</b> (<code>public string Name { get; set; }</code>) are C#'s idiomatic way to expose state, offering the syntax of a field with the control of a method underneath.</p>
-    <p>Constructors initialize an object's state when created. C# also supports <b>record types</b> (<code>record Person(string Name, int Age)</code>), a concise syntax for immutable data-holding classes that automatically get value-based equality and a readable <code>ToString</code>.</p>
-    <p>The <code>this</code> keyword refers to the current instance, most often used inside a constructor to distinguish a field from a same-named parameter.</p>
+    <p class="lead">A C# class groups fields and methods together, and objects are created from it with <code>new</code>. <b>Properties</b> (<code>public string Name { get; set; }</code>) are C#'s idiomatic way to expose state, offering the syntax of a field with the control of a method underneath &mdash; you can add validation logic in a custom <code>set</code> accessor without changing how callers use the property.</p>
+    <p>Constructors initialize an object's state when created, and a class can define several overloaded constructors for different initialization scenarios; one constructor can call another with <code>: this(...)</code> to avoid duplicating setup logic. C# also supports <b>record types</b> (<code>record Person(string Name, int Age)</code>), a concise syntax for immutable data-holding classes that automatically get value-based equality, a readable <code>ToString</code>, and a <code>with</code> expression for creating a modified copy.</p>
+    <p>The <code>this</code> keyword refers to the current instance, most often used inside a constructor to distinguish a field from a same-named parameter, but also usable to pass the current object to another method or to chain constructors.</p>
+    <p>Access modifiers control visibility: <code>public</code> members are visible everywhere, <code>private</code> (the default for fields) only within the same class, <code>protected</code> also to derived classes, and <code>internal</code> only within the same assembly. Choosing the narrowest modifier that still works is a core encapsulation habit &mdash; exposing a mutable field publicly instead of a property removes your ability to change the implementation later without breaking callers.</p>
+    <p>Auto-implemented properties can be read-only from outside the class using <code>{ get; private set; }</code> or fully immutable using <code>{ get; init; }</code>, the latter allowing the property to be set only during object initialization (including with object-initializer syntax), which is a lighter-weight alternative to a full record when you still want a class.</p>
+    <p>Static members (<code>static</code> fields and methods) belong to the type itself rather than any instance, and are shared across every use of the class &mdash; useful for utility methods or counters, but a source of hidden shared state and testing difficulty if overused.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>public class Book
 {
@@ -131,18 +134,64 @@
 var book = new Book("Clean Code", 464);
 Console.WriteLine(book.Summary());</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">RecordsAndInit.cs</div>      <pre><code>public record Person(string Name, int Age)
+{
+    public string Greet() =&gt; $"Hi, I'm {Name} and I'm {Age}.";
+}
+
+var alice = new Person("Alice", 30);
+var olderAlice = alice with { Age = 31 }; // creates a modified copy
+Console.WriteLine(alice.Greet());
+Console.WriteLine(alice == olderAlice); // false -- value equality by field
+
+public class Account
+{
+    public string Owner { get; init; } = "";
+    public decimal Balance { get; private set; }
+
+    public void Deposit(decimal amount) =&gt; Balance += amount;
+}
+
+var acc = new Account { Owner = "Yusuf" }; // init-only, settable here only
+acc.Deposit(100);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">ConstructorChaining.cs</div>      <pre><code>public class Rectangle
+{
+    public double Width { get; }
+    public double Height { get; }
+
+    public Rectangle(double width, double height)
+    {
+        Width = width;
+        Height = height;
+    }
+
+    // Chains to the main constructor to avoid duplicating logic
+    public Rectangle(double side) : this(side, side) { }
+
+    public double Area =&gt; Width * Height;
+}
+
+var square = new Rectangle(4);
+Console.WriteLine(square.Area); // 16</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Properties (<code>get</code>/<code>set</code>) are the standard way to expose an object's state in C#.</li>
-        <li>Record types give concise, immutable data classes with built-in value equality.</li>
-        <li>Constructors run automatically when an object is created with <code>new</code>.</li>
+        <li>Record types give concise, immutable data classes with built-in value equality and a <code>with</code> expression for copies.</li>
+        <li>Constructors run automatically when an object is created with <code>new</code>, and can chain to each other with <code>: this(...)</code>.</li>
         <li><code>this</code> disambiguates a field from a constructor parameter of the same name.</li>
+        <li>Prefer the narrowest access modifier that works &mdash; expose properties, not raw mutable fields.</li>
+        <li><code>{ get; init; }</code> allows a property to be set only during construction, a lightweight alternative to a full record.</li>
+        <li>Static members belong to the type, not an instance, and are shared everywhere the type is used.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Person class with Name and Age properties, a constructor, and a Greet() method, then create two instances and print their greetings.</p>
+      <p>Write a Person class with Name and Age properties, a constructor, and a Greet() method, then create two instances and print their greetings. Then write a second version as a record, add a with-expression that creates an older copy of one person, and print whether the two records are equal.</p>
     </div>
   </article>
 

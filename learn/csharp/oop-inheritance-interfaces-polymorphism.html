@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">C# classes support single inheritance via <code>:</code>, so a subclass extends exactly one base class but can implement multiple interfaces. Marking a base method <code>virtual</code> and the derived one <code>override</code> is required for polymorphic dispatch &mdash; without it, the base version always runs regardless of the actual object type.</p>
-    <p>An <b>interface</b> declares a contract of members without implementation (default interface methods are allowed since C# 8). A class implements one with the same <code>:</code> syntax used for inheritance, and can implement any number of interfaces.</p>
-    <p>Polymorphism means code written against a base type or interface automatically works with any derived type, which is the foundation for writing extensible code that doesn't need to know about every concrete subtype in advance.</p>
+    <p class="lead">C# classes support single inheritance via <code>:</code>, so a subclass extends exactly one base class but can implement multiple interfaces. Marking a base method <code>virtual</code> and the derived one <code>override</code> is required for polymorphic dispatch &mdash; without it, the base version always runs regardless of the actual object's runtime type, a mistake known as accidentally "hiding" rather than overriding a method.</p>
+    <p>A method can also be marked <code>new</code> instead of <code>override</code> to deliberately hide (rather than override) a base member; this is rare and usually a code smell, since callers holding a base-typed reference will still see the base behavior, which is the opposite of what most people expect from inheritance.</p>
+    <p>An <b>interface</b> declares a contract of members without implementation (default interface methods are allowed since C# 8, letting an interface provide a fallback implementation). A class implements one with the same <code>:</code> syntax used for inheritance, and can implement any number of interfaces, which is how C# achieves the flexibility of "multiple inheritance" without its classic diamond-problem ambiguity.</p>
+    <p><code>abstract</code> classes sit between a plain base class and an interface: they can contain real implementation and fields, like a normal class, but can also declare <code>abstract</code> members that have no body and must be implemented by any concrete (non-abstract) subclass. Use an abstract class when subclasses genuinely share state or behavior, and an interface when you're only describing a capability.</p>
+    <p>Polymorphism means code written against a base type or interface automatically works with any derived type, which is the foundation for writing extensible code that doesn't need to know about every concrete subtype in advance &mdash; this is the same principle behind the Liskov Substitution Principle: a subtype should be usable anywhere its base type is expected without surprising behavior.</p>
+    <p>The <code>sealed</code> keyword on a class prevents further inheritance, and on an overriding method prevents further overriding in deeper subclasses; both are useful for locking down a design once you're confident no further specialization should happen, and sealing a class can also give the JIT compiler more opportunities to optimize method calls.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>public interface IShape
 {
@@ -134,18 +137,61 @@ public class Square : IShape
 IShape[] shapes = { new Circle { Radius = 2 }, new Square { Side = 3 } };
 foreach (var s in shapes) Console.WriteLine(s.Area());</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">AbstractAndVirtual.cs</div>      <pre><code>public abstract class Employee
+{
+    public string Name { get; set; } = "";
+    public abstract decimal MonthlyPay();
+
+    public virtual string Describe() =&gt; $"{Name} earns {MonthlyPay():C}";
+}
+
+public class SalariedEmployee : Employee
+{
+    public decimal Salary { get; set; }
+    public override decimal MonthlyPay() =&gt; Salary / 12;
+}
+
+public class CommissionEmployee : Employee
+{
+    public decimal Base { get; set; }
+    public decimal Commission { get; set; }
+    public override decimal MonthlyPay() =&gt; Base + Commission;
+
+    // adds context on top of the base implementation
+    public override string Describe() =&gt; base.Describe() + " (incl. commission)";
+}
+
+Employee[] staff = { new SalariedEmployee { Name = "Amina", Salary = 60000 },
+                     new CommissionEmployee { Name = "Bilal", Base = 2000, Commission = 500 } };
+foreach (var e in staff) Console.WriteLine(e.Describe());</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">HidingVsOverriding.cs</div>      <pre><code>public class Base { public virtual string Kind() =&gt; "Base"; }
+public class Overrider : Base { public override string Kind() =&gt; "Overrider"; }
+public class Hider : Base { public new string Kind() =&gt; "Hider"; }
+
+Base b1 = new Overrider();
+Base b2 = new Hider();
+Console.WriteLine(b1.Kind()); // "Overrider" -- polymorphic dispatch
+Console.WriteLine(b2.Kind()); // "Base" -- 'new' hides, doesn't override!</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A class inherits from exactly one base class but can implement several interfaces.</li>
         <li><code>virtual</code> on the base and <code>override</code> on the derived class enable polymorphic dispatch.</li>
-        <li>Interfaces define a contract; classes fulfill it with the same colon syntax as inheritance.</li>
-        <li>Code written against an interface works automatically with any type implementing it.</li>
+        <li>The <code>new</code> modifier hides a base member instead of overriding it &mdash; usually a mistake, not a feature to reach for.</li>
+        <li>Abstract classes share real implementation and state; interfaces only describe a capability.</li>
+        <li>Interfaces define a contract; classes fulfill it with the same colon syntax as inheritance, and can implement many at once.</li>
+        <li>Default interface methods (C# 8+) let an interface supply fallback behavior for implementers that don't override it.</li>
+        <li>Code written against an interface or abstract base works automatically with any type implementing it.</li>
+        <li><code>sealed</code> prevents further inheritance or overriding, useful once a design is meant to be final.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define an IPayable interface with an AmountDue() method, implement it in an Invoice and a Subscription class, then loop over an array of IPayable printing each amount.</p>
+      <p>Define an IPayable interface with an AmountDue() method, implement it in an Invoice and a Subscription class, then loop over an array of IPayable printing each amount. Then refactor to introduce an abstract BillableItem base class that both Invoice and Subscription extend, moving any shared logic (like a Description property) into the base class while keeping AmountDue abstract.</p>
     </div>
   </article>
 

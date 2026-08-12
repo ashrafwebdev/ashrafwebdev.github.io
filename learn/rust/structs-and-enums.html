@@ -113,6 +113,9 @@
     <p class="lead">A Rust <code>struct</code> groups named fields together, similar to a class's data. Methods are attached separately in an <code>impl</code> block, keeping data definitions and behavior visually distinct from each other.</p>
     <p>Rust <code>enum</code>s are far more powerful than in most languages: each variant can carry its own associated data, making an enum a natural way to model "one of several distinct shapes of data" &mdash; the <code>Option</code> and <code>Result</code> types covered in later lessons are themselves just enums.</p>
     <p><code>match</code> pairs naturally with enums: matching on an enum's variants, and optionally destructuring the data each variant carries, is one of the most common patterns in everyday Rust code.</p>
+    <p>Beyond named-field structs, Rust also has <b>tuple structs</b> like <code>struct Point(f64, f64);</code>, whose fields are accessed by position (<code>point.0</code>, <code>point.1</code>) rather than by name, and <b>unit structs</b> like <code>struct Marker;</code> with no fields at all, often used purely as zero-sized type tags or markers in a trait system.</p>
+    <p>Hand-writing common trait implementations gets repetitive fast, so Rust lets you derive many of them: <code>#[derive(Debug, Clone, PartialEq)]</code> above a struct or enum automatically generates a debug-printable representation, a <code>.clone()</code> method, and equality comparison, respectively, with zero boilerplate as long as every field also implements that trait.</p>
+    <p><b>Struct update syntax</b>, written <code>Point { x: 10.0, ..original }</code>, creates a new instance that copies every field from <code>original</code> except the ones you explicitly override, which is far less error-prone than manually listing every unchanged field when only one or two values actually differ.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>struct Book {
     title: String,
@@ -143,6 +146,41 @@ fn main() {
     println!("{}", area(&amp;Shape::Circle(2.0)));
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">tuple_struct_derive.rs</div>      <pre><code>#[derive(Debug, Clone, PartialEq)]
+struct Point(f64, f64);
+
+impl Point {
+    fn distance(&amp;self, other: &amp;Point) -&gt; f64 {
+        ((self.0 - other.0).powi(2) + (self.1 - other.1).powi(2)).sqrt()
+    }
+}
+
+fn main() {
+    let a = Point(0.0, 0.0);
+    let b = a.clone();
+    println!("{:?}", a);
+    println!("equal: {}", a == b);
+    println!("distance: {}", a.distance(&amp;Point(3.0, 4.0)));
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">struct_update.rs</div>      <pre><code>#[derive(Debug, Clone)]
+struct Config {
+    host: String,
+    port: u16,
+    debug: bool,
+}
+
+fn main() {
+    let default = Config { host: String::from("localhost"), port: 8080, debug: false };
+
+    // only override `port`; host and debug are copied from `default`
+    let staging = Config { port: 9090, ..default.clone() };
+
+    println!("{:?}", staging);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -150,11 +188,15 @@ fn main() {
         <li>Enum variants can each carry their own associated data, unlike simple enums in many other languages.</li>
         <li>Matching on an enum's variants with destructuring is a core, everyday Rust pattern.</li>
         <li><code>&self</code> as the first method parameter borrows the instance rather than taking ownership of it.</li>
+        <li>Tuple structs use positional fields (<code>.0</code>, <code>.1</code>); unit structs have no fields at all.</li>
+        <li><code>#[derive(...)]</code> auto-generates common trait implementations like Debug, Clone, and PartialEq.</li>
+        <li>Struct update syntax (<code>..base</code>) copies unspecified fields from an existing instance.</li>
+        <li>Deriving PartialEq is what makes <code>==</code> comparisons between struct instances possible at all.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define an enum Shape with Circle and Rectangle variants carrying their dimensions, write an area function using match, and print the area of one of each.</p>
+      <p>Define a tuple struct Point holding two f64 fields, derive Debug, Clone, and PartialEq on it, and implement a distance method computing the distance between two points. Then use struct update syntax to create a translated copy of an existing point that changes only one coordinate, printing both points with the debug formatter.</p>
     </div>
   </article>
 

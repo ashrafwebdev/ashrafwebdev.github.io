@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A <b>worker pool</b> launches a fixed number of goroutines that all read tasks from a shared input channel and send results to an output channel, bounding concurrency instead of spawning an unbounded goroutine per task.</p>
-    <p>The <code>select</code> statement waits on multiple channel operations at once, proceeding with whichever is ready first &mdash; essential for patterns like implementing timeouts or handling cancellation alongside normal work.</p>
-    <p>Combining a worker pool with a <code>context.Context</code> (covered in a later lesson) for cancellation, plus <code>select</code> for timeouts, is the standard toolkit for writing robust, bounded concurrent Go code.</p>
+    <p class="lead">A <b>worker pool</b> launches a fixed number of goroutines that all read tasks from a shared input channel and send results to an output channel, bounding concurrency instead of spawning an unbounded goroutine per task &mdash; important when tasks involve a limited resource like a database connection pool or an external API's rate limit, where unlimited concurrency would overwhelm the downstream system rather than speed things up.</p>
+    <p>The <code>select</code> statement waits on multiple channel operations at once, proceeding with whichever is ready first &mdash; essential for patterns like implementing timeouts (racing a real channel against <code>time.After</code>) or handling cancellation alongside normal work. A <code>select</code> with a <code>default</code> case never blocks: it takes the default branch immediately if no channel operation is ready, which is how you implement a non-blocking send or receive.</p>
+    <p><code>sync.WaitGroup</code> is the standard way to wait for a group of goroutines to finish: call <code>wg.Add(1)</code> before launching each one, <code>defer wg.Done()</code> inside it, and <code>wg.Wait()</code> in the coordinating goroutine to block until all of them have called <code>Done</code>. It's commonly paired with a worker pool to know when all results have been produced, so the output channel can be safely closed.</p>
+    <p><code>sync.Mutex</code> protects shared state that isn't naturally expressed as channel communication &mdash; incrementing a shared counter from multiple goroutines, for instance. Go's philosophy favors channels for coordinating goroutines and passing ownership of data, but reaches for a mutex without hesitation when protecting a small piece of genuinely shared state is simpler and clearer than routing it through a channel.</p>
+    <p>The Go race detector (<code>go run -race</code> or <code>go test -race</code>) instruments the program to catch data races &mdash; concurrent unsynchronized access to the same memory, at least one of which is a write &mdash; at runtime. It doesn't catch every possible race (only ones that actually occur during the run being tested), but running the full test suite under <code>-race</code> in CI is standard practice for any concurrent Go code.</p>
+    <p>Combining a worker pool with a <code>context.Context</code> (covered in a later lesson) for cancellation, plus <code>select</code> for timeouts, is the standard toolkit for writing robust, bounded concurrent Go code that doesn't leak goroutines or hang indefinitely when something downstream goes wrong.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -141,18 +144,75 @@ func main() {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">select_timeout.go</div>      <pre><code>package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func slowWork() &lt;-chan string {
+	ch := make(chan string)
+	go func() {
+		time.Sleep(2 * time.Second)
+		ch &lt;- "done"
+	}()
+	return ch
+}
+
+func main() {
+	select {
+	case result := &lt;-slowWork():
+		fmt.Println(result)
+	case &lt;-time.After(1 * time.Second):
+		fmt.Println("timed out waiting for slowWork")
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">waitgroup_and_mutex.go</div>      <pre><code>package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	total := 0
+
+	for i := 1; i &lt;= 100; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			mu.Lock()
+			total += n // shared state -- must be protected
+			mu.Unlock()
+		}(i)
+	}
+
+	wg.Wait()
+	fmt.Println("total:", total) // 5050
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A worker pool bounds concurrency to a fixed number of goroutines pulling from a shared job channel.</li>
         <li><code>close(channel)</code> signals no more values will be sent, letting range loops over it terminate.</li>
-        <li><code>select</code> proceeds with whichever of several channel operations becomes ready first.</li>
+        <li><code>select</code> proceeds with whichever of several channel operations becomes ready first; a <code>default</code> case makes it non-blocking.</li>
+        <li><code>sync.WaitGroup</code> (Add/Done/Wait) is the standard way to know when a group of goroutines has all finished.</li>
+        <li><code>sync.Mutex</code> protects shared state that isn't naturally routed through channel communication.</li>
         <li>Buffered channels (<code>make(chan int, 5)</code>) let sends succeed without an immediate receiver, up to their capacity.</li>
+        <li>The race detector (<code>-race</code>) catches concurrent unsynchronized access to shared memory and should run in CI for concurrent code.</li>
+        <li>Pairing a worker pool with <code>context.Context</code> cancellation and <code>select</code>-based timeouts avoids leaked or hung goroutines.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a worker pool of 3 goroutines processing 10 jobs from a buffered jobs channel, collecting all results, and use select with time.After to add a 2-second overall timeout.</p>
+      <p>Build a worker pool of 3 goroutines processing 10 jobs from a buffered jobs channel, collecting all results with a sync.WaitGroup, and use select with time.After to add a 2-second overall timeout. Then run your program with go run -race to confirm there are no data races, and add a sync.Mutex-protected counter that tracks how many jobs each worker processed.</p>
     </div>
   </article>
 

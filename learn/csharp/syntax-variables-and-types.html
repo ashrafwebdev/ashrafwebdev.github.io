@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A C# program's entry point is a <code>Main</code> method, though modern top-level programs let you skip the surrounding class and method declarations entirely for small scripts. C# is <b>statically typed</b>: every variable has a type known at compile time, whether declared explicitly (<code>int age = 30;</code>) or inferred with <code>var</code>.</p>
-    <p>The built-in value types include <code>int</code>, <code>double</code>, <code>bool</code>, <code>char</code>, and <code>decimal</code> (preferred for money, since it avoids binary floating-point rounding errors). Reference types like <code>string</code> and your own classes are stored on the heap, and a variable of that type holds a reference to the object.</p>
-    <p>C# 8 introduced <b>nullable reference types</b>: when enabled, the compiler warns if a reference-typed variable might be null where you didn't expect it, catching a huge class of <code>NullReferenceException</code> bugs before the program ever runs.</p>
+    <p class="lead">A C# program's entry point is a <code>Main</code> method, though modern top-level programs let you skip the surrounding class and method declarations entirely for small scripts &mdash; the compiler generates the boilerplate for you behind the scenes. C# is <b>statically typed</b>: every variable has a type known at compile time, whether declared explicitly (<code>int age = 30;</code>) or inferred with <code>var</code>. Static typing means the compiler catches a whole class of mistakes, like assigning a string to an int variable, before the program ever runs.</p>
+    <p>The built-in value types include <code>int</code>, <code>double</code>, <code>bool</code>, <code>char</code>, and <code>decimal</code> (preferred for money, since it avoids the binary floating-point rounding errors that <code>double</code> and <code>float</code> are prone to). Value types are stored inline &mdash; on the stack for local variables, or directly inside the containing object for fields &mdash; and assigning one variable to another copies the whole value.</p>
+    <p>Reference types like <code>string</code>, arrays, and your own classes are stored on the heap, and a variable of that type merely holds a reference (a pointer, conceptually) to the object. Assigning one reference-typed variable to another copies the reference, not the object, so both variables end up pointing at the same underlying data &mdash; a frequent source of confusion for beginners who expect copy semantics.</p>
+    <p>A subtlety worth internalizing early: <code>string</code> is a reference type but behaves as if it were immutable and value-like, because every string operation (concatenation, <code>Substring</code>, <code>Replace</code>) returns a brand-new string object rather than mutating the original. Building a string piece by piece in a loop with <code>+</code> therefore allocates a new string on every iteration; <code>StringBuilder</code> exists specifically to avoid that cost.</p>
+    <p>When a value type needs to be treated as an <code>object</code> (for example, passed to an old-style non-generic API), the runtime <b>boxes</b> it &mdash; copying the value onto the heap and wrapping it &mdash; and reading it back out is <b>unboxing</b>. Boxing is an easy-to-miss allocation cost, and it is one of the reasons generic collections like <code>List of T</code> are strongly preferred over their non-generic ancestors.</p>
+    <p>C# 8 introduced <b>nullable reference types</b>: when enabled (via <code>#nullable enable</code> or a project-wide setting), the compiler tracks whether a reference-typed variable is allowed to be null and warns when you dereference one that might be, catching a huge class of <code>NullReferenceException</code> bugs at compile time. This is purely a compile-time annotation system, though &mdash; it does not change runtime behavior, and a suppressed warning (using the <code>!</code> null-forgiving operator) can still fail at runtime just like before.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>int age = 30;
 double price = 19.99;
@@ -122,18 +125,49 @@ var score = 95; // type inferred as int
 
 Console.WriteLine($"{name} is {age} years old and scored {score}.");</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ValueVsReference.cs</div>      <pre><code>struct Point { public int X, Y; }
+class Box { public int Value; }
+
+Point p1 = new Point { X = 1, Y = 2 };
+Point p2 = p1;      // copies the struct's fields
+p2.X = 99;
+Console.WriteLine(p1.X); // 1 -- p1 is untouched
+
+Box b1 = new Box { Value = 1 };
+Box b2 = b1;        // copies the reference, not the object
+b2.Value = 99;
+Console.WriteLine(b1.Value); // 99 -- same object as b2</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">BoxingPitfall.cs</div>      <pre><code>// Boxing: the int is copied onto the heap and wrapped as an object
+int number = 42;
+object boxed = number;      // boxing (allocation!)
+int unboxed = (int)boxed;   // unboxing
+
+// Nullable value types use Nullable&lt;T&gt; under the hood
+int? maybeAge = null;
+if (maybeAge.HasValue)
+    Console.WriteLine(maybeAge.Value);
+else
+    Console.WriteLine("No age set");</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Top-level programs let small C# scripts skip the explicit class/Main boilerplate.</li>
         <li><code>var</code> infers a type at compile time; it is still statically typed, not dynamic.</li>
         <li><code>decimal</code> is preferred over <code>double</code> for currency to avoid rounding errors.</li>
-        <li>Nullable reference types help the compiler flag potential null-dereference bugs early.</li>
+        <li>Value types copy their data on assignment; reference types copy the reference, sharing the same object.</li>
+        <li>Strings are immutable reference types &mdash; every modification produces a new object, so use <code>StringBuilder</code> for heavy concatenation.</li>
+        <li>Boxing copies a value type onto the heap when it's used as an <code>object</code>; it's an easy-to-miss allocation cost.</li>
+        <li>Nullable reference types are a compile-time warning system, not a runtime guarantee &mdash; the null-forgiving operator <code>!</code> can still let a null through.</li>
+        <li><code>int?</code> is shorthand for <code>Nullable of T</code>, a distinct mechanism from nullable reference types.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a top-level C# program that declares an int, a decimal, and a string, then prints them together using string interpolation.</p>
+      <p>Write a top-level C# program that declares an int, a decimal, and a string, then prints them together using string interpolation. Then add a small struct and a small class with the same shape (a single int field), copy each into a second variable, mutate the copy, and print both originals to demonstrate the difference between value and reference semantics.</p>
     </div>
   </article>
 

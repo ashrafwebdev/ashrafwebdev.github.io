@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">At this stage, the most valuable thing you can do is stop only consuming libraries and start engaging with how they're actually built and maintained — reading issues, understanding maintainers' trade-offs, and eventually submitting real fixes.</p>
-    <p>Start small: a documentation fix, a failing test case for a reported bug, or a well-written bug report with a minimal reproduction. These are exactly as valuable to a maintainer as a feature PR, and they teach you the project's real architecture from the inside.</p>
+    <p class="lead">At this stage, the most valuable shift is moving from only consuming libraries to actually engaging with how they're built and maintained — reading open issues, understanding the trade-offs maintainers are weighing when they accept or decline a change, and eventually submitting fixes of your own. This is as much a social and process skill as it is a coding one, and it's genuinely different from writing code in a project only you or your immediate team will ever touch.</p>
+    <p>Start small and start by reading, not writing code: spend real time in a project's issue tracker before opening anything yourself. Understand what kinds of contributions the maintainers actually welcome (many label issues explicitly as <code>good first issue</code> or <code>help wanted</code>), what their review turnaround tends to look like, and what a typical accepted pull request in that specific project actually contains — conventions vary enormously between projects, and copying the local style is far more valuable than assuming your own preferred conventions from other projects apply.</p>
+    <p>A minimal, reliable reproduction of a bug is often more valuable to a maintainer than a code fix without one — a clear, small, runnable example that reliably triggers the bug (ideally in an online sandbox like CodeSandbox or StackBlitz, or a tiny standalone repo) lets a maintainer immediately see and confirm the actual problem, verify any proposed fix genuinely resolves it, and use it directly as a regression test afterward. A bug report without a reproduction, by contrast, often sits untouched for a long time simply because nobody can confirm it or knows where in a large codebase to even start looking.</p>
+    <p>Read a project's <code>CONTRIBUTING.md</code> file before opening a pull request — most established projects have specific, explicit expectations around commit message format, required tests for any behavioral change, code style and linting rules, and the exact process for proposing a larger feature (often a discussion or an RFC-style issue before any code at all, to avoid wasted effort on a design the maintainers wouldn't actually accept).</p>
+    <p>Small, tightly-focused pull requests get reviewed and merged far faster than large, sprawling ones that touch many unrelated things at once — a reviewer can hold a ten-line, single-purpose change in their head easily and approve it quickly, while a five-hundred-line change mixing a bug fix with an unrelated refactor and a new feature is both hard to review carefully and risky to merge, since any one part of it might need more discussion or turn out to be wrong.</p>
+    <p>Engaging thoughtfully with issue discussions — even without submitting any code at all — genuinely builds the project-specific context you'll eventually need to contribute real code meaningfully: understanding why a particular design decision was made, what's already been tried and rejected before, and what the maintainers actually care about most. Documentation fixes, writing a missing test case for an already-reported but unfixed bug, and triaging unlabeled issues are all real, valued contributions in their own right, not merely stepping stones to 'real' code contributions.</p>
 
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -120,11 +124,14 @@
         <li>Read a project's CONTRIBUTING.md before opening a PR — most have specific expectations around tests, style, and commit format.</li>
         <li>Small, focused PRs get reviewed and merged far faster than large, sprawling ones.</li>
         <li>Engaging with issue discussions (even without code) builds the context you need to contribute meaningfully later.</li>
+        <li>Look specifically for issues labeled good first issue or help wanted — they're explicitly the ones maintainers consider approachable for new contributors.</li>
+        <li>Documentation fixes and missing test cases are genuinely valued contributions, not just stepping stones toward code changes.</li>
+        <li>Conventions vary enormously between projects — copying the local style and process matters more than applying your own preferred conventions from elsewhere.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a JavaScript library you use regularly, find an open issue labeled 'good first issue', and either fix it or write up a clear, reproducible bug report.</p>
+      <p>Pick a JavaScript library you use regularly, find an open issue labeled 'good first issue', and either fix it or write up a clear, reproducible bug report. Before opening anything, read the project's CONTRIBUTING.md in full and confirm your planned change matches its expectations for tests, style, and commit format, and build a minimal standalone reproduction (in a sandbox or tiny repo) if you're filing a bug rather than a fix.</p>
     </div>
   </article>
 

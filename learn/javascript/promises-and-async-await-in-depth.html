@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A Promise represents a value that isn't available yet but will be — eventually resolved (success) or rejected (failure). <code>async</code>/<code>await</code> is syntax sugar over Promises that lets asynchronous code read top-to-bottom like synchronous code.</p>
-    <p><code>Promise.all()</code> runs multiple promises concurrently and waits for all of them, which is usually much faster than awaiting several requests one after another when they don't depend on each other.</p>
+    <p class="lead">A Promise represents a value that isn't available yet but will eventually either resolve (succeed, with a value) or reject (fail, with a reason, usually an Error). A Promise moves through exactly three states over its lifetime — pending, then fulfilled or rejected — and once it settles into fulfilled or rejected, it can never change state again; this immutability is what makes Promises reliable to reason about compared to older callback-based async patterns.</p>
+    <p><code>async</code>/<code>await</code> is syntax sugar built directly on top of Promises: marking a function <code>async</code> makes it always return a Promise, and <code>await</code> inside it pauses that function's execution (without blocking the rest of the program) until the awaited Promise settles, unwrapping its resolved value or throwing its rejection as a regular exception. This lets asynchronous code read top-to-bottom like synchronous code, which is dramatically easier to follow than nested <code>.then()</code> callback chains.</p>
+    <p><code>await</code> only works inside a function explicitly marked <code>async</code> (or, in modern module environments, at a module's top level). A common structural mistake is trying to use <code>await</code> inside a plain <code>.forEach()</code> callback — <code>.forEach()</code> doesn't wait for anything its callback returns, so an async operation inside it fires and is immediately abandoned rather than awaited in sequence; a plain <code>for...of</code> loop (which does respect <code>await</code>) or <code>Promise.all()</code> with <code>.map()</code> are the correct replacements.</p>
+    <p><code>Promise.all()</code> runs an array of promises concurrently and resolves once every one of them has resolved, or rejects immediately as soon as any single one rejects. This is usually far faster than awaiting several independent requests one after another with sequential <code>await</code> calls, since sequential awaiting needlessly serializes work that has no actual dependency between the pieces.</p>
+    <p><code>Promise.allSettled()</code> is the safer sibling of <code>Promise.all()</code> for situations where some requests are allowed to fail without cancelling or invalidating the others — it always resolves (never rejects) with an array describing each promise's individual outcome, either <code>{status: "fulfilled", value}</code> or <code>{status: "rejected", reason}</code>. <code>Promise.race()</code> and <code>Promise.any()</code> round out the family: <code>race()</code> settles as soon as the first promise settles at all (success or failure), while <code>any()</code> settles as soon as the first one succeeds, ignoring failures unless all of them fail.</p>
+    <p>Error handling around <code>await</code> deserves real care: wrap awaited code in try/catch, because an unhandled rejected promise can crash a Node.js process outright, and in a browser it fails silently unless you're specifically listening for <code>unhandledrejection</code> events — either way, a swallowed rejection is a bug that's painful to track down later. Also remember that a <code>.then()</code> callback that itself throws produces a rejected promise, not a synchronous exception the surrounding code can catch with a normal try/catch — chaining <code>.catch()</code> (or awaiting inside try/catch) is required either way.</p>
     <div class="code-block">
 <div class="cap">async.js</div>      <pre><code>async function loadDashboard(userId) {
   const [user, posts] = await Promise.all([
@@ -121,18 +125,67 @@
   return { user, posts };
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">allSettled-and-error-handling.js</div>      <pre><code>async function notifyAllUsers(userIds) {
+  const results = await Promise.allSettled(
+    userIds.map((id) =&gt; sendNotification(id))
+  );
+
+  const failed = results.filter((r) =&gt; r.status === "rejected");
+  if (failed.length &gt; 0) {
+    console.warn(`${failed.length} notification(s) failed`, failed);
+  }
+  return results.filter((r) =&gt; r.status === "fulfilled").length;
+}
+
+async function safeLoad(id) {
+  try {
+    const data = await fetchUser(id);
+    return data;
+  } catch (err) {
+    console.error("Failed to load user", id, err);
+    return null; // fail gracefully instead of crashing the caller
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common-mistake-forEach.js</div>      <pre><code>// Bug: forEach does not wait for the async callback
+async function processAllBroken(ids) {
+  ids.forEach(async (id) =&gt; {
+    await sendToServer(id); // fires, but processAllBroken doesn't wait
+  });
+  console.log("done"); // logs immediately, before any request finishes
+}
+
+// Fix 1: sequential, respects await, one request at a time
+async function processAllSequential(ids) {
+  for (const id of ids) {
+    await sendToServer(id);
+  }
+  console.log("done");
+}
+
+// Fix 2: concurrent, independent requests in parallel
+async function processAllConcurrent(ids) {
+  await Promise.all(ids.map((id) =&gt; sendToServer(id)));
+  console.log("done");
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>await</code> only works inside an <code>async</code> function (or, in modern environments, at a module's top level).</li>
-        <li><code>Promise.all()</code> runs promises concurrently; sequential <code>await</code> calls run one after another, unnecessarily slower when they're independent.</li>
-        <li>Always wrap awaited code in try/catch — an unhandled rejected promise can crash a Node process or silently fail in the browser.</li>
-        <li><code>Promise.allSettled()</code> is safer than <code>all()</code> when some requests are allowed to fail without cancelling the others.</li>
+        <li>A Promise settles exactly once, into fulfilled or rejected, and can never change state afterward — this immutability is what makes them predictable to compose.</li>
+        <li><code>Promise.all()</code> runs promises concurrently and rejects as soon as any one fails; sequential <code>await</code> calls run one after another, unnecessarily slower when the work is independent.</li>
+        <li><code>Promise.allSettled()</code> never rejects — it reports every promise's individual outcome, ideal when partial failures are acceptable.</li>
+        <li><code>.forEach()</code> does not wait for an async callback — use a plain <code>for...of</code> loop for sequential awaiting, or <code>Promise.all()</code> with <code>.map()</code> for concurrent awaiting.</li>
+        <li>Always wrap awaited code in try/catch — an unhandled rejected promise can crash a Node process or fail silently in the browser.</li>
+        <li><code>Promise.race()</code> settles on the first promise to settle at all; <code>Promise.any()</code> settles on the first to succeed, ignoring failures unless every one fails.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Rewrite a chain of sequential fetch calls for independent data as concurrent calls using Promise.all, and measure the time difference.</p>
+      <p>Rewrite a chain of sequential fetch calls for independent data as concurrent calls using Promise.all, and measure the time difference against the sequential version using console.time. Then take a list of IDs, write a function that sends each one to a (mock) server using forEach with an async callback, observe that it logs 'done' before any request actually completes, and fix it using both a sequential for...of version and a concurrent Promise.all version.</p>
     </div>
   </article>
 

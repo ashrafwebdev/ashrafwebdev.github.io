@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">JavaScript runs on a single thread, but never blocks on slow operations because of the event loop: synchronous code runs first, then microtasks (Promise callbacks) drain completely, then one macrotask (a setTimeout callback, an I/O event) runs, then microtasks drain again, repeating.</p>
-    <p>This ordering explains a classic surprise: a <code>Promise.resolve().then()</code> always runs before a <code>setTimeout(fn, 0)</code>, even though both look like they should run 'immediately' — the microtask queue is always fully drained before the next macrotask is picked up.</p>
+    <p class="lead">JavaScript runs on a single thread — only one piece of JavaScript code executes at any given moment — yet it never blocks the whole program on slow operations like network requests or timers, because of the event loop. The mental model: all currently-queued synchronous code runs to completion first, then the entire microtask queue is drained completely (every microtask, including any new ones queued by earlier microtasks), then exactly one macrotask is picked up and run, then the microtask queue is drained again, and the cycle repeats indefinitely.</p>
+    <p>Promise callbacks (<code>.then()</code>, <code>.catch()</code>, <code>.finally()</code>, and anything after an <code>await</code>) are microtasks. <code>setTimeout()</code>, <code>setInterval()</code>, and I/O callbacks (like a completed file read in Node, or a UI event dispatch) are macrotasks. This ordering explains a classic, genuinely surprising result: a <code>Promise.resolve().then(fn)</code> queued before a <code>setTimeout(fn, 0)</code> always runs first, even though both superficially look like they should run 'immediately' — the entire microtask queue must fully drain before the event loop is even allowed to look at the next macrotask.</p>
+    <p>This distinction matters practically, not just as trivia: code that depends on execution order across a mix of promises and timers can behave unexpectedly if you assume 'whatever was scheduled first runs first' without accounting for which queue each callback actually lands in. A common real bug: expecting a <code>setTimeout(fn, 0)</code> to run before a chain of several <code>.then()</code> callbacks, when in fact every one of those microtasks runs first, no matter how many are queued, because the timeout is stuck waiting for its turn as a macrotask.</p>
+    <p>A genuinely rare but real footgun: a microtask that queues another microtask (for example, a <code>.then()</code> handler that itself returns a promise which schedules further <code>.then()</code> handlers, recursively) can, in principle, starve macrotasks indefinitely, since the microtask queue must be fully emptied before any macrotask gets a turn — if microtasks keep refilling the queue faster than it drains, timers, rendering, and I/O callbacks are all delayed behind them.</p>
+    <p>The browser also inserts rendering (style recalculation, layout, paint) at specific points in this cycle, generally after the microtask queue drains and before the next macrotask, though the precise timing is more nuanced and partly implementation-defined — a practical consequence is that even a synchronous loop packed with many DOM writes won't visually update the page until that whole script finishes and the microtask queue is empty, which is why long synchronous work makes a page feel frozen even though the DOM was, technically, already being updated in memory the whole time.</p>
+    <p>Node.js has its own extra wrinkles worth knowing if you work there: <code>process.nextTick()</code> queues a callback that runs even before the regular microtask queue (including before promise callbacks), and Node's event loop is organized into distinct phases (timers, pending callbacks, poll, check, close callbacks) that don't map exactly onto the simpler browser model — worth a dedicated look once you're doing real backend work in Node.</p>
     <div class="code-block">
 <div class="cap">eventloop.js</div>      <pre><code>console.log("1: sync");
 
@@ -123,18 +127,52 @@ console.log("4: sync");
 
 // Actual order: 1, 4, 3, 2</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">chained-microtasks-vs-timeout.js</div>      <pre><code>console.log("start");
+
+setTimeout(() =&gt; console.log("timeout"), 0);
+
+Promise.resolve()
+  .then(() =&gt; console.log("promise 1"))
+  .then(() =&gt; console.log("promise 2"))
+  .then(() =&gt; console.log("promise 3"));
+
+console.log("end");
+
+// Order: start, end, promise 1, promise 2, promise 3, timeout
+// All three chained microtasks drain before the single macrotask runs,
+// no matter how many .then() links are in the chain.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">await-pauses-at-microtask-boundaries.js</div>      <pre><code>async function demo() {
+  console.log("A");
+  await null; // yields, resuming as a microtask
+  console.log("C"); // runs after any synchronous code that follows the call
+}
+
+console.log("start");
+demo();
+console.log("B");
+
+// Order: start, A, B, C
+// `await` splits the async function: everything before the first await
+// runs synchronously; everything after resumes later as a microtask.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Order of execution: all synchronous code, then all pending microtasks, then one macrotask, repeat.</li>
-        <li>Promise callbacks are microtasks; setTimeout/setInterval callbacks are macrotasks.</li>
-        <li>A microtask that queues another microtask can starve macrotasks indefinitely — a real, if rare, footgun.</li>
-        <li>Understanding this ordering explains most 'why did this run in that order' bugs in async code.</li>
+        <li>Order of execution: all synchronous code, then the entire microtask queue drains, then one macrotask, then the microtask queue drains again, repeat.</li>
+        <li>Promise callbacks (<code>.then</code>, <code>.catch</code>, code after <code>await</code>) are microtasks; <code>setTimeout</code>/<code>setInterval</code>/I-O callbacks are macrotasks.</li>
+        <li>A chain of any number of <code>.then()</code> callbacks fully drains before a competing <code>setTimeout(fn, 0)</code> ever runs, regardless of chain length.</li>
+        <li>A microtask that keeps queuing more microtasks can starve macrotasks indefinitely — a real, if rare, footgun.</li>
+        <li>Code before the first <code>await</code> in an async function runs synchronously; everything after it resumes later as a microtask.</li>
+        <li>Understanding this ordering explains most 'why did this run in that order' bugs in code mixing promises and timers.</li>
+        <li>Node.js's <code>process.nextTick()</code> runs even before the regular microtask queue, and Node's event loop has distinct phases that don't map directly onto the browser's simpler model.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Predict the console.log output order for a mix of synchronous code, a setTimeout, and two chained .then() promise callbacks, then run it to verify.</p>
+      <p>Predict the console.log output order for a mix of synchronous code, a setTimeout, and two chained .then() promise callbacks, then run it to verify. Next, extend the prediction exercise to three chained .then() calls competing against a single setTimeout(fn, 0) and confirm all three microtasks still run first. Finally, write an async function with two await statements interleaved with synchronous console.log calls outside it, and trace through exactly why the output appears in the order it does.</p>
     </div>
   </article>
 

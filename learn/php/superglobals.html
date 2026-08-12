@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Superglobals are built-in arrays automatically available in every scope, no import needed. <code>$_GET</code> holds URL query parameters; <code>$_POST</code> holds submitted form data sent via POST; <code>$_SESSION</code> persists data across requests for a single logged-in visitor.</p>
-    <p>Never trust superglobal data directly — always validate and sanitize it before using it in a database query or displaying it back to the page, since it comes straight from the user and could be anything, including malicious input.</p>
+    <p class="lead">Superglobals are built-in arrays automatically available in every scope, no import needed. <code>$_GET</code> holds URL query parameters; <code>$_POST</code> holds submitted form data sent via POST; <code>$_SESSION</code> persists data across requests for a single logged-in visitor. There are several other superglobals too: <code>$_SERVER</code> (request and environment metadata), <code>$_COOKIE</code> (cookies sent by the browser), and <code>$_FILES</code> (uploaded file metadata).</p>
+    <p>Never trust superglobal data directly — always validate and sanitize it before using it in a database query or displaying it back to the page, since it comes straight from the user and could be anything, including malicious input. A key coming from <code>$_GET</code> or <code>$_POST</code> may not even exist if the form was tampered with or the field left out, so always check for it rather than assuming it's present.</p>
+    <p><code>$_GET</code> and <code>$_POST</code> differ in more than just where the data comes from. GET requests are meant to be idempotent (safe to repeat, cacheable, bookmarkable) and their parameters are visible in the URL and browser history, with practical length limits imposed by servers and browsers. POST requests are meant for state-changing actions, keep data out of the URL and browser history, and have no practical size limit — which is why login forms and file uploads use POST, never GET.</p>
+    <p><code>$_SESSION</code> requires calling <code>session_start()</code> before any output is sent and before reading or writing session data. By default PHP stores session data in a file on the server (one file per session ID) and gives the browser only an opaque session ID cookie — the actual data never leaves the server, which is why sessions are the right place for anything sensitive that cookies alone shouldn't hold.</p>
+    <p>The null coalescing operator, <code>$_POST['name'] ?? ''</code>, safely reads a possibly-missing array key and falls back to a default instead of triggering an "undefined array key" warning. <code>isset()</code> and <code>array_key_exists()</code> serve a similar defensive purpose when you need a boolean check rather than a fallback value.</p>
+    <p><code>$_FILES</code> holds metadata about uploaded files — name, temporary path, size, and MIME type as reported by the browser (which cannot be fully trusted) — and any uploaded file must be moved out of PHP's temporary upload directory with <code>move_uploaded_file()</code> before the request ends, or it is discarded automatically.</p>
     <div class="code-block">
 <div class="cap">handle_form.php</div>      <pre><code>&lt;?php
 session_start(); // must be called before using $_SESSION
@@ -122,6 +126,36 @@ $_SESSION['last_name_submitted'] = $name;
 echo "Thanks, $name!";
 ?&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">get_vs_post.php</div>      <pre><code>&lt;?php
+// search.php?q=php+tutorial&amp;page=2  -&gt; a bookmarkable, cacheable GET request
+$query = htmlspecialchars($_GET['q'] ?? '');
+$page  = (int) ($_GET['page'] ?? 1);
+
+// A state-changing action belongs in a POST body, not the URL
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $comment = trim($_POST['comment'] ?? '');
+    if ($comment === '') {
+        http_response_code(422);
+        echo "Comment cannot be empty.";
+        exit;
+    }
+    // ...save $comment...
+}
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">upload.php</div>      <pre><code>&lt;?php
+if (!empty($_FILES['avatar']['tmp_name']) &amp;&amp; $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+    $destination = __DIR__ . '/uploads/' . basename($_FILES['avatar']['name']);
+    if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
+        echo "Upload saved.";
+    } else {
+        echo "Upload failed to move.";
+    }
+}
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -129,11 +163,15 @@ echo "Thanks, $name!";
         <li><code>session_start()</code> must run before any output and before reading or writing <code>$_SESSION</code>.</li>
         <li>The null coalescing operator (<code>$_POST['name'] ?? ''</code>) safely handles a missing key without a warning.</li>
         <li>Always escape output with <code>htmlspecialchars()</code> before printing user-supplied data back into HTML, to prevent XSS.</li>
+        <li>GET requests are for safe, repeatable reads; POST requests are for actions that change state — use the right one for the job.</li>
+        <li><code>$_SERVER['REQUEST_METHOD']</code> tells you which HTTP method the current request used, useful when one script handles both a form's display and its submission.</li>
+        <li>Uploaded files in <code>$_FILES</code> must be moved with <code>move_uploaded_file()</code> before the request ends, or PHP discards the temporary file.</li>
+        <li>Never assume a superglobal key exists — a tampered or incomplete form submission can omit fields you expect.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a simple form that POSTs a name to a PHP script, which echoes it back safely escaped with htmlspecialchars.</p>
+      <p>Build a simple form that POSTs a name to a PHP script, which echoes it back safely escaped with htmlspecialchars. Then extend the same script to also accept a GET parameter for a greeting language (e.g. ?lang=fr), defaulting sensibly with the null coalescing operator when it's missing, and store the last submitted name in $_SESSION so it's remembered on the next visit.</p>
     </div>
   </article>
 

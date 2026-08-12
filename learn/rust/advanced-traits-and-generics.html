@@ -113,6 +113,9 @@
     <p class="lead"><b>Associated types</b> let a trait define a placeholder type that each implementor fills in, such as the <code>Iterator</code> trait's <code>type Item</code>, which avoids needing a separate generic parameter for every implementation of the trait.</p>
     <p><b>Trait objects</b> (<code>dyn Trait</code>, usually behind <code>Box of dyn Trait</code>) allow storing different concrete types that share a trait in the same collection, resolved via dynamic dispatch at runtime, as opposed to generics which are resolved at compile time via monomorphization (a separate specialized copy generated per concrete type).</p>
     <p>Choosing between generics and trait objects is a real design decision: generics give zero-cost, compile-time-specialized code at the cost of larger binaries; trait objects give a single shared implementation and heterogeneous collections at the cost of a small runtime dispatch overhead.</p>
+    <p>Rust lets you overload operators like <code>+</code>, <code>-</code>, and <code>==</code> for your own types by implementing the corresponding trait from <code>std::ops</code> &mdash; implementing <code>Add</code> for a custom vector type lets two instances be summed with plain <code>+</code> syntax instead of a named method, which reads far more naturally in mathematical code.</p>
+    <p>A <b>supertrait</b> relationship, written <code>trait B: A</code>, requires that anything implementing <code>B</code> must also implement <code>A</code>, letting <code>B</code>'s own methods freely call methods from <code>A</code> since the compiler guarantees they'll always be available together. This is a common way to build layered trait hierarchies without duplicating requirements.</p>
+    <p>A <b>blanket implementation</b> implements a trait for every type that satisfies some other bound at once &mdash; for instance, the standard library implements <code>ToString</code> for every type that already implements <code>Display</code>, so you get <code>.to_string()</code> for free the moment you write a <code>Display</code> implementation. It's a powerful pattern for extending a trait across an entire family of types with a single block of code, though it's worth noting that not every trait can be turned into a trait object: <code>dyn Trait</code> requires the trait to be "object safe," which rules out methods that return <code>Self</code> by value or that are themselves generic.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>trait Shape {
     fn area(&amp;self) -&gt; f64;
@@ -138,6 +141,49 @@ fn main() {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">operator_overload.rs</div>      <pre><code>use std::ops::Add;
+
+#[derive(Debug, Clone, Copy)]
+struct Vector2D { x: f64, y: f64 }
+
+impl Add for Vector2D {
+    type Output = Vector2D;
+
+    fn add(self, other: Vector2D) -&gt; Vector2D {
+        Vector2D { x: self.x + other.x, y: self.y + other.y }
+    }
+}
+
+fn main() {
+    let a = Vector2D { x: 1.0, y: 2.0 };
+    let b = Vector2D { x: 3.0, y: 4.0 };
+    println!("{:?}", a + b); // uses our Add impl
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">supertrait_and_blanket.rs</div>      <pre><code>use std::fmt::Debug;
+
+trait Named: Debug {
+    fn name(&amp;self) -&gt; String;
+
+    fn describe(&amp;self) -&gt; String {
+        format!("{} ({:?})", self.name(), self) // relies on Debug from the supertrait
+    }
+}
+
+#[derive(Debug)]
+struct Item { label: String }
+
+impl Named for Item {
+    fn name(&amp;self) -&gt; String { self.label.clone() }
+}
+
+fn main() {
+    let item = Item { label: String::from("widget") };
+    println!("{}", item.describe());
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -145,11 +191,15 @@ fn main() {
         <li>Trait objects (<code>dyn Trait</code>) enable heterogeneous collections resolved via dynamic dispatch.</li>
         <li>Generics are monomorphized at compile time; trait objects share one implementation at runtime.</li>
         <li>Choose generics for zero-cost specialization, trait objects for heterogeneous collections.</li>
+        <li>Implementing <code>std::ops</code> traits like <code>Add</code> lets custom types use operators like <code>+</code> naturally.</li>
+        <li>A supertrait (<code>trait B: A</code>) guarantees A's methods are always available wherever B is implemented.</li>
+        <li>Blanket implementations extend a trait across every type satisfying some bound, like ToString via Display.</li>
+        <li><code>dyn Trait</code> requires object safety; methods returning <code>Self</code> by value or generic methods disqualify a trait.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Vec of Box of dyn Shape holding at least two different shape types, iterate over it, and print the total combined area.</p>
+      <p>Create a Vec of Box of dyn Shape holding at least two different shape types, iterate over it, and print the total combined area. Then implement std::ops::Add for a custom Vector2D struct so two vectors can be summed with plain +, and define a supertrait Named requiring Debug so its default describe() method can rely on debug formatting.</p>
     </div>
   </article>
 

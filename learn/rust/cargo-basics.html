@@ -113,6 +113,9 @@
     <p class="lead"><code>cargo</code> is Rust's build tool and package manager, used for virtually every Rust project. <code>cargo new my_project</code> scaffolds a new project with a <code>Cargo.toml</code> manifest describing metadata and dependencies, and a <code>src/main.rs</code> starter file.</p>
     <p><code>cargo build</code> compiles the project, <code>cargo run</code> compiles and runs it in one step, and <code>cargo build --release</code> produces an optimized binary suitable for production, trading longer compile times for significantly faster runtime performance.</p>
     <p><code>cargo test</code> runs all functions annotated <code>#[test]</code> anywhere in the project, and <code>cargo add</code> fetches and adds a new dependency from crates.io directly into <code>Cargo.toml</code>.</p>
+    <p><code>cargo check</code> is worth reaching for constantly while iterating: it runs the compiler's full type-checking and borrow-checking passes without generating an actual binary, which is noticeably faster than a full <code>cargo build</code> and gives you the same compile errors as fast feedback.</p>
+    <p>Larger projects often use a <b>workspace</b>: a top-level <code>Cargo.toml</code> listing multiple member crates that share one <code>target/</code> build directory and one <code>Cargo.lock</code>, which avoids recompiling shared dependencies separately for each crate and is the standard way to split a project into a library plus one or more binaries or supporting crates.</p>
+    <p><code>[profile.dev]</code> and <code>[profile.release]</code> sections in <code>Cargo.toml</code> let you tune optimization level, debug symbols, and panic behavior separately per build profile; alongside cargo, <code>cargo fmt</code> formats code to a canonical style, <code>cargo clippy</code> lints for unidiomatic or bug-prone patterns, and <code>cargo doc --open</code> builds and opens local documentation for your project and every one of its dependencies.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>$ cargo new hello_rust
 $ cd hello_rust
@@ -125,6 +128,26 @@ Hello, world!
 $ cargo test
 $ cargo build --release</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Cargo.toml (workspace + profiles)</div>      <pre><code># top-level Cargo.toml
+[workspace]
+members = ["app", "core_lib"]
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = true
+panic = "abort"</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">terminal (dev tools)</div>      <pre><code>$ cargo check          # fast type-check, no binary produced
+$ cargo fmt             # format all source files
+$ cargo clippy --all-targets   # lint for common mistakes
+$ cargo doc --open      # build and open docs for this crate + dependencies</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,11 +155,15 @@ $ cargo build --release</code></pre>
         <li><code>cargo run</code> builds and runs in one step; <code>cargo build --release</code> produces an optimized binary.</li>
         <li><code>cargo test</code> automatically discovers and runs every <code>#[test]</code>-annotated function.</li>
         <li><code>cargo add</code> fetches a dependency from crates.io and records it in the manifest.</li>
+        <li><code>cargo check</code> gives fast compiler feedback without producing a binary at all.</li>
+        <li>A workspace groups multiple crates under one <code>Cargo.toml</code>, sharing a build directory and lockfile.</li>
+        <li><code>[profile.dev]</code>/<code>[profile.release]</code> tune optimization, debug info, and panic behavior per build type.</li>
+        <li><code>cargo fmt</code>, <code>cargo clippy</code>, and <code>cargo doc --open</code> round out the standard local development loop.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Scaffold a new project with cargo new, add one dependency with cargo add, write a small test function, and run it with cargo test.</p>
+      <p>Scaffold a new project with cargo new, add one dependency with cargo add, write a small test function, and run it with cargo test. Then set up a two-member workspace (a library crate and a binary crate that depends on it), and run cargo check followed by cargo fmt and cargo clippy before a final cargo build --release.</p>
     </div>
   </article>
 

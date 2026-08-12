@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A closure is a function that 'remembers' the variables from where it was defined, even after that outer function has finished running. This is how private state and factory functions work in JavaScript.</p>
-    <p><code>this</code> refers to different things depending on how a function is called — a method call, a plain function call, and an arrow function all bind <code>this</code> differently, which trips up nearly every JavaScript learner at least once.</p>
+    <p class="lead">A closure is what happens whenever a function is defined inside another function and keeps access to that outer function's variables even after the outer function has already finished running and returned. This isn't a special feature you opt into — every function in JavaScript forms a closure over the scope it was defined in, automatically; it's just usually invisible until you return an inner function from an outer one and only then notice the outer variables are still alive.</p>
+    <p>Closures are the mechanism behind private state in JavaScript before (and still alongside) classes with private fields: a variable declared inside an outer function is completely inaccessible from outside it, but an inner function returned from that outer function can still read and modify it, giving you a controlled, encapsulated piece of mutable state with no way to reach in and corrupt it directly.</p>
+    <p>A classic closure pitfall involves loops and <code>var</code>: because <code>var</code> is function-scoped, not block-scoped, a closure created inside a <code>var</code>-based for-loop captures the same single variable, not a fresh one per iteration, so all the closures end up seeing the final value of the loop variable after the loop finishes. Switching to <code>let</code> fixes this automatically, since <code>let</code> creates a genuinely new binding for each iteration of the loop.</p>
+    <p><code>this</code> is unlike ordinary variables — it isn't determined by where a regular function is written, but by how it's called at the call site. Calling <code>obj.method()</code> binds <code>this</code> to <code>obj</code>. Calling the same function as a bare, unattached function binds <code>this</code> to <code>undefined</code> in strict mode (or the global object in loose mode) — which is exactly why passing a method as a bare callback, like <code>setTimeout(obj.method)</code>, silently loses its intended <code>this</code> and is one of the single most common sources of confusion for people learning JavaScript.</p>
+    <p>Arrow functions sidestep this entire problem by design: they don't have their own <code>this</code> binding at all, and instead capture <code>this</code> lexically from the scope they were written in, exactly like a closure captures any other outer variable. This is precisely why arrow functions are the standard choice for callbacks inside class methods and event handlers — they automatically keep referring to the surrounding object's <code>this</code>, with nothing extra required.</p>
+    <p>When you do need to explicitly control what <code>this</code> refers to, three methods exist: <code>.call(thisArg, ...args)</code> and <code>.apply(thisArg, argsArray)</code> both invoke the function immediately with a given <code>this</code> (differing only in how arguments are passed), while <code>.bind(thisArg)</code> returns a new function permanently locked to that <code>this</code>, which can then be called (or passed around as a callback) later without losing its binding.</p>
     <div class="code-block">
 <div class="cap">closures.js</div>      <pre><code>function makeCounter() {
   let count = 0; // captured by the closure
@@ -124,18 +128,61 @@
 const counter = makeCounter();
 console.log(counter(), counter(), counter()); // 1 2 3</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">var-loop-closure-bug.js</div>      <pre><code>// Bug: var is function-scoped, so all three closures share one `i`
+const broken = [];
+for (var i = 0; i &lt; 3; i++) {
+  broken.push(() =&gt; console.log("var:", i));
+}
+broken.forEach((fn) =&gt; fn()); // var: 3, var: 3, var: 3
+
+// Fix: let creates a fresh binding per iteration
+const fixed = [];
+for (let j = 0; j &lt; 3; j++) {
+  fixed.push(() =&gt; console.log("let:", j));
+}
+fixed.forEach((fn) =&gt; fn()); // let: 0, let: 1, let: 2</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">this-binding.js</div>      <pre><code>const counter = {
+  count: 0,
+  increment() { this.count++; },
+};
+
+counter.increment();       // fine, `this` is `counter`
+console.log(counter.count); // 1
+
+const bareIncrement = counter.increment;
+// bareIncrement(); // TypeError-ish bug: `this` is undefined here
+
+// Fix with bind:
+const bound = counter.increment.bind(counter);
+bound(); // works, `this` is locked to counter
+console.log(counter.count); // 2
+
+// Arrow functions avoid the problem entirely by inheriting `this`:
+const counterWithArrow = {
+  count: 0,
+  incrementLater() {
+    setTimeout(() =&gt; { this.count++; }, 100); // `this` still counterWithArrow
+  },
+};</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>A closure keeps a reference to its outer variables alive as long as the closure itself exists.</li>
+        <li>A closure keeps a reference to its outer variables alive as long as the closure itself is reachable, even after the outer function returns.</li>
+        <li>Closures are the classic way to build private state in JavaScript: outer variables are invisible from outside, but reachable and mutable through returned inner functions.</li>
+        <li>A <code>var</code>-based for-loop shares one variable across every iteration's closures; <code>let</code> creates a fresh binding per iteration, which is usually what you actually want.</li>
         <li>Arrow functions inherit <code>this</code> from where they're defined, not how they're called — this is why they're preferred inside class methods and callbacks.</li>
         <li>A regular function's <code>this</code> depends entirely on the call site: <code>obj.method()</code> binds <code>this</code> to <code>obj</code>; a bare function call binds it to <code>undefined</code> in strict mode.</li>
-        <li><code>.bind()</code>, <code>.call()</code>, and <code>.apply()</code> let you explicitly control what <code>this</code> refers to.</li>
+        <li>Passing a method as a bare callback (<code>setTimeout(obj.method)</code>) silently loses its <code>this</code> — bind it first, or wrap it in an arrow function.</li>
+        <li><code>.call()</code>/<code>.apply()</code> invoke a function immediately with a chosen <code>this</code>; <code>.bind()</code> returns a new function permanently locked to that <code>this</code> for later use.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a makeCounter-style closure that supports increment, decrement, and reset, each remembering the same private count variable.</p>
+      <p>Write a makeCounter-style closure that supports increment, decrement, and reset, each remembering the same private count variable. Then reproduce the classic var-in-a-loop closure bug with three functions pushed into an array, fix it by switching to let, and finally write an object with a method that loses its this when passed as a bare callback to setTimeout, fixing it with both .bind() and an arrow function.</p>
     </div>
   </article>
 

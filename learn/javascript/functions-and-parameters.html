@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A function packages up reusable logic. JavaScript has several syntaxes: function declarations, function expressions, and arrow functions — all valid, with arrow functions being the most common in modern code for short, single-purpose logic.</p>
-    <p>Parameters can have default values, and the rest parameter (<code>...args</code>) collects any extra arguments into an array, useful when a function needs to accept a variable number of inputs.</p>
+    <p class="lead">A function packages up reusable logic so you don't repeat yourself. JavaScript offers several ways to define one: function declarations (<code>function greet() {}</code>), function expressions (<code>const greet = function() {}</code>), and arrow functions (<code>const greet = () => {}</code>). All three produce callable functions, but they differ in two important ways — hoisting behavior and how they handle <code>this</code>.</p>
+    <p>Function declarations are hoisted completely, meaning you can call one before its line in the file and it still works, because the whole function is set up before any code runs. Function expressions and arrow functions are not hoisted the same way — the variable holding them follows normal <code>let</code>/<code>const</code> rules, so calling one before its declaration throws.</p>
+    <p>Parameters can have default values (<code>function greet(name = "friend")</code>), which only kick in when the argument is <code>undefined</code> — passing <code>null</code> explicitly does not trigger the default. The rest parameter (<code>...args</code>) collects any number of trailing arguments into a real array, which is useful whenever a function needs to accept a variable number of inputs, like a sum or a logging helper.</p>
+    <p>JavaScript functions are values — they can be stored in variables, passed as arguments to other functions, and returned from other functions. This is what makes callbacks, <code>.map()</code>/<code>.filter()</code>, and higher-order functions possible. A function that takes another function as an argument, or returns one, is called a higher-order function, and they're everywhere in idiomatic JavaScript.</p>
+    <p>Arrow functions are more than shorthand — they deliberately do not create their own <code>this</code>, <code>arguments</code> object, or binding for <code>super</code>. They inherit all of those from the surrounding scope. This makes them ideal for short callbacks and for methods defined as class fields, but it also means an arrow function is the wrong tool when you actually need a dynamic <code>this</code>, such as certain object methods or constructor functions.</p>
+    <p>A function that doesn't explicitly <code>return</code> a value returns <code>undefined</code> — this is a common source of silent bugs, especially with <code>.forEach()</code> or <code>.map()</code> callbacks that use a block body with curly braces but forget the <code>return</code> keyword, silently producing an array full of <code>undefined</code>.</p>
     <div class="code-block">
 <div class="cap">functions.js</div>      <pre><code>function greet(name = "friend") {
   return `Hello, ${name}!`;
@@ -125,18 +129,57 @@ function sum(...numbers) {
 
 console.log(greet(), add(2, 3), sum(1, 2, 3, 4));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">higher-order-functions.js</div>      <pre><code>// Functions as values: passed in, returned out
+function makeMultiplier(factor) {
+  return function (n) {
+    return n * factor;
+  };
+}
+
+const double = makeMultiplier(2);
+const triple = makeMultiplier(3);
+console.log(double(5), triple(5)); // 10 15
+
+// A function accepting a function: retry with a callback
+async function retry(fn, attempts = 3) {
+  for (let i = 0; i &lt; attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === attempts - 1) throw err;
+    }
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common-mistake.js</div>      <pre><code>// Forgetting `return` in a block-bodied arrow function
+const doubled = [1, 2, 3].map((n) =&gt; {
+  n * 2; // no return! result is undefined for every item
+});
+console.log(doubled); // [undefined, undefined, undefined]
+
+// Fix: either add return, or drop the braces for an implicit return
+const fixedA = [1, 2, 3].map((n) =&gt; {
+  return n * 2;
+});
+const fixedB = [1, 2, 3].map((n) =&gt; n * 2); // implicit return, no braces</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Arrow functions (<code>=&gt;</code>) are shorter and don't rebind <code>this</code>, which matters a lot inside classes and callbacks.</li>
-        <li>Default parameters (<code>name = "friend"</code>) avoid a separate check for undefined arguments.</li>
-        <li>The rest parameter (<code>...args</code>) must be the last parameter in the list.</li>
-        <li>A function without an explicit <code>return</code> returns <code>undefined</code>.</li>
+        <li>Arrow functions (<code>=&gt;</code>) are shorter and don't create their own <code>this</code>, <code>arguments</code>, or <code>super</code> binding — they inherit these from the enclosing scope.</li>
+        <li>Function declarations are fully hoisted and callable before their line in the file; function expressions and arrow functions are not.</li>
+        <li>Default parameters (<code>name = "friend"</code>) only apply when the argument is <code>undefined</code>, not when it's <code>null</code>.</li>
+        <li>The rest parameter (<code>...args</code>) must be the last parameter, and collects the remaining arguments into a real array.</li>
+        <li>A function without an explicit <code>return</code> returns <code>undefined</code> — a common silent bug with block-bodied arrow callbacks.</li>
+        <li>Arrow functions with a single expression and no braces have an implicit return; adding braces requires an explicit <code>return</code>.</li>
+        <li>Functions are first-class values in JavaScript — they can be stored, passed around, and returned like any other value, which is the basis of callbacks and higher-order functions.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that takes any number of prices as arguments and returns their total using the rest parameter and reduce.</p>
+      <p>Write a function that takes any number of prices as arguments and returns their total using the rest parameter and reduce. Then write a makeMultiplier(factor) higher-order function that returns a new function multiplying its input by that factor, and demonstrate the forgotten-return bug with a block-bodied arrow function passed to map, followed by the fix.</p>
     </div>
   </article>
 

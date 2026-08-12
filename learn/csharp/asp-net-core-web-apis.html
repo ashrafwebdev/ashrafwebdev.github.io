@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Building a full REST API in ASP.NET Core typically uses <code>[ApiController]</code> classes with attribute routing: <code>[HttpGet]</code>, <code>[HttpPost]</code>, and similar attributes map methods to HTTP verbs and routes, and returned objects are automatically serialized to JSON.</p>
-    <p>Model binding automatically converts incoming JSON request bodies into C# objects via <code>[FromBody]</code>, and validation attributes like <code>[Required]</code> on a model's properties are checked automatically before the action method even runs.</p>
-    <p>Returning an <code>IActionResult</code> (or the generic <code>ActionResult of T</code>) lets a single action return different HTTP status codes &mdash; <code>Ok(result)</code>, <code>NotFound()</code>, <code>BadRequest()</code> &mdash; depending on what happened.</p>
+    <p class="lead">Building a full REST API in ASP.NET Core typically uses <code>[ApiController]</code> classes with attribute routing: <code>[HttpGet]</code>, <code>[HttpPost]</code>, and similar attributes map methods to HTTP verbs and routes, and returned objects are automatically serialized to JSON via <code>System.Text.Json</code> by default. The <code>[ApiController]</code> attribute also turns on automatic model validation and forces route/query mismatches to return a 400 response instead of silently binding null.</p>
+    <p>Model binding automatically converts incoming JSON request bodies into C# objects via <code>[FromBody]</code>, route segments via <code>[FromRoute]</code>, and query string values via <code>[FromQuery]</code>; validation attributes like <code>[Required]</code>, <code>[Range]</code>, and <code>[StringLength]</code> on a model's properties are checked automatically before the action method even runs, and a failing model returns a 400 with the validation errors without you writing any explicit validation code.</p>
+    <p>Returning an <code>IActionResult</code> (or the generic <code>ActionResult of T</code>) lets a single action return different HTTP status codes &mdash; <code>Ok(result)</code>, <code>NotFound()</code>, <code>BadRequest()</code>, <code>CreatedAtAction(...)</code> &mdash; depending on what happened, which maps the API's behavior onto proper REST semantics instead of always returning 200 with an error flag buried in the body.</p>
+    <p>Dependency injection is the standard way to reach a database or external service from a controller: services registered in <code>Program.cs</code> are supplied automatically to a controller's constructor, keeping the controller itself thin and easily testable by substituting a fake implementation of the injected interface in unit tests.</p>
+    <p>Cross-cutting concerns &mdash; authentication (<code>[Authorize]</code>), CORS, rate limiting, response caching &mdash; are typically applied via attributes on controllers/actions or configured once in the middleware pipeline, rather than duplicated in every action method, keeping the actual business logic focused on just the request at hand.</p>
+    <p>For discoverability, ASP.NET Core integrates with OpenAPI/Swagger tooling that generates interactive API documentation directly from your controllers, routes, and model types, which is invaluable both for other developers consuming the API and for catching accidental breaking changes to a contract.</p>
     <div class="code-block">
 <div class="cap">ProductsController.cs</div>      <pre><code>[ApiController]
 [Route("api/[controller]")]
@@ -134,18 +137,68 @@ public class ProductsController : ControllerBase
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ValidatedModelAndDI.cs</div>      <pre><code>public class CreateProductRequest
+{
+    [Required, StringLength(100)]
+    public string Name { get; set; } = "";
+
+    [Range(0.01, 100000)]
+    public decimal Price { get; set; }
+}
+
+[ApiController]
+[Route("api/[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IProductRepository _repository;
+
+    // Injected automatically by the DI container
+    public ProductsController(IProductRepository repository)
+    {
+        _repository = repository;
+    }
+
+    [HttpPost]
+    public IActionResult Create(CreateProductRequest request)
+    {
+        // [ApiController] already returned 400 automatically if invalid
+        var product = _repository.Add(request.Name, request.Price);
+        return CreatedAtAction(nameof(Create), new { id = product.Id }, product);
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">AuthorizeAndErrors.cs</div>      <pre><code>[ApiController]
+[Route("api/[controller]")]
+[Authorize] // every action requires an authenticated caller
+public class OrdersController : ControllerBase
+{
+    [HttpGet("{id}")]
+    [AllowAnonymous] // overrides the class-level [Authorize] for this action
+    public IActionResult Get(int id)
+    {
+        if (id &lt;= 0) return BadRequest("id must be positive");
+        var order = OrderRepository.Find(id);
+        return order is null ? NotFound() : Ok(order);
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>[ApiController]</code> plus attribute routing maps HTTP verbs and routes directly to methods.</li>
-        <li><code>[FromBody]</code> deserializes the JSON request body into a strongly typed C# object.</li>
+        <li><code>[ApiController]</code> plus attribute routing maps HTTP verbs and routes directly to methods, and enables automatic 400s on invalid models.</li>
+        <li><code>[FromBody]</code>, <code>[FromRoute]</code>, and <code>[FromQuery]</code> tell model binding where to pull each parameter from.</li>
+        <li>Data annotation attributes such as <code>[Required]</code> and <code>[Range]</code> drive automatic model validation before the action even runs.</li>
         <li><code>ActionResult of T</code> lets one method return varied HTTP responses like Ok, NotFound, or BadRequest.</li>
-        <li>Data annotation attributes such as <code>[Required]</code> drive automatic model validation.</li>
+        <li>Constructor-injected services keep controllers thin and easy to unit test with fake implementations.</li>
+        <li><code>[Authorize]</code> and <code>[AllowAnonymous]</code> control access at the class or action level, overriding as needed.</li>
+        <li>OpenAPI/Swagger tooling generates interactive documentation straight from your controllers and models.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch an ApiController with GET and POST actions for a Task resource, including proper NotFound and BadRequest responses where appropriate.</p>
+      <p>Sketch an ApiController with GET and POST actions for a Task resource, including proper NotFound and BadRequest responses where appropriate. Add a request model with at least two validation attributes (like Required and StringLength), inject a repository interface into the controller's constructor, and mark one action with [Authorize] while leaving the GET action publicly accessible with [AllowAnonymous].</p>
     </div>
   </article>
 

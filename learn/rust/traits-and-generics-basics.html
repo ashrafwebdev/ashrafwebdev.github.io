@@ -111,8 +111,11 @@
 
   <article>
     <p class="lead">A <code>trait</code> defines shared behavior a type can implement, similar to an interface: <code>trait Summary { fn summarize(&self) -> String; }</code> declares a method any implementing type must provide, using <code>impl Summary for MyType</code>.</p>
-    <p>Generics let you write a function or struct once that works with any type: <code>fn largest of T</code> uses a type parameter <code>T</code>, and <b>trait bounds</b> like <code>T: PartialOrd</code> restrict which types are allowed while granting access to that trait's methods inside the function.</p>
+    <p>Generics let you write a function or struct once that works with any type: a generic function using a type parameter <code>T</code>, and <b>trait bounds</b> like <code>T: PartialOrd</code> restrict which types are allowed while granting access to that trait's methods inside the function.</p>
     <p>Traits and generics combine constantly in Rust: <code>impl Trait</code> as a return type, or a <code>where</code> clause with multiple bounds, are common ways to write flexible code that the compiler still fully type-checks and can often optimize as if it were hand-written for each concrete type.</p>
+    <p>Trait methods can supply a <b>default implementation</b>: a method body written directly in the trait definition is used automatically by any implementor that doesn't override it, which is a natural way to share common behavior across many implementors while still allowing individual ones to customize just the parts that differ.</p>
+    <p>When a function needs several capabilities from its generic type at once, bounds combine with <code>+</code>, as in <code>T: Display + Clone</code>, or move into a separate <code>where</code> clause once the parameter list starts getting long or involves multiple type parameters &mdash; purely a readability convention, not a difference in meaning.</p>
+    <p><code>#[derive(...)]</code> covers common, mechanical trait implementations (Debug, Clone, PartialEq, PartialOrd), but a manual <code>impl</code> is needed whenever the behavior isn't simply "do the obvious thing field by field" &mdash; a custom <code>Display</code> implementation for user-facing output is a typical example, kept deliberately separate from the developer-facing <code>Debug</code> output.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>trait Summary {
     fn summarize(&amp;self) -&gt; String;
@@ -137,6 +140,58 @@ fn main() {
     print_summary(&amp;a);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">default_methods_and_bounds.rs</div>      <pre><code>trait Greet {
+    fn name(&amp;self) -&gt; String;
+
+    fn greet(&amp;self) -&gt; String {
+        format!("Hello, {}!", self.name()) // default implementation
+    }
+}
+
+struct Person { name: String }
+struct Robot { id: u32 }
+
+impl Greet for Person {
+    fn name(&amp;self) -&gt; String { self.name.clone() }
+    // uses the default greet()
+}
+
+impl Greet for Robot {
+    fn name(&amp;self) -&gt; String { format!("Unit-{}", self.id) }
+    fn greet(&amp;self) -&gt; String { format!("BEEP BOOP {}", self.name()) }
+}
+
+fn largest&lt;T: PartialOrd + Copy&gt;(items: &amp;[T]) -&gt; T {
+    let mut max = items[0];
+    for &amp;item in items {
+        if item &gt; max { max = item; }
+    }
+    max
+}
+
+fn main() {
+    println!("{}", Person { name: String::from("Sumaya") }.greet());
+    println!("{}", Robot { id: 7 }.greet());
+    println!("{}", largest(&amp;[3, 7, 2, 9, 4]));
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">custom_display.rs</div>      <pre><code>use std::fmt;
+
+struct Temperature { celsius: f64 }
+
+impl fmt::Display for Temperature {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        write!(f, "{:.1}\u{00B0}C", self.celsius)
+    }
+}
+
+fn main() {
+    let t = Temperature { celsius: 21.5 };
+    println!("current: {}", t); // uses our Display impl
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -144,11 +199,15 @@ fn main() {
         <li>Generic functions and structs use a type parameter that gets filled in when they're used.</li>
         <li>Trait bounds restrict a generic type parameter while granting access to that trait's methods.</li>
         <li><code>impl Trait</code> as a parameter or return type is shorthand for a common generic pattern.</li>
+        <li>Default trait method implementations are shared automatically unless an implementor overrides them.</li>
+        <li>Multiple bounds combine with <code>+</code>, or move into a <code>where</code> clause for readability.</li>
+        <li><code>#[derive(...)]</code> covers mechanical trait impls; write Display/custom traits manually otherwise.</li>
+        <li><code>Display</code> is for user-facing output; <code>Debug</code> is for developer-facing inspection &mdash; they're separate on purpose.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a trait Describable with a describe() method, implement it for two different structs, and write a generic function that accepts any Describable and prints its description.</p>
+      <p>Define a trait Greet with a default greet() method, override it for one struct and accept the default for another, then write a generic function largest of T with a PartialOrd bound that returns the largest element of a slice. Also implement a custom Display for one of your structs and print an instance with {} to see it used.</p>
     </div>
   </article>
 

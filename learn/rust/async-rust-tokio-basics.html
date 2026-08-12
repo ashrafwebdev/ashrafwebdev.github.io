@@ -113,6 +113,9 @@
     <p class="lead">Rust's <code>async</code>/<code>await</code> syntax lets you write non-blocking code that reads sequentially, but unlike some languages, Rust's standard library provides only the language feature &mdash; an actual <b>async runtime</b> like <b>tokio</b> is needed to actually execute async code, since Rust deliberately keeps the runtime out of the language core.</p>
     <p>An <code>async fn</code> returns a <code>Future</code> that does nothing until it's <code>.await</code>ed or driven by the runtime; <code>#[tokio::main]</code> is the common way to turn <code>fn main()</code> into an async entry point backed by tokio's runtime.</p>
     <p><code>tokio::spawn</code> runs a future concurrently as a lightweight task, and <code>tokio::join!</code> or <code>tokio::select!</code> let you run multiple futures concurrently and either wait for all of them or react to whichever finishes first.</p>
+    <p>Async tasks are <b>cooperatively scheduled</b>, unlike OS threads: a task only yields control back to the runtime at an <code>.await</code> point. A long CPU-bound loop written inside an async function with no <code>.await</code> anywhere inside it will run to completion without ever yielding, starving every other task scheduled on that same worker thread in the meantime &mdash; CPU-heavy work belongs in <code>tokio::task::spawn_blocking</code> or a dedicated OS thread instead.</p>
+    <p>Anything passed to <code>tokio::spawn</code> must be <code>'static</code> and <code>Send</code>, because a spawned task may be moved to and run on any of the runtime's worker threads and can outlive the function that spawned it. This is why capturing a borrowed reference (rather than an owned value) into a spawned task is a common compile error for newcomers.</p>
+    <p>It's worth being realistic about when async actually helps: it shines for I/O-bound workloads with many concurrent waits &mdash; network requests, file access, database queries &mdash; where a task spends most of its time waiting rather than computing. For CPU-bound work, plain OS threads or a data-parallelism library like <code>rayon</code> are usually a better fit; async by itself does not make computation faster.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>use tokio::time::{sleep, Duration};
 
@@ -128,6 +131,42 @@ async fn main() {
     println!("{}", result);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">spawn_and_join.rs</div>      <pre><code>use tokio::time::{sleep, Duration};
+
+async fn worker(id: u32, delay_ms: u64) -&gt; String {
+    sleep(Duration::from_millis(delay_ms)).await;
+    format!("worker {} done", id)
+}
+
+#[tokio::main]
+async fn main() {
+    let handles = vec![
+        tokio::spawn(worker(1, 300)),
+        tokio::spawn(worker(2, 100)),
+        tokio::spawn(worker(3, 200)),
+    ];
+
+    for handle in handles {
+        println!("{}", handle.await.unwrap());
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">spawn_blocking.rs</div>      <pre><code>fn cpu_heavy_work() -&gt; u64 {
+    (1..=40u64).product() // pretend this is expensive
+}
+
+#[tokio::main]
+async fn main() {
+    // WRONG: putting cpu_heavy_work() directly in an async fn with
+    // no .await would block the whole worker thread's other tasks.
+    let result = tokio::task::spawn_blocking(cpu_heavy_work)
+        .await
+        .unwrap();
+    println!("{}", result);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -135,11 +174,15 @@ async fn main() {
         <li>An <code>async fn</code> returns a Future that only runs once awaited or polled by the runtime.</li>
         <li><code>#[tokio::main]</code> sets up a tokio runtime around an async main function.</li>
         <li><code>tokio::spawn</code>, <code>join!</code>, and <code>select!</code> run and coordinate multiple futures concurrently.</li>
+        <li>Async tasks are cooperatively scheduled and only yield at <code>.await</code> points, unlike preemptive OS threads.</li>
+        <li>A CPU-bound loop with no <code>.await</code> inside an async function can starve every other task on its thread.</li>
+        <li>Tasks passed to <code>tokio::spawn</code> must be <code>'static</code> and <code>Send</code>, since they may outlive the caller and move threads.</li>
+        <li>Async shines for I/O-bound waiting; CPU-bound work belongs on <code>spawn_blocking</code> or dedicated threads.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write two async functions that each sleep for a different duration and return a value, run them concurrently with tokio::join!, and print both results with the total elapsed time.</p>
+      <p>Write three async functions that each simulate an I/O delay with sleep and return a distinct value, run them concurrently with tokio::spawn, and collect all three results via their JoinHandles. Then add a comment explaining why placing a long CPU-bound loop directly inside one of those functions (with no await inside it) would block the entire runtime thread's other tasks.</p>
     </div>
   </article>
 

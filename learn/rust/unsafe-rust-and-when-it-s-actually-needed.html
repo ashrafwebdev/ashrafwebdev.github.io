@@ -113,6 +113,9 @@
     <p class="lead">The <code>unsafe</code> keyword unlocks five specific capabilities the compiler cannot otherwise verify as safe: dereferencing raw pointers, calling unsafe functions, accessing mutable statics, implementing unsafe traits, and accessing union fields. Everything else in Rust remains exactly as safe as normal, even inside an unsafe block.</p>
     <p><code>unsafe</code> does not turn off the borrow checker or type checking &mdash; it only grants access to those five specific operations, and the programmer takes on the responsibility of manually upholding the invariants the compiler would normally enforce, such as never producing a dangling raw pointer.</p>
     <p>In practice, unsafe is needed for FFI (calling C libraries), building certain low-level data structures the borrow checker can't reason about directly (like some intrusive linked lists), and performance-critical code; well-written unsafe code is typically wrapped in a small, carefully-audited safe API so the rest of the program never needs to reason about it.</p>
+    <p>It's worth being precise about what happens when an unsafe invariant is actually violated: it isn't guaranteed to crash right away. Dereferencing a dangling pointer or creating two conflicting mutable references through raw pointers is <b>undefined behavior</b>, meaning the compiler is free to assume it never happens and can miscompile code around it in ways that only surface later, on a different platform, or under a different optimization level. This is exactly why unsafe code demands more discipline than safe Rust's "the compiler will catch it" mindset encourages, not less.</p>
+    <p>Calling into C code requires an <code>extern "C"</code> block declaring the foreign function's signature, and every call into such a function is itself unsafe by default, since Rust has no way to verify that the foreign code upholds Rust's own invariants. The same <code>extern "C"</code> and <code>#[no_mangle]</code> attributes work in reverse too, exposing a Rust function so it can be called from C.</p>
+    <p><b>Miri</b>, an experimental interpreter for Rust's mid-level intermediate representation, can catch many categories of undefined behavior in unsafe code &mdash; out-of-bounds access, use-after-free, invalid pointer aliasing &mdash; while running your test suite, catching bugs the compiler itself has no way to detect. Running <code>cargo miri test</code> is a genuinely valuable habit whenever a project contains a meaningful amount of hand-written unsafe code.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>fn main() {
     let mut num = 5;
@@ -126,6 +129,39 @@
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ffi.rs</div>      <pre><code>// declares a C function's signature so Rust can call it
+extern "C" {
+    fn abs(input: i32) -&gt; i32;
+}
+
+// exposes this Rust function to be called from C
+#[no_mangle]
+pub extern "C" fn rust_double(x: i32) -&gt; i32 {
+    x * 2
+}
+
+fn main() {
+    unsafe {
+        println!("abs(-4) = {}", abs(-4)); // calling into C is unsafe
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">safe_wrapper.rs</div>      <pre><code>// SAFETY: caller must guarantee `slice` is non-empty.
+// Violating this reads out of bounds, which is undefined behavior.
+fn first_or_default(slice: &amp;[i32], default: i32) -&gt; i32 {
+    if slice.is_empty() {
+        return default;
+    }
+    unsafe { *slice.get_unchecked(0) } // skips the bounds check
+}
+
+fn main() {
+    println!("{}", first_or_default(&amp;[10, 20, 30], -1));
+    println!("{}", first_or_default(&amp;[], -1));
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -133,11 +169,15 @@
         <li>The programmer, not the compiler, guarantees safety invariants inside an unsafe block.</li>
         <li>Common legitimate uses: FFI with C libraries, specialized data structures, and performance-critical code.</li>
         <li>Idiomatic unsafe code is wrapped in a small, well-audited safe API for the rest of the program to use.</li>
+        <li>Violating an unsafe invariant is undefined behavior, not a guaranteed crash &mdash; the compiler may miscompile around it.</li>
+        <li><code>extern "C"</code> blocks declare foreign function signatures; calling them is unsafe by default.</li>
+        <li><code>#[no_mangle] extern "C" fn</code> exposes a Rust function to be called from C code.</li>
+        <li>Miri (<code>cargo miri test</code>) catches many forms of undefined behavior in unsafe code that rustc cannot.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a small unsafe block that creates two raw pointers to the same integer, reads through one, mutates through the other, and reads the value again to observe the change.</p>
+      <p>Write a small safe wrapper function first_or_default that uses an unsafe block internally with get_unchecked to read the first element of a slice without a bounds check when the caller has already verified the slice is non-empty. Add a SAFETY comment explaining exactly what invariant the caller must uphold for this to remain sound, and test it against both an empty and a non-empty slice.</p>
     </div>
   </article>
 

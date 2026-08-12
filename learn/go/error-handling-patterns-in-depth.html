@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Beyond basic <code>if err != nil</code> checks, idiomatic Go often defines <b>custom error types</b> implementing the <code>error</code> interface's single <code>Error() string</code> method, letting callers extract structured information via type assertion or <code>errors.As</code> rather than parsing an error's message string.</p>
-    <p><code>errors.As</code> checks whether an error chain contains an error of a specific concrete type and, if so, extracts it into a variable you can inspect &mdash; the structured-type counterpart to <code>errors.Is</code>'s sentinel-value check.</p>
-    <p>A common convention is to handle an error exactly once: either log it and stop, or add context and return it up the call stack &mdash; never both, which avoids the common bug of the same failure being logged repeatedly at every layer.</p>
+    <p class="lead">Beyond basic <code>if err != nil</code> checks, idiomatic Go often defines <b>custom error types</b> implementing the <code>error</code> interface's single <code>Error() string</code> method, letting callers extract structured information via type assertion or <code>errors.As</code> rather than parsing an error's message string, which is fragile and breaks the moment the wording changes.</p>
+    <p><code>errors.As</code> checks whether an error chain contains an error of a specific concrete type and, if so, extracts it into a variable you can inspect &mdash; the structured-type counterpart to <code>errors.Is</code>'s sentinel-value check. It walks the chain produced by repeated <code>%w</code> wrapping via the error's <code>Unwrap() error</code> method, which <code>fmt.Errorf</code> generates automatically when you use <code>%w</code>.</p>
+    <p>Go 1.20 added support for wrapping <b>multiple errors</b> in one value, either with <code>errors.Join(err1, err2)</code> or by using more than one <code>%w</code> verb in a single <code>fmt.Errorf</code> call &mdash; useful when several independent operations fail and you want to report all of them rather than only the first, such as when validating several fields of a form at once.</p>
+    <p>A common convention is to handle an error exactly once: either log it and stop, or add context and return it up the call stack &mdash; never both, which avoids the common bug of the same failure being logged repeatedly at every layer of a call stack, cluttering logs and making the actual failure point hard to find.</p>
+    <p>Sentinel errors (package-level <code>var Err... = errors.New(...)</code>) are simple but have a downside: they create a coupling where callers must import your package just to compare against your specific error value, and they can't carry dynamic data. Custom error struct types solve both problems by carrying fields and by letting <code>errors.As</code> match on type rather than on a specific shared variable.</p>
+    <p>When designing a package's error handling, decide up front which errors are part of its public contract (documented sentinel errors or types callers are expected to check for) versus purely internal failure details that should just be wrapped with context and treated as opaque by callers &mdash; exposing too much internal error detail as part of an API makes later refactoring a breaking change.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -144,18 +147,72 @@ func main() {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">joined_errors.go</div>      <pre><code>package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+func validateForm(name string, age int) error {
+	var errs []error
+	if name == "" {
+		errs = append(errs, errors.New("name is required"))
+	}
+	if age &lt; 0 {
+		errs = append(errs, fmt.Errorf("age must not be negative, got %d", age))
+	}
+	return errors.Join(errs...) // nil if errs is empty
+}
+
+func main() {
+	if err := validateForm("", -3); err != nil {
+		fmt.Println(err) // prints both messages, one per line
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">handle_once.go</div>      <pre><code>package main
+
+import (
+	"fmt"
+	"log"
+)
+
+func loadConfig() error {
+	return fmt.Errorf("reading config.yaml: %w", fmt.Errorf("permission denied"))
+}
+
+func run() error {
+	if err := loadConfig(); err != nil {
+		// add context, DON'T also log here -- the caller decides what to do
+		return fmt.Errorf("startup failed: %w", err)
+	}
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatal(err) // handled exactly once, at the top
+	}
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A custom error type just needs an <code>Error() string</code> method to satisfy the <code>error</code> interface.</li>
-        <li><code>errors.As</code> extracts a specific concrete error type out of a (possibly wrapped) error chain.</li>
+        <li><code>errors.As</code> extracts a specific concrete error type out of a (possibly wrapped) error chain, walking each <code>Unwrap()</code> step.</li>
+        <li><code>errors.Join</code> (Go 1.20+) or multiple <code>%w</code> verbs let you combine several independent errors into one value.</li>
         <li>Handle each error exactly once &mdash; either resolve/log it, or add context and propagate it, not both.</li>
+        <li>Sentinel errors are simple but couple callers to your package; custom error types carry data and match by type instead.</li>
         <li>Structured errors let callers react programmatically instead of matching on message text.</li>
+        <li>Decide which errors are part of a package's public contract versus purely internal detail before publishing an API.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a custom NotFoundError type with an Id field, return it from a lookup function for a missing id, and use errors.As in the caller to print a specific message.</p>
+      <p>Define a custom NotFoundError type with an Id field, return it from a lookup function for a missing id, and use errors.As in the caller to print a specific message. Then write a form-validation function that checks two fields and uses errors.Join to return all validation failures at once instead of stopping at the first one.</p>
     </div>
   </article>
 

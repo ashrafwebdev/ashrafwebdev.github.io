@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><code>try</code>/<code>catch</code> lets you handle errors gracefully instead of letting them crash your program. Throwing meaningful custom <code>Error</code> objects (rather than strings) preserves a stack trace and lets calling code distinguish error types.</p>
-    <p>Unit tests verify a function behaves correctly in isolation. Jest and Vitest (a faster, modern alternative with a near-identical API) both provide a <code>test()</code>/<code>it()</code> function and an <code>expect()</code> assertion API for checking results.</p>
+    <p class="lead"><code>try</code>/<code>catch</code> lets you handle errors gracefully at the point where they occur instead of letting them crash the whole program. A <code>finally</code> block, if present, always runs after the try/catch resolves, whether an error was thrown or not — the natural place to put cleanup code, like closing a connection or clearing a loading spinner, that needs to happen regardless of the outcome.</p>
+    <p>Always throw actual <code>Error</code> objects (or subclasses of <code>Error</code>), never plain strings or other values — an <code>Error</code> automatically captures a stack trace at the point it was created, which is often the single most useful piece of information for tracking down where and why something went wrong; throwing a bare string discards that entirely.</p>
+    <p>Custom error classes, created by extending <code>Error</code>, let calling code distinguish between different failure categories programmatically — a <code>ValidationError</code> versus a <code>NetworkError</code> versus a <code>NotFoundError</code> — rather than having to parse an error's message text to figure out what actually went wrong, which is brittle and breaks the moment the message wording changes.</p>
+    <p>Unit tests verify that a specific, isolated piece of code behaves correctly, independent of the rest of the system. Jest and Vitest (a newer, notably faster alternative built for projects already using Vite, with a nearly identical API) both provide a <code>describe()</code> function to group related tests, a <code>test()</code>/<code>it()</code> function to define one specific case, and an <code>expect()</code> assertion API with matchers like <code>.toBe()</code>, <code>.toEqual()</code>, <code>.toThrow()</code>, and <code>.toHaveBeenCalledWith()</code> for spies and mocks.</p>
+    <p>Good tests are independent of each other — one test's outcome must never depend on another test having run first, since test runners can execute tests in any order or in parallel, and a hidden dependency between tests produces flaky, order-dependent failures that are miserable to debug. Aim to test observable behavior ('adds two numbers correctly', 'throws on negative input') rather than internal implementation details that might legitimately change even when the actual behavior hasn't.</p>
+    <p>Mocking replaces a real dependency (a network call, the current date, a random number generator) with a controlled stand-in, so a test can exercise the code under realistic-but-deterministic conditions without needing a live server, a real database, or genuine randomness — both Jest and Vitest include built-in mocking utilities (<code>vi.fn()</code> in Vitest, <code>jest.fn()</code> in Jest) for exactly this purpose.</p>
     <div class="code-block">
 <div class="cap">math.test.js (Vitest/Jest)</div>      <pre><code>import { describe, it, expect } from "vitest";
 import { add } from "./math.js";
@@ -125,18 +129,69 @@ describe("add", () =&gt; {
   });
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">custom-errors-and-finally.js</div>      <pre><code>class ValidationError extends Error {
+  constructor(message, field) {
+    super(message);
+    this.name = "ValidationError";
+    this.field = field;
+  }
+}
+
+function createUser(data) {
+  if (!data.email) {
+    throw new ValidationError("Email is required", "email");
+  }
+  return { id: 1, ...data };
+}
+
+function safeCreateUser(data) {
+  try {
+    return createUser(data);
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      console.warn(`Validation failed on ${err.field}: ${err.message}`);
+      return null;
+    }
+    throw err; // re-throw anything we don't specifically know how to handle
+  } finally {
+    console.log("createUser attempt finished"); // always runs
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">mocking-and-error-tests.test.js</div>      <pre><code>import { describe, it, expect, vi } from "vitest";
+import { createUser, ValidationError } from "./users.js";
+
+describe("createUser", () =&gt; {
+  it("throws a ValidationError when email is missing", () =&gt; {
+    expect(() =&gt; createUser({})).toThrow(ValidationError);
+  });
+
+  it("calls the logger mock exactly once on success", () =&gt; {
+    const logger = vi.fn();
+    createUser({ email: "a@b.com" }, logger);
+    expect(logger).toHaveBeenCalledTimes(1);
+    expect(logger).toHaveBeenCalledWith("user created");
+  });
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Throw <code>Error</code> objects (or subclasses), not plain strings — they carry a stack trace.</li>
+        <li>Throw <code>Error</code> objects (or subclasses), not plain strings — they carry a stack trace that's often the most useful debugging clue you have.</li>
+        <li>Custom error classes (extending <code>Error</code>) let calling code branch on error type with <code>instanceof</code>, instead of fragile string-matching on a message.</li>
+        <li>A <code>finally</code> block always runs whether an error was thrown or not — the natural place for cleanup code.</li>
         <li>Tests should be independent — one test's outcome must never depend on another test having run first.</li>
-        <li><code>describe()</code> groups related tests; <code>it()</code>/<code>test()</code> defines one specific case.</li>
-        <li>Aim to test behavior ("adds two numbers correctly") not implementation details that might change.</li>
+        <li><code>describe()</code> groups related tests; <code>it()</code>/<code>test()</code> defines one specific case; <code>expect()</code> asserts on the result.</li>
+        <li>Aim to test observable behavior ("adds two numbers correctly") not internal implementation details that might change without the behavior actually changing.</li>
+        <li>Mocking (<code>vi.fn()</code>/<code>jest.fn()</code>) replaces real dependencies like network calls or randomness with controlled, deterministic stand-ins for tests.</li>
+        <li><code>expect(fn).toThrow(ErrorClass)</code> tests that a function throws the right kind of error, not just any error.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write three Vitest/Jest test cases for a function you've already built, covering a normal case, an edge case, and an invalid-input case.</p>
+      <p>Write three Vitest/Jest test cases for a function you've already built, covering a normal case, an edge case, and an invalid-input case that should throw. Then create a custom error class extending Error, throw it from that function on invalid input, and write a test asserting the function throws specifically that error class rather than any generic error. Finally, use a mock function to verify a side-effect callback (like a logger) is called exactly once with the expected argument on success.</p>
     </div>
   </article>
 

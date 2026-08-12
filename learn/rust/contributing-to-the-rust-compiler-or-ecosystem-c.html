@@ -113,6 +113,9 @@
     <p class="lead">The Rust compiler (rustc) and its ecosystem crates are entirely open source, and the Rust project maintains an unusually welcoming, well-documented contribution process, including a dedicated "rustc dev guide" covering the compiler's internal architecture for newcomers.</p>
     <p>For popular ecosystem crates (tokio, serde, clap, and hundreds of others), the same general open-source etiquette applies: read CONTRIBUTING.md, look for issues labeled "good first issue" or "E-easy" (a labeling convention common across Rust projects), and keep an initial pull request small and well-tested.</p>
     <p>Running <code>cargo fmt</code>, <code>cargo clippy</code> (Rust's linter, which catches many subtle mistakes and unidiomatic patterns beyond what the compiler itself flags), and the full test suite locally before submitting is expected practice across nearly every Rust project.</p>
+    <p>Significant changes to the Rust language itself go through the <b>RFC (Request for Comments) process</b>: a public design document is written, discussed, and reviewed by the community and the relevant Rust team before any implementation work begins. Smaller compiler bug fixes and routine library additions don't need this level of process &mdash; a normal pull request is enough &mdash; but anyone proposing a new language feature or a major API change should expect to write an RFC first.</p>
+    <p>rustc's own test suite is unusually rigorous compared to a typical library's: <code>compiletest</code> runs "UI tests" that compile a small input file and compare the compiler's actual output (errors, warnings, or generated code) against a checked-in expected output file, since a regression in the compiler itself affects every single downstream Rust project. Popular ecosystem crates mirror this seriousness at a smaller scale, often maintaining a CI matrix that tests against several Rust versions to track their MSRV (minimum supported Rust version) alongside multiple target platforms.</p>
+    <p>Community discussion happens mostly off GitHub: the Rust Zulip (chat.rust-lang.org) hosts most day-to-day compiler and language-team conversation, while individual ecosystem crates typically run their own Discord, Zulip, or GitHub Discussions space. Asking a clarifying question in one of these before starting significant work is normal, encouraged behavior in the Rust community, not something that reads as bothering the maintainers.</p>
     <div class="code-block">
 <div class="cap">workflow</div>      <pre><code>$ git clone https://github.com/you/tokio-fork.git
 $ cd tokio-fork
@@ -125,6 +128,35 @@ $ cargo test
 $ git commit -m "Fix timeout not firing on zero duration"
 $ git push origin fix-timeout-edge-case</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">.github/workflows/ci.yml (MSRV matrix)</div>      <pre><code>name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        rust: ["1.70.0", stable, beta]  # 1.70.0 is this crate's MSRV
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup default ${{ matrix.rust }}
+      - run: cargo test --all-features
+      - run: cargo clippy -- -D warnings</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">tests/ui/missing_semi.rs + .stderr</div>      <pre><code>// tests/ui/missing_semi.rs (a compiletest-style UI test, similar
+// in spirit to how rustc tests its own error messages)
+fn main() {
+    let x: i32 = "not a number"
+}
+
+// tests/ui/missing_semi.stderr (checked-in expected output)
+// error[E0308]: mismatched types
+//  --&gt; tests/ui/missing_semi.rs:2:18
+//   |
+// 2 |     let x: i32 = "not a number"
+//   |                  ^^^^^^^^^^^^^^ expected `i32`, found `&amp;str`</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,11 +164,15 @@ $ git push origin fix-timeout-edge-case</code></pre>
         <li>"good first issue" / "E-easy" labels are a common convention for approachable issues across Rust crates.</li>
         <li>cargo clippy catches unidiomatic patterns and subtle bugs beyond what rustc itself flags.</li>
         <li>Running fmt, clippy, and the full test suite locally is standard practice before submitting a PR.</li>
+        <li>Significant language changes go through a public RFC process before any implementation begins.</li>
+        <li>rustc's compiletest UI tests compare actual compiler output against checked-in expected output files.</li>
+        <li>Ecosystem crates commonly track an MSRV and test it explicitly in their CI matrix.</li>
+        <li>The Rust Zulip and per-project Discord/Discussions spaces are the normal places to ask questions before diving in.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Rust crate you use on crates.io, find its repository's CONTRIBUTING guide, and list three specific expectations it sets for contributors (formatting, testing, issue labels, etc).</p>
+      <p>Pick a Rust crate you use from crates.io, read its CONTRIBUTING guide and CI configuration, and write down three specific expectations it sets for contributors, such as formatting, minimum supported Rust version, required tests, or issue labels. Then note whether it documents any process (like an RFC or a design-discussion issue) for proposing larger changes before submitting a big pull request.</p>
     </div>
   </article>
 

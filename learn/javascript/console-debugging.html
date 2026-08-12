@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><code>console.log()</code> is the fastest feedback loop in JavaScript — print a value, see exactly what it is. Beyond <code>log</code>, the console object has specialized methods: <code>console.table()</code> for arrays of objects, <code>console.error()</code> and <code>console.warn()</code> for styled severity levels.</p>
-    <p>Browser DevTools also let you set actual breakpoints, stepping through code line by line and inspecting every variable's value at that exact moment — far more powerful than sprinkling console.log statements everywhere, once you get comfortable with it.</p>
+    <p class="lead"><code>console.log()</code> is the fastest feedback loop in JavaScript — print a value and see exactly what it is, right now, without setting up any tooling. But the console object has a whole family of more specialized methods worth knowing: <code>console.table()</code> renders arrays of objects as an actual readable table, <code>console.error()</code> and <code>console.warn()</code> print with distinct severity styling and, crucially, a full stack trace, and <code>console.group()</code>/<code>console.groupEnd()</code> let you visually nest related log output.</p>
+    <p><code>console.log()</code> accepts multiple arguments and prints them space-separated on one line, so <code>console.log("user:", user)</code> is both clearer and faster to type than building a concatenated string. It also supports format specifiers (<code>%s</code>, <code>%d</code>, <code>%o</code>) and, in browsers, <code>%c</code> for CSS-styled output — rarely necessary, but occasionally useful for making a specific log stand out.</p>
+    <p>The <code>debugger;</code> statement is a real breakpoint written directly in your source code: when DevTools is open, execution pauses right there, and you can inspect every variable in scope, step line by line, and watch the call stack — a far more powerful way to understand a bug than sprinkling console.log calls everywhere and guessing where to put them next.</p>
+    <p>Browser DevTools also let you set breakpoints without touching the source at all, including conditional breakpoints (only pause when a specific expression is true) and DOM breakpoints (pause when a specific element is modified or removed) — both are enormously useful once a bug depends on something happening many iterations into a loop or deep in a rendering cycle.</p>
+    <p>For asynchronous code, <code>console.trace()</code> prints the call stack at the point it's called, which helps answer 'who called this function, and from where' — a question that plain <code>console.log</code> can't answer on its own, especially once callbacks and promises are involved and the call stack no longer matches the code's visual layout.</p>
+    <p>It's easy to forget stray debugging output in code that ships. Treat <code>console.log</code> as a temporary tool, not application output — a linter rule (like <code>no-console</code>) or a quick project-wide search before committing catches most leftover calls before they reach production.</p>
     <div class="code-block">
 <div class="cap">debug.js</div>      <pre><code>const users = [
   { name: "Amina", age: 27 },
@@ -121,18 +125,47 @@
 console.table(users); // renders a readable table in DevTools
 console.error("This looks like a problem");</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">grouping-and-trace.js</div>      <pre><code>function processOrder(order) {
+  console.group(`Order #${order.id}`);
+  console.log("Customer:", order.customer);
+  console.log("Item count:", order.items.length);
+  if (order.items.length === 0) {
+    console.warn("Empty order — check the cart flow");
+  }
+  console.groupEnd();
+}
+
+function whoCalledThis() {
+  console.trace("call stack at this point");
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">debugger-statement.js</div>      <pre><code>function calculateDiscount(price, coupon) {
+  debugger; // execution pauses here when DevTools is open
+  const rate = coupon === "SAVE10" ? 0.1 : 0;
+  return price * (1 - rate);
+}
+
+// Open DevTools, then call calculateDiscount(100, "SAVE10")
+// and step through line by line, watching `rate` change.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>console.table()</code> is far more readable than <code>console.log()</code> for arrays of objects.</li>
+        <li><code>console.error()</code>/<code>console.warn()</code> print a full stack trace alongside styled output — more informative than plain <code>log</code> for problems.</li>
         <li><code>debugger;</code> in your code pauses execution right there if DevTools is open — a real breakpoint without clicking anything.</li>
-        <li>Remove stray <code>console.log</code> calls before shipping — they're a debugging tool, not application output.</li>
+        <li>DevTools conditional and DOM breakpoints let you pause exactly when a specific expression becomes true or a specific element changes, without editing source.</li>
+        <li><code>console.trace()</code> answers 'who called this, and from where' — invaluable once callbacks and async code obscure the visual call structure.</li>
+        <li><code>console.group()</code>/<code>console.groupEnd()</code> visually nest related log lines, making busy output much easier to scan.</li>
+        <li>Remove stray <code>console.log</code> calls before shipping — they're a debugging tool, not application output; a lint rule catches most stragglers automatically.</li>
         <li>The Network tab (not just Console) is often where real debugging of API issues actually happens.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a debugger statement inside a function, open DevTools, trigger the function, and step through it line by line.</p>
+      <p>Add a debugger statement inside a function, open DevTools, trigger the function, and step through it line by line watching a local variable change. Then rewrite the same function's logging using console.group to nest related messages, and add a console.table call to inspect an array of objects it produces.</p>
     </div>
   </article>
 

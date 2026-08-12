@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Go has only one looping construct, <code>for</code>, which covers what other languages split into <code>for</code>, <code>while</code>, and infinite loops depending on how many clauses you provide. There is no <code>while</code> keyword at all.</p>
-    <p><code>if</code> statements can include an initializer clause, scoping a variable to just the condition and its branches, which is idiomatic for patterns like checking a map lookup's second return value.</p>
-    <p>Functions can return <b>multiple values</b>, which Go uses pervasively for the common pattern of returning a result alongside an error, rather than throwing exceptions.</p>
+    <p class="lead">Go has only one looping construct, <code>for</code>, which covers what other languages split into <code>for</code>, <code>while</code>, and infinite loops depending on how many clauses you provide. There is no <code>while</code> keyword at all &mdash; <code>for condition { ... }</code> with a single boolean expression plays that role, and a bare <code>for { ... }</code> with no clauses loops forever until a <code>break</code> or <code>return</code>.</p>
+    <p><code>if</code> statements can include an initializer clause, scoping a variable to just the condition and its branches, which is idiomatic for patterns like checking a map lookup's second return value: <code>if v, ok := m[key]; ok { ... }</code>. The same initializer syntax is available on <code>switch</code> statements.</p>
+    <p>Go's <code>switch</code> does not fall through by default (unlike C or Java) &mdash; each case breaks automatically after its body runs, and the explicit <code>fallthrough</code> keyword is needed for the rare case where you do want the next case's body to execute too. A <code>switch</code> with no expression (<code>switch { case x > 10: ... }</code>) is a clean substitute for a long if/else-if chain.</p>
+    <p>Functions can return <b>multiple values</b>, which Go uses pervasively for the common pattern of returning a result alongside an error, rather than throwing exceptions. <b>Named return values</b> let a function declare its result variables in the signature (<code>func split(sum int) (x, y int)</code>) and return them implicitly with a bare <code>return</code>, which can make short functions more self-documenting but hurts readability if overused in longer ones.</p>
+    <p>Go supports <b>variadic parameters</b> (<code>func sum(nums ...int) int</code>) for functions that accept a variable number of arguments, and functions are first-class values: they can be assigned to variables, passed as arguments, and returned from other functions, which is how closures and higher-order functions like those in the <code>sort</code> package work.</p>
+    <p><code>defer</code> schedules a function call to run just before the surrounding function returns, regardless of how it returns (normal return, or an in-flight panic). Deferred calls run in <b>LIFO order</b> (last deferred, first executed), which makes <code>defer file.Close()</code> or <code>defer mu.Unlock()</code> immediately after an acquire the idiomatic way to guarantee cleanup without duplicating it at every return path.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -135,18 +138,68 @@ func main() {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">switch_defer.go</div>      <pre><code>package main
+
+import "fmt"
+
+func describe(score int) string {
+	switch {
+	case score &gt;= 90:
+		return "A"
+	case score &gt;= 80:
+		return "B"
+	default:
+		return "C or below"
+	}
+}
+
+func process() {
+	defer fmt.Println("1: cleanup runs last")
+	defer fmt.Println("2: this runs before 1")
+	fmt.Println("3: this runs first")
+}
+
+func main() {
+	fmt.Println(describe(85))
+	process()
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">variadic.go</div>      <pre><code>package main
+
+import "fmt"
+
+func sum(nums ...int) int {
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
+func main() {
+	fmt.Println(sum(1, 2, 3))
+
+	values := []int{4, 5, 6, 7}
+	fmt.Println(sum(values...)) // spread a slice into a variadic call
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>for</code> is Go's only loop keyword; omitting all three clauses makes it an infinite loop.</li>
-        <li>An <code>if</code> initializer clause scopes a helper variable to just that if/else block.</li>
+        <li>An <code>if</code> or <code>switch</code> initializer clause scopes a helper variable to just that block.</li>
+        <li>Go's <code>switch</code> does not fall through by default; use <code>fallthrough</code> explicitly if you need that behavior.</li>
         <li>Functions commonly return a value and an error as two separate return values.</li>
         <li>Named return values are optional but can make short functions more self-documenting.</li>
+        <li>Variadic parameters (<code>...int</code>) accept a variable number of arguments, and a slice can be spread into one with <code>values...</code>.</li>
+        <li><code>defer</code> runs on function exit in LIFO order and fires even when the function panics, making it the idiomatic cleanup mechanism.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function safeSqrt(x float64) (float64, error) that returns an error for negative input, then call it in a for loop over a few sample values, printing results or errors.</p>
+      <p>Write a function safeSqrt(x float64) (float64, error) that returns an error for negative input, then call it in a for loop over a few sample values, printing results or errors. Then write a second function that opens a resource (simulate with a printed message), uses defer to guarantee it prints a closing message, and demonstrate with a switch statement that categorizes the sqrt result into ranges.</p>
     </div>
   </article>
 

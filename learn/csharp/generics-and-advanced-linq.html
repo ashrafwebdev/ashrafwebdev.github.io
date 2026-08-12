@@ -110,9 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Generics in C# work much like Java's: <code>class Box of T</code> defines a type parameter filled in at use time, with <b>constraints</b> (<code>where T : IComparable</code>) restricting what types can be used and what operations are available on them.</p>
-    <p>Beyond basic <code>Where</code>/<code>Select</code>, LINQ supports grouping (<code>GroupBy</code>), joining two sequences (<code>Join</code>), and aggregation (<code>Sum</code>, <code>Average</code>, <code>Aggregate</code>), letting fairly complex data transformations be expressed in a single declarative chain.</p>
-    <p>Combining generics with LINQ is common when writing reusable utility methods, such as a generic <code>MaxBy</code>-style helper that works across any collection of any comparable type.</p>
+    <p class="lead">Generics in C# work much like Java's: <code>class Box of T</code> defines a type parameter filled in at use time, with <b>constraints</b> (<code>where T : IComparable</code>) restricting what types can be used and unlocking operations on them that wouldn't otherwise be available on an unconstrained <code>T</code>. Common constraint kinds include <code>where T : class</code> (reference types only), <code>where T : struct</code> (value types only), <code>where T : new()</code> (requires a public parameterless constructor), and <code>where T : SomeBaseType</code>.</p>
+    <p>Unlike Java's generics, C#'s are <b>reified</b> at runtime &mdash; the actual type argument is known and available via reflection, and no boxing occurs for value-type type arguments, which is why <code>List of int</code> stores actual ints inline rather than boxed objects the way a pre-generics or non-generic collection would have to.</p>
+    <p>Generic methods can infer their type argument from the arguments passed, so you rarely need to write <code>Method&lt;int&gt;(5)</code> explicitly; the compiler figures out <code>T</code> from the call site. Generic classes and generic methods can each declare their own independent type parameters, and a generic method inside a non-generic class is a common way to write a single reusable algorithm that works across many types.</p>
+    <p>Beyond basic <code>Where</code>/<code>Select</code>, LINQ supports grouping (<code>GroupBy</code>), joining two sequences (<code>Join</code>), and aggregation (<code>Sum</code>, <code>Average</code>, <code>Aggregate</code>), letting fairly complex data transformations be expressed in a single declarative chain instead of nested loops with manual accumulator variables.</p>
+    <p><code>Aggregate</code> is LINQ's general-purpose reduce/fold operation: it takes a seed value and a function combining the running result with each element, and can express sums, products, string concatenation, or any custom fold &mdash; though for the common cases, the dedicated <code>Sum</code>/<code>Average</code>/<code>Max</code> methods are clearer and should be preferred when they fit.</p>
+    <p>Combining generics with LINQ is common when writing reusable utility methods, such as a generic <code>MaxBy</code>-style helper that works across any collection of any comparable type; constraining <code>T</code> to <code>IComparable of T</code> lets the method call <code>CompareTo</code> on elements of that unknown type safely.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>record Order(string Customer, decimal Amount);
 
@@ -128,18 +131,58 @@ var totalsByCustomer = orders
 foreach (var t in totalsByCustomer)
     Console.WriteLine($"{t.Customer}: {t.Total}");</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">GenericConstraints.cs</div>      <pre><code>// T must implement IComparable&lt;T&gt;, so CompareTo is guaranteed to exist
+static T Max&lt;T&gt;(IEnumerable&lt;T&gt; items) where T : IComparable&lt;T&gt;
+{
+    T best = items.First();
+    foreach (var item in items.Skip(1))
+        if (item.CompareTo(best) &gt; 0) best = item;
+    return best;
+}
+
+Console.WriteLine(Max(new[] { 3, 7, 2, 9, 1 }));      // 9
+Console.WriteLine(Max(new[] { "pear", "apple", "fig" })); // pear
+
+// where T : new() lets a generic method construct T itself
+static T CreateDefault&lt;T&gt;() where T : new() =&gt; new T();</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">JoinAndAggregate.cs</div>      <pre><code>record Customer(int Id, string Name);
+record Purchase(int CustomerId, decimal Amount);
+
+var customers = new List&lt;Customer&gt; { new(1, "Amina"), new(2, "Bilal") };
+var purchases = new List&lt;Purchase&gt; { new(1, 50), new(1, 30), new(2, 20) };
+
+var report = customers.Join(
+    purchases,
+    c =&gt; c.Id,
+    p =&gt; p.CustomerId,
+    (c, p) =&gt; new { c.Name, p.Amount });
+
+foreach (var r in report) Console.WriteLine($"{r.Name}: {r.Amount}");
+
+// Aggregate: general fold, here concatenating names with commas
+string joined = customers.Aggregate("", (acc, c) =&gt;
+    acc.Length == 0 ? c.Name : acc + ", " + c.Name);
+Console.WriteLine(joined);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Generic constraints like <code>where T : IComparable</code> restrict and enable behavior on a type parameter.</li>
+        <li>Generic constraints like <code>where T : IComparable of T</code> restrict and enable behavior on a type parameter.</li>
+        <li>C# generics are reified at runtime &mdash; no boxing for value-type type arguments, unlike Java's type erasure.</li>
+        <li>Type arguments are usually inferred from call-site arguments, so explicit <code>&lt;T&gt;</code> syntax is rarely needed.</li>
         <li><code>GroupBy</code> groups a sequence by a key selector, producing groups you can then aggregate.</li>
-        <li><code>Sum</code>, <code>Average</code>, and <code>Aggregate</code> reduce a sequence to a single value.</li>
+        <li><code>Join</code> combines two sequences by matching keys, similar to a SQL inner join.</li>
+        <li><code>Aggregate</code> is LINQ's general fold/reduce operation; prefer <code>Sum</code>/<code>Average</code>/<code>Max</code> when they fit.</li>
         <li>Anonymous types (<code>new { ... }</code>) are handy for shaping intermediate LINQ query results.</li>
+        <li><code>where T : new()</code> lets a generic method construct an instance of the unknown type T itself.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Given a list of order records with Customer and Amount, use LINQ GroupBy and Sum to print the total amount spent per customer, sorted from highest to lowest.</p>
+      <p>Given a list of order records with Customer and Amount, use LINQ GroupBy and Sum to print the total amount spent per customer, sorted from highest to lowest. Then write a generic method called MaxBy, constrained to IComparable of T, that finds the largest element of any sequence, and test it against both a list of ints and a list of strings.</p>
     </div>
   </article>
 

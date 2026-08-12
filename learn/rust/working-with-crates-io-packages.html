@@ -113,6 +113,9 @@
     <p class="lead"><b>crates.io</b> is Rust's central package registry, and any dependency added with <code>cargo add crate_name</code> is fetched from there automatically, recorded in <code>Cargo.toml</code>, with exact resolved versions locked in <code>Cargo.lock</code> for reproducible builds.</p>
     <p>Popular crates cover most common needs: <code>serde</code> for serialization, <code>tokio</code> for async runtimes, <code>reqwest</code> for HTTP clients, and <code>clap</code> for command-line argument parsing are all near-universal choices in their respective niches.</p>
     <p>Documentation for every published crate is automatically hosted on docs.rs, generated directly from the crate's own doc comments, so reading a new dependency's API is usually a matter of visiting one consistent, predictable URL.</p>
+    <p>Cargo follows semantic versioning by default: a dependency listed as <code>version = "1.2"</code> is treated as a caret requirement, meaning any released <code>1.x.y</code> version that is at least <code>1.2</code> satisfies it. <code>Cargo.lock</code> freezes the exact versions actually resolved for a build so everyone on a team gets identical dependency versions, and <code>cargo update</code> is the explicit, deliberate action needed to move those pinned versions forward within their semver constraints.</p>
+    <p>Many crates expose optional <b>feature flags</b> &mdash; serde's <code>derive</code> feature is a common example &mdash; that pull in extra dependencies and code only when explicitly enabled, keeping a default installation lean. You can also disable a crate's default features with <code>default-features = false</code> when you only need a small subset of what it offers.</p>
+    <p>Before depending on a niche or unfamiliar crate, it's normal Rust practice to check its health on crates.io or lib.rs: recent download counts, how recently it was published, and how many open issues it has. A broken or abandoned dependency becomes your project's problem the moment you adopt it, so a small amount of due diligence up front is standard etiquette, not paranoia.</p>
     <div class="code-block">
 <div class="cap">Cargo.toml</div>      <pre><code>[dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -122,6 +125,17 @@ serde_json = "1"
 # $ cargo add serde --features derive
 # $ cargo add serde_json</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Cargo.toml (feature flags)</div>      <pre><code>[dependencies]
+# pull in only what's needed, skip the rest of tokio's default features
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros"] }
+clap = { version = "4", features = ["derive"] }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">terminal</div>      <pre><code>$ cargo update              # bump locked versions within semver constraints
+$ cargo tree                # inspect the full dependency graph
+$ cargo tree -i serde        # see which crates depend on serde specifically</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -129,11 +143,15 @@ serde_json = "1"
         <li>Cargo.lock pins exact dependency versions for reproducible builds across machines.</li>
         <li>serde, tokio, reqwest, and clap are near-universal crates in their respective problem spaces.</li>
         <li>docs.rs auto-generates and hosts documentation for every published crate.</li>
+        <li>Version requirements follow semver caret rules by default; cargo update moves the lockfile forward explicitly.</li>
+        <li>Feature flags (like serde's derive) pull in extra code only when explicitly enabled.</li>
+        <li><code>default-features = false</code> trims a dependency down to only the features you actually need.</li>
+        <li>cargo tree inspects the full dependency graph; checking a crate's activity and issues is standard due diligence.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add the serde and serde_json crates to a new project with cargo add, derive Serialize and Deserialize on a small struct, and serialize an instance of it to a JSON string.</p>
+      <p>Add the serde and serde_json crates to a new project with cargo add, derive Serialize and Deserialize on a small struct, and serialize an instance of it to a JSON string. Then add clap with its derive feature enabled, define a small struct-based CLI argument parser, and run cargo tree to see what clap itself depends on.</p>
     </div>
   </article>
 
