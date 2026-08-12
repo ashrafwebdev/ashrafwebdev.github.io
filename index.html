@@ -61,7 +61,7 @@
   }
   .navrow{
     display:flex; justify-content:space-between; align-items:center;
-    padding-bottom:18px;
+    padding-bottom:18px; gap:16px; flex-wrap:wrap;
   }
   .navrow .name{
     font-family:'IBM Plex Mono', monospace;
@@ -69,12 +69,13 @@
     letter-spacing:0.02em;
   }
   .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
   .navrow nav a{
     font-family:'IBM Plex Mono', monospace;
     font-size:13px;
     text-decoration:none;
     color:var(--ink-soft);
-    margin-left:22px;
+    white-space:nowrap;
   }
   .navrow nav a:hover{color:var(--teal-deep);}
 
@@ -163,6 +164,12 @@
     color:var(--ink);
   }
   .btn.ghost:hover{background:var(--paper-raised);}
+  .btn.amber{
+    background:var(--amber);
+    color:#241C0C;
+    font-weight:600;
+  }
+  .btn.amber:hover{background:#D2984A;}
 
   /* ---------- Section shell ---------- */
   section{padding:56px 0;}
@@ -192,10 +199,29 @@
   .service a{color:var(--teal-deep); text-decoration:none; border-bottom:1px solid var(--teal-deep); white-space:nowrap;}
   .service a:hover{color:var(--teal);}
 
-  /* ---------- Religious sites examples ---------- */
+  /* ---------- Web design portfolio ---------- */
+  .portfolio-group{margin-top:34px;}
+  .portfolio-group:first-child{margin-top:0;}
+  .portfolio-group .group-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .portfolio-group .group-label::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
   .site-examples{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns:repeat(2, 1fr);
     gap:18px;
   }
   .site-card{
@@ -234,6 +260,51 @@
     align-self:flex-start;
   }
   .site-card .view-link:hover{color:var(--teal);}
+
+  .biz-feature{
+    border:1px solid var(--line);
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal));
+    border-radius:8px;
+    padding:32px 32px 30px;
+    color:var(--paper-raised);
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .biz-feature .bf-top{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;
+  }
+  .biz-feature .bf-count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.04em;
+    color:var(--amber);
+  }
+  .biz-feature h3{
+    font-family:'IBM Plex Serif', serif;
+    font-weight:600;
+    font-size:22px;
+    margin:6px 0 0;
+    color:#fff;
+  }
+  .biz-feature p{
+    font-size:14.5px;
+    color:#D7E3DE;
+    margin:0;
+    max-width:56ch;
+  }
+  .biz-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .biz-chips span{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:#EAF1EC;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.2);
+    border-radius:20px;
+    padding:6px 12px;
+  }
+  .biz-feature .btn{align-self:flex-start; margin-top:4px;}
+
   .service{
     border:1px solid var(--line);
     background:var(--paper);
@@ -427,53 +498,66 @@
   </div>
 </section>
 
-<section id="religious-sites">
+<section class="alt">
   <div class="wrap">
     <p class="eyebrow">Web design</p>
-    <h2>Websites for masjids, madrasas, Islamic scholars &amp; non-profits.</h2>
-    <p style="color:var(--ink-soft); font-size:15px; max-width:60ch; margin:-14px 0 30px;">Sample builds showing the kind of site I'd design for your community or organization — click through to view each one live, or browse 50 design variations of each type.</p>
-    <div class="site-examples">
-      <div class="site-card">
-        <span class="tag">MASJID</span>
-        <h3>Masjid website</h3>
-        <p>Prayer &amp; Jummah times, announcements, events calendar, and donation info in one clean, mobile-friendly site.</p>
-        <a class="view-link" href="demo/masjid/index.html" target="_blank" rel="noopener">View example →</a>
-        <a class="view-link" href="demo/masjid-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
-      </div>
-      <div class="site-card">
-        <span class="tag">MADRASA</span>
-        <h3>Madrasa website</h3>
-        <p>Programs, admissions, teacher profiles, and a contact form built for parents and prospective students.</p>
-        <a class="view-link" href="demo/madrasa/index.html" target="_blank" rel="noopener">View example →</a>
-        <a class="view-link" href="demo/madrasa-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
-      </div>
-      <div class="site-card">
-        <span class="tag">ISLAMIC SCHOLAR</span>
-        <h3>Scholar website</h3>
-        <p>Bio, lecture &amp; publication archive, upcoming sessions, and a simple way for people to get in touch.</p>
-        <a class="view-link" href="demo/scholar/index.html" target="_blank" rel="noopener">View example →</a>
-        <a class="view-link" href="demo/scholar-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
-      </div>
-      <div class="site-card">
-        <span class="tag">NON-PROFIT</span>
-        <h3>Islamic non-profit website</h3>
-        <p>Programs, impact stats, ways to get involved, team profiles, and a donation-ready contact form.</p>
-        <a class="view-link" href="demo/nonprofit-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
+    <h2>Websites for your community or business.</h2>
+    <p style="color:var(--ink-soft); font-size:15px; max-width:60ch; margin:-14px 0 30px;">Sample builds showing the kind of site I'd design for you — click through to view any example live, or browse the full set of design variations.</p>
+
+    <div class="portfolio-group" id="religious-sites">
+      <p class="group-label">Faith &amp; community</p>
+      <div class="site-examples">
+        <div class="site-card">
+          <span class="tag">MASJID</span>
+          <h3>Masjid website</h3>
+          <p>Prayer &amp; Jummah times, announcements, events calendar, and donation info in one clean, mobile-friendly site.</p>
+          <a class="view-link" href="demo/masjid/index.html" target="_blank" rel="noopener">View example →</a>
+          <a class="view-link" href="demo/masjid-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
+        </div>
+        <div class="site-card">
+          <span class="tag">MADRASA</span>
+          <h3>Madrasa website</h3>
+          <p>Programs, admissions, teacher profiles, and a contact form built for parents and prospective students.</p>
+          <a class="view-link" href="demo/madrasa/index.html" target="_blank" rel="noopener">View example →</a>
+          <a class="view-link" href="demo/madrasa-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
+        </div>
+        <div class="site-card">
+          <span class="tag">ISLAMIC SCHOLAR</span>
+          <h3>Scholar website</h3>
+          <p>Bio, lecture &amp; publication archive, upcoming sessions, and a simple way for people to get in touch.</p>
+          <a class="view-link" href="demo/scholar/index.html" target="_blank" rel="noopener">View example →</a>
+          <a class="view-link" href="demo/scholar-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
+        </div>
+        <div class="site-card">
+          <span class="tag">NON-PROFIT</span>
+          <h3>Islamic non-profit website</h3>
+          <p>Programs, impact stats, ways to get involved, team profiles, and a donation-ready contact form.</p>
+          <a class="view-link" href="demo/nonprofit-demos/index.html" target="_blank" rel="noopener" style="margin-top:6px;">Browse 50 design variations →</a>
+        </div>
       </div>
     </div>
-  </div>
-</section>
 
-<section class="alt" id="halal-businesses">
-  <div class="wrap">
-    <p class="eyebrow">Web design</p>
-    <h2>Websites for halal &amp; Muslim-community businesses.</h2>
-    <p style="color:var(--ink-soft); font-size:15px; max-width:60ch; margin:-14px 0 30px;">31 business categories — halal restaurants, Hajj &amp; Umrah travel agencies, modest fashion boutiques, Islamic finance advisors, and more — each with 50 unique sample designs.</p>
-    <div class="site-card" style="max-width:none;">
-      <span class="tag">31 CATEGORIES &middot; 1,550 SAMPLES</span>
-      <h3>Halal business website designs</h3>
-      <p>Restaurants, butchers, travel agencies, boutiques, law firms, clinics, gyms, tutoring centers, and more — browse every category and every design.</p>
-      <a class="view-link" href="demo/business/index.html" target="_blank" rel="noopener">Browse all 31 categories →</a>
+    <div class="portfolio-group" id="halal-businesses">
+      <p class="group-label">Halal business</p>
+      <div class="biz-feature">
+        <div class="bf-top">
+          <div>
+            <span class="bf-count">31 categories &middot; 1,550 sample designs</span>
+            <h3>Halal business website designs</h3>
+          </div>
+        </div>
+        <p>Restaurants, butchers, travel agencies, boutiques, law firms, clinics, gyms, tutoring centers, and more — every category, fully designed.</p>
+        <div class="biz-chips">
+          <span>Restaurants</span>
+          <span>Hajj &amp; Umrah travel</span>
+          <span>Modest fashion</span>
+          <span>Islamic finance</span>
+          <span>Law firms</span>
+          <span>Gyms &amp; clinics</span>
+          <span>+ 25 more</span>
+        </div>
+        <a class="btn amber" href="demo/business/index.html" target="_blank" rel="noopener">Browse all 31 categories →</a>
+      </div>
     </div>
   </div>
 </section>
