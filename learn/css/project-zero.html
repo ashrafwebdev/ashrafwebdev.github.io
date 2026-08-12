@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your résumé page, styled by hand — CSS capstone project — Learn to Code</title>
+<meta name="description" content="Your résumé page, styled by hand — the Zero-stage capstone project for CSS, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/css/project-zero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#css">CSS</a> / Zero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">01</span> Zero stage capstone</span>
+    <h1>Your résumé page, styled by hand</h1>
+    <p class="lang-line"><b>CSS</b> &middot; ties together everything in the Zero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">You already have a plain HTML résumé page from the HTML track — now you're going to give it fonts, color, and breathing room using only the five CSS ideas this stage covers: selectors and specificity, the box model, colors and units, the block/inline/inline-block display trio, and a linked external stylesheet. Nothing else is available to you yet, and that's the point.</p>
+    <p>The constraint that makes this a real test is: <b>one external stylesheet, zero inline <code>style</code> attributes, zero <code>&lt;style&gt;</code> blocks in the HTML</b>. Every visual decision has to be expressed as a selector in <code>styles.css</code>, which forces you to actually think about which class or element you're targeting and why, instead of reaching for the nearest tag to patch.</p>
+    <p>By the end, the same underlying HTML document should look like a page someone designed on purpose — consistent spacing, a readable type scale, a limited color palette — without you having touched Flexbox, Grid, or a single line of JavaScript.</p>
+    <ul class="used-topics">
+      <li><a href="selectors-and-specificity.html">Selectors and specificity</a></li>
+      <li><a href="the-box-model.html">The box model: margin, border, padding, content</a></li>
+      <li><a href="colors-units-px-em-rem-and-typography-basics.html">Colors, units (px, %, em, rem), and typography basics</a></li>
+      <li><a href="display-block-inline-inline-block.html">display: block, inline, inline-block</a></li>
+      <li><a href="linking-a-stylesheet-and-basic-cascading-rules.html">Linking a stylesheet and basic cascading rules</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>One external stylesheet linked from the <code>&lt;head&gt;</code> with <code>&lt;link rel="stylesheet"&gt;</code> — no inline <code>style</code> attributes and no <code>&lt;style&gt;</code> blocks anywhere in the HTML.</li>
+        <li><code>box-sizing: border-box</code> set globally, and at least one deliberately styled box (a card or the page container) with visible padding, a border, and a margin, sized so the numbers behave the way you predicted.</li>
+        <li>A type scale using <code>rem</code> for every font size — headings, body text, and any small print — with body text no smaller than <code>1rem</code>.</li>
+        <li>A limited, consistent color palette (2-4 colors total) applied via at least two different selector types: an element selector, a class selector, and one pseudo-class (<code>a:hover</code> at minimum).</li>
+        <li>At least one place where <code>display: inline-block</code> is used deliberately and correctly (for example, a small skill tag or badge next to your name) rather than left at its default.</li>
+        <li>No two rules in your stylesheet fight over the same property on the same element — if you find yourself needing <code>!important</code> anywhere, that's a sign to simplify the selector instead.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Start by linking an empty stylesheet and confirming a trivial change (like changing the page background) actually shows up — get the wiring right before styling anything real.</li>
+        <li>Set <code>box-sizing: border-box</code> globally first, then style the overall page container's width, padding, and margin so you have a stable canvas to work inside.</li>
+        <li>Build your type scale next: pick a root font size, then set heading and body sizes in <code>rem</code> before touching color at all.</li>
+        <li>Add color last, applied through classes rather than bare tag selectors wherever a class already exists, so a future change to "body text color" doesn't require hunting through unrelated rules.</li>
+        <li>Finish with the small details — the inline-block badge, the link hover state — and check every rule's specificity is no higher than it needs to be.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Rebuild your color palette using <code>hsl()</code> instead of hex codes, and try shifting just the lightness value to generate a matching hover shade.</li>
+        <li>Add a print stylesheet using <code>&lt;link rel="stylesheet" media="print"&gt;</code> that hides anything irrelevant on paper (like a badge or decorative background).</li>
+        <li>Open DevTools' Computed panel on three different elements and, for each, identify exactly which rule in your stylesheet won and why.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="linking-a-stylesheet-and-basic-cascading-rules.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Linking a stylesheet and basic cascading rules</span></a>
+    <a class="next" href="../css/flexbox-for-one-dimensional-layout.html"><span class="dir">Next stage &rarr;</span><span class="ttl">Flexbox for one-dimensional layout</span></a>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>
