@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A multi-service backend with a queue, cache, and load-tested API — Node.js capstone project — Learn to Code</title>
+<meta name="description" content="A multi-service backend with a queue, cache, and load-tested API — the Hero-stage capstone project for Node.js, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/nodejs/project-hero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#nodejs">Node.js</a> / Hero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">04</span> Hero stage capstone</span>
+    <h1>A multi-service backend with a queue, cache, and load-tested API</h1>
+    <p class="lang-line"><b>Node.js</b> &middot; ties together everything in the Hero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">This is the capstone of the whole Node.js track, and it should feel genuinely hard: split your task API into two independently-running services — an API service and a worker service — communicating through a real job queue, backed by a cache layer, and proven under load rather than just 'working when you tried it once'. This is the project that turns 'I've used Express' into 'I can architect a backend system'.</p>
+    <p>Concretely: the API service accepts requests and enqueues slow work (e.g. generating a per-user activity report, or sending a notification) onto a Redis-backed queue instead of doing it inline; a separate worker process, run as its own script, pulls jobs off that queue and processes them independently, retrying with backoff on failure; and a cache layer (also Redis) sits in front of your most frequently-read, rarely-changed data so repeated reads don't hit the database every time.</p>
+    <p>The bar for 'done' here is deliberately close to what a small production team would actually expect: the API responds quickly regardless of how long background work takes, a crashed worker doesn't lose in-flight jobs, the whole system survives a load test without falling over silently, and it shuts down cleanly instead of dropping in-flight requests when told to stop.</p>
+    <ul class="used-topics">
+      <li><a href="event-loop-internals-and-performance-tuning.html">Event loop internals and performance tuning</a></li>
+      <li><a href="clustering-and-horizontal-scaling.html">Clustering and horizontal scaling</a></li>
+      <li><a href="designing-scalable-resilient-service-architectur.html">Designing scalable, resilient service architectures</a></li>
+      <li><a href="publishing-and-maintaining-an-npm-package.html">Publishing and maintaining an npm package</a></li>
+      <li><a href="contributing-to-node-core-or-a-major-framework.html">Contributing to Node core or a major framework</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>Two separately runnable Node processes: an API service (Express) and a worker service, sharing a job queue (BullMQ or similar, backed by Redis) — starting only the API process must not process any queued jobs.</li>
+        <li>At least one route that enqueues a job instead of doing the work inline, returning immediately with a status like <code>{ status: "queued", jobId }</code> rather than blocking the request until the job finishes.</li>
+        <li>The worker processes jobs idempotently — verified by manually re-queuing the same job id and confirming it doesn't duplicate its side effect (e.g. doesn't send a duplicate notification or double-increment a counter).</li>
+        <li>Jobs use retries with exponential backoff on failure, and a job engineered to always fail ends up somewhere inspectable (a dead-letter queue or a failed-jobs list) rather than retrying forever silently.</li>
+        <li>A cache layer (Redis) in front of at least one frequently-read endpoint, with a defined invalidation strategy (e.g. a write to the underlying data explicitly clears or updates the relevant cache key) — a stale cache after a write is a bug you need to explicitly avoid, not something left to chance.</li>
+        <li>A load test (using a tool like <code>autocannon</code> or <code>k6</code>) run against the API service, with a short written summary of throughput, latency at a couple of percentiles, and what — if anything — broke or degraded under load.</li>
+        <li>Both services handle <code>SIGTERM</code> gracefully: the API stops accepting new connections and finishes in-flight requests before exiting, and the worker finishes its current job (or explicitly marks it for retry) rather than exiting mid-job.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Start from your Advanced-stage API and pick one genuinely slow or non-critical piece of work to move to the queue (report generation, sending an email/notification) — get the queue and a trivial worker running end to end for that one case before touching anything else.</li>
+        <li>Build the worker as its own separate entry-point script from day one, not a function called from the API process, so the architectural separation is real rather than simulated.</li>
+        <li>Add idempotency and retry/backoff configuration to the job next, and deliberately break it (throw inside the worker) to confirm retries and eventual dead-lettering behave the way you intended, rather than assuming they do.</li>
+        <li>Add the caching layer to a separate, unrelated read-heavy route, along with the invalidation logic for whatever write can make that cached data stale — verify by writing, reading immediately after, and confirming you don't see stale data.</li>
+        <li>Do the load test and graceful-shutdown work last, once the system's behavior under normal conditions is solid — load testing against a half-finished system mostly just produces noise instead of useful signal.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add a second worker type on a different queue with its own concurrency limit, and confirm via the load test that a flood of one job type doesn't starve the other.</li>
+        <li>Put the API service behind the Node <code>cluster</code> module (or PM2) and re-run the load test to measure the actual throughput difference against a single process.</li>
+        <li>Add structured JSON logging with a request id that flows from the API request through to the corresponding worker job log line, so a single job's full lifecycle is traceable across both services.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="contributing-to-node-core-or-a-major-framework.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Contributing to Node core or a major framework</span></a>
+    <span></span>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>
