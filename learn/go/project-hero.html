@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fanout: a horizontally-scalable, distributed job-processing platform — Go capstone project — Learn to Code</title>
+<meta name="description" content="Fanout: a horizontally-scalable, distributed job-processing platform — the Hero-stage capstone project for Go, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/go/project-hero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#go">Go</a> / Hero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">04</span> Hero stage capstone</span>
+    <h1>Fanout: a horizontally-scalable, distributed job-processing platform</h1>
+    <p class="lang-line"><b>Go</b> &middot; ties together everything in the Hero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">Fanout is the roadmap's own stated goal for this stage made concrete: a distributed, horizontally-scalable Go service, designed and deployed rather than just described. It's split into two independently deployable binaries &mdash; a stateless API service that accepts job submissions, and a worker binary that processes them &mdash; coordinating through nothing but a shared SQL job-queue table, so that running more copies of the worker binary genuinely increases throughput with zero code changes.</p>
+    <p>The interesting engineering is entirely in the coordination: multiple worker processes must be able to claim jobs from the same queue table without ever double-processing one, jobs must be safe to retry after a partial failure without being processed twice, and both binaries must start up, report their health, and shut down cleanly enough that an orchestrator could manage them without babysitting.</p>
+    <p>This project draws on the full width of what the Hero stage covers: distributed-systems patterns (idempotency keys, retries with backoff and jitter, a circuit breaker around a simulated downstream dependency) and microservices architecture at scale (minimal Docker images, health and readiness endpoints, graceful shutdown), closed out with real performance work &mdash; a pprof profile taken under load, and a benchmark-backed optimization of whatever it points to.</p>
+    <ul class="used-topics">
+      <li><a href="performance-profiling-pprof-and-optimization.html">Performance profiling (pprof) and optimization</a></li>
+      <li><a href="designing-distributed-systems-in-go.html">Designing distributed systems in Go</a></li>
+      <li><a href="contributing-to-the-go-standard-library-or-major.html">Contributing to the Go standard library or major tools</a></li>
+      <li><a href="architecting-microservices-at-scale.html">Architecting microservices at scale</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>Two independently deployable binaries (or one binary with two run modes) &mdash; a stateless API service and a worker &mdash; that coordinate only through a shared job-queue table in a real SQL database; no state is shared between instances any other way.</li>
+        <li>Workers claim jobs atomically from the shared queue (for example, a <code>SELECT ... FOR UPDATE SKIP LOCKED</code> query inside a transaction) such that running several worker processes against the same queue concurrently never lets two workers process the same job.</li>
+        <li>Every job carries a client-supplied idempotency key that the system deduplicates on at submission time, so resubmitting the same job never results in it being processed twice.</li>
+        <li>Job processing runs under a <code>context.WithTimeout</code>, retries transient failures with exponential backoff and jitter, and trips a circuit breaker around a downstream dependency you simulate, so a sustained failure stops hammering it instead of retrying forever.</li>
+        <li>Both binaries expose <code>/healthz</code> and <code>/readyz</code> endpoints and shut down gracefully on <code>SIGTERM</code>, letting in-flight work drain instead of being dropped mid-job.</li>
+        <li>Both binaries are packaged as minimal Docker images built from <code>CGO_ENABLED=0</code> static binaries, and you can demonstrate horizontal scale-out concretely: run three or more worker containers against the same queue and show throughput increasing as workers are added.</li>
+        <li>At least one CPU or memory profile, captured with <code>pprof</code> while the workers are under load, leads to one specific, documented optimization justified by a <code>go test -bench -benchmem</code> comparison of before and after.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Design the shared job-queue schema first (status, idempotency key, payload, claimed-by, claimed-at) and get the <code>SKIP LOCKED</code> claim query correct and tested against a local database before writing either binary.</li>
+        <li>Build the stateless API service: it accepts job submissions, enforces idempotency-key deduplication, and writes new jobs into the queue &mdash; nothing else.</li>
+        <li>Build the worker binary: it claims jobs, processes them under a context timeout, and wraps the simulated downstream call in retry-with-backoff-and-jitter plus the circuit breaker.</li>
+        <li>Add health, readiness, and graceful-shutdown handling to both binaries, then write a minimal Dockerfile for each and confirm both run correctly as containers.</li>
+        <li>Run several worker containers against the same queue to confirm real horizontal scaling, then profile a worker under load with pprof, optimize the hottest path the profile points to, and back the improvement with a benchmark comparison.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add distributed tracing with a correlation id generated by the API service and threaded through every worker log line, so one job's full lifecycle is traceable across both binaries.</li>
+        <li>Swap the Postgres-backed queue for a real message broker (NATS or Kafka) and write a short comparison of the two coordination strategies' tradeoffs.</li>
+        <li>Add simple autoscaling logic that launches additional worker containers when queue depth crosses a threshold and retires them when it drops back down.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="architecting-microservices-at-scale.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Architecting microservices at scale</span></a>
+    <span></span>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>

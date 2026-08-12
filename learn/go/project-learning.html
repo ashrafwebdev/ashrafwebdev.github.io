@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A REST task tracker built with nothing but net/http — Go capstone project — Learn to Code</title>
+<meta name="description" content="A REST task tracker built with nothing but net/http — the Learning-stage capstone project for Go, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/go/project-learning.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#go">Go</a> / Learning / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">02</span> Learning stage capstone</span>
+    <h1>A REST task tracker built with nothing but net/http</h1>
+    <p class="lang-line"><b>Go</b> &middot; ties together everything in the Learning stage</p>
+  </div>
+
+  <article>
+    <p class="lead">This project is a small, real REST API for tracking tasks &mdash; create, list, fetch, and delete &mdash; built entirely on the standard library, with a twist that forces you to actually understand goroutines and channels rather than skip past them: the in-memory data store's state may only ever be touched by one dedicated goroutine, which every HTTP handler talks to over channels. No handler is allowed to read or write the underlying map directly.</p>
+    <p>That constraint exists because Learning-stage Go hasn't covered <code>sync.Mutex</code> yet &mdash; that's Advanced-stage material. Instead, you'll build the store the way Go's own philosophy suggests: "share memory by communicating." A single goroutine owns the data; everyone else sends it a request and waits for a reply on a channel.</p>
+    <p>Alongside the concurrency constraint, this project ties together structs and interfaces (a <code>Task</code> struct, a <code>Store</code> interface satisfied implicitly), a real Go module with its own <code>go.mod</code>, and error-handling patterns beyond a bare <code>if err != nil</code> &mdash; a custom validation error type surfaced as a proper HTTP 400 response.</p>
+    <ul class="used-topics">
+      <li><a href="structs-and-interfaces.html">Structs and interfaces</a></li>
+      <li><a href="goroutines-and-channels-basics.html">Goroutines and channels basics</a></li>
+      <li><a href="error-handling-patterns-in-depth.html">Error handling patterns in depth</a></li>
+      <li><a href="working-with-modules-go-mod.html">Working with modules (go.mod)</a></li>
+      <li><a href="building-a-basic-http-server-with-net-http.html">Building a basic HTTP server with net/http</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>A real Go module: <code>go mod init</code> run at the project root, building cleanly with <code>go build</code>.</li>
+        <li>A <code>Task</code> struct with JSON tags (id, title, done, etc.) and a <code>Store</code> interface declaring <code>Create</code>, <code>Get</code>, <code>List</code>, and <code>Delete</code> methods, implemented by exactly one in-memory type.</li>
+        <li>The in-memory store's state is owned and mutated by a single dedicated goroutine; every HTTP handler communicates with it only by sending a request value (with a reply channel embedded in it) over a shared channel &mdash; no handler reads or writes the store's map directly.</li>
+        <li>HTTP routes, using Go 1.22's method-and-pattern <code>http.ServeMux</code> syntax, for at least: <code>GET /tasks</code> (list all), <code>POST /tasks</code> (create), <code>GET /tasks/{id}</code> (fetch one), and <code>DELETE /tasks/{id}</code> (delete).</li>
+        <li>Correct JSON encoding and decoding (<code>encoding/json</code>) on every route, with the right status code for each outcome: 201 for a successful create, 200 for a successful read/list/delete, 404 for an unknown id.</li>
+        <li>A custom <code>ValidationError</code> type (implementing the <code>error</code> interface) returned when a task's title is empty, detected in the handler with <code>errors.As</code> and turned into a 400 response with a clear message.</li>
+        <li>The server is started from an explicit <code>http.Server</code> value with <code>ReadTimeout</code>, <code>WriteTimeout</code>, and <code>IdleTimeout</code> set, not the bare <code>http.ListenAndServe</code> shortcut.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Run <code>go mod init</code> and get the barest possible server running &mdash; a single health-check route, started via an explicit <code>http.Server</code> with timeouts set &mdash; before writing any task logic.</li>
+        <li>Define the <code>Task</code> struct and the <code>Store</code> interface first, on paper if you have to, before writing a single handler; this is the contract everything else builds against.</li>
+        <li>Implement the channel-based store: design the request messages it accepts (each carrying its own reply channel), write the goroutine's central <code>for { select { ... } }</code> loop, and test it with a few calls from a throwaway <code>main</code> before wiring up HTTP at all.</li>
+        <li>Add the four HTTP routes one at a time, translating each incoming request into a message sent to the store goroutine and its reply into a JSON response with the right status code.</li>
+        <li>Add the <code>ValidationError</code> type and wire it into the create-task path last, once the happy path for every route already works.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add a <code>PUT /tasks/{id}</code> route to mark a task done, and confirm it round-trips correctly through the channel-based store.</li>
+        <li>Add a request-logging middleware (a function wrapping an <code>http.Handler</code>) that prints each request's method, path, and duration, applied to every route.</li>
+        <li>Swap the reply-channel pattern for a version using <code>context.Context</code> to time out a request if the store goroutine takes too long to respond, even though you haven't formally covered <code>context</code> yet &mdash; see how far you get reading the standard library docs.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="building-a-basic-http-server-with-net-http.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Building a basic HTTP server with net/http</span></a>
+    <a class="next" href="../go/concurrency-patterns.html"><span class="dir">Next stage &rarr;</span><span class="ttl">Concurrency patterns: worker pools, select statements</span></a>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>
