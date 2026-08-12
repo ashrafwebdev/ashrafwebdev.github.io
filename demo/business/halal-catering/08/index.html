@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al-Salaam Events Catering — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample halal catering service website design for Al-Salaam Events Catering — packages, gallery, and contact. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#3A2038; --mid:#5C3457; --soft:#F0E7EF; --accent:#C8933F; --cream:#F9F5F8;
+    --ink:#241A23; --inks:#6A5768; --line:#E2D3E0; --ond:#F3E8F2; --onds:#DFC3DC;
+    --font-disp:'Playfair Display',serif; --font-body:'Source Sans 3',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:15px 0; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--deep); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:16px; font-weight:700;}
+  .brand .name{font-family:var(--font-disp); font-size:17px; font-weight:700;}
+  .navctas{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links{display:flex; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+  .nav-cta-btn{background:var(--accent); color:var(--deep); font-size:12.5px; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:20px;}
+
+
+  .hero{background:var(--cream); padding:66px 0;}
+  .hero-split{display:grid; grid-template-columns:1.1fr 0.9fr; gap:44px; align-items:center;}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 12px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(28px,4.4vw,42px); margin:0 0 16px; font-weight:700; color:var(--deep);}
+  .hero p{color:var(--inks); font-size:15.5px; margin:0 0 26px; max-width:46ch;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .hero-art{aspect-ratio:4/3.2; border-radius:14px; background:linear-gradient(150deg, var(--deep), var(--mid) 60%, var(--accent)); position:relative; overflow:hidden;}
+  .hero-art::before{content:""; position:absolute; inset:0; opacity:0.16; background-image:radial-gradient(circle, var(--cream) 2px, transparent 2.4px); background-size:26px 26px;}
+  .hero-art::after{content:attr(data-mark); font-family:var(--font-disp); position:absolute; bottom:18px; right:22px; font-size:38px; color:var(--ond); opacity:0.9;}
+  @media (max-width:760px){.hero-split{grid-template-columns:1fr;}}
+
+
+  .services-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .svc-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px;}
+  .svc-card .num{font-family:var(--font-disp); color:var(--accent); font-size:20px; font-weight:700; margin-bottom:10px;}
+  .svc-card h3{margin:0 0 8px; font-size:16px; color:var(--deep);}
+  .svc-card p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.services-grid{grid-template-columns:1fr;}}
+
+
+  .feat-split{display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start;}
+  .feat-split p.lead{color:var(--inks); font-size:15px; margin:0;}
+  .feat-checklist{list-style:none; margin:0; padding:0; background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px 24px;}
+  .feat-checklist li{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink);}
+  .feat-checklist li:last-child{border-bottom:none;}
+  .feat-checklist li::before{content:"✓"; color:var(--mid); font-weight:700;}
+  @media (max-width:760px){.feat-split{grid-template-columns:1fr;}}
+
+
+  .gallery-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .gallery-tile{aspect-ratio:4/3; border-radius:8px; display:flex; align-items:flex-end; position:relative; overflow:hidden;}
+  .gallery-tile span{position:relative; background:rgba(0,0,0,0.42); color:#fff; font-size:12px; padding:8px 12px; width:100%; box-sizing:border-box;}
+  .gallery-note{margin-top:14px; font-size:12.5px; color:var(--inks);}
+  @media (max-width:760px){.gallery-grid{grid-template-columns:1fr 1fr;}}
+
+
+  .testi-ticker{display:flex; flex-direction:column;}
+  .testi-tick-item{display:flex; gap:20px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .testi-tick-item:first-child{border-top:1px solid var(--line);}
+  .testi-tick-item .mark{font-family:var(--font-disp); font-size:30px; color:var(--accent); line-height:1;}
+  .testi-tick-item p{margin:0 0 6px; font-size:14.5px; color:var(--inks); font-style:italic;}
+  .testi-tick-item .who{font-size:13px; font-weight:600; color:var(--deep);}
+
+
+  .contact-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:30px;}
+  .cc-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:20px; text-align:center;}
+  .cc-card b{display:block; color:var(--deep); font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+  .cc-card span{font-size:14px; color:var(--inks);}
+  .contact-form-narrow{max-width:560px; margin:0 auto;}
+  @media (max-width:760px){.contact-cards{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real business. Want a site like this? <a href="../../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top"><span class="mark">ك</span><span class="name">Al-Salaam Events Catering</span></a>
+    <div class="navctas">
+      <nav class="links">
+        <a href="#services">Packages</a>
+        <a href="#features">Why Us</a>
+        <a href="#gallery">Gallery</a>
+      </nav>
+      <a class="nav-cta-btn" href="#contact">Get a quote</a>
+    </div>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-split">
+    <div>
+      <p class="eyebrow-tag">Brookhaven &middot; Halal Catering Service</p>
+      <h1>From iftars to weddings, catered halal, done right.</h1>
+      <p>We handle the food so you can focus on your guests — all halal, all made fresh for your event.</p>
+      <div class="hero-ctas">
+        <a class="btn gold" href="#contact">Get a quote</a>
+        <a class="btn outline-dark" href="#services">See packages</a>
+      </div>
+    </div>
+    <div class="hero-art" data-mark="ك"></div>
+  </div>
+</section>
+
+
+<section id="services">
+
+<div class="wrap">
+  <p class="eyebrow">Packages</p>
+  <h2>Catering packages</h2>
+  <div class="services-grid">
+    <div class="svc-card"><div class="num">01</div><h3>Drop-off & Full-Service</h3><p>Choose simple drop-off or full setup, service, and cleanup.</p></div>
+    <div class="svc-card"><div class="num">02</div><h3>Community Event Catering</h3><p>Large-batch catering for masjid events and community gatherings.</p></div>
+    <div class="svc-card"><div class="num">03</div><h3>Custom Menu Planning</h3><p>Work with our chefs to design a menu around your guest list.</p></div>
+    <div class="svc-card"><div class="num">04</div><h3>Wedding Catering</h3><p>Full-course halal menus for wedding receptions and walimahs.</p></div>
+    <div class="svc-card"><div class="num">05</div><h3>Ramadan Iftar Packages</h3><p>Pre-planned iftar spreads delivered ready to serve.</p></div>
+    <div class="svc-card"><div class="num">06</div><h3>Corporate Catering</h3><p>Boxed lunches and buffet setups for office events and meetings.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="features">
+
+<div class="wrap feat-split">
+  <div>
+    <p class="eyebrow">Why choose us</p>
+    <h2>What sets us apart</h2>
+    <p class="lead">Every menu is built around halal ingredients and tailored to your event's size and budget.</p>
+  </div>
+  <ul class="feat-checklist">
+    <li>Easy to Reach & Book</li>
+    <li>Friendly, Knowledgeable Team</li>
+    <li>Consistent Quality</li>
+    <li>Convenient Location & Hours</li>
+  </ul>
+</div>
+
+</section>
+
+<section class="alt" id="gallery">
+
+<div class="wrap">
+  <p class="eyebrow">Gallery</p>
+  <h2>A look inside</h2>
+  <div class="gallery-grid">
+    <div class="gallery-tile" style="background:repeating-linear-gradient(45deg, var(--deep), var(--deep) 14px, var(--mid) 14px, var(--mid) 28px);"><span>Wedding buffet spread</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 30% 30%, var(--accent), var(--mid) 70%);"><span>Corporate boxed lunches</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(135deg, var(--mid), var(--deep));"><span>Iftar table setup</span></div>
+    <div class="gallery-tile" style="background:repeating-linear-gradient(-45deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px);"><span>Chef preparing trays</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 70% 70%, var(--soft), var(--mid) 80%);"><span>Event staff serving guests</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(160deg, var(--accent), var(--deep) 70%);"><span>Dessert table display</span></div>
+  </div>
+  <p class="gallery-note">Photo placeholders shown here — a real build uses your own photography.</p>
+</div>
+
+</section>
+
+<section>
+
+<div class="wrap">
+  <p class="eyebrow">What clients say</p>
+  <h2>Reviews &amp; feedback</h2>
+  <div class="testi-ticker">
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Reliable, on time, and the food was still hot when it arrived.</p><div class="who">— A corporate client</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>They worked with our budget and still over-delivered on quality.</p><div class="who">— An event planner</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Our masjid uses them for every Ramadan iftar now.</p><div class="who">— A community organizer</div></div></div>
+  </div>
+</div>
+
+</section>
+
+<section id="contact">
+
+<div class="wrap">
+  <p class="eyebrow">Get in touch</p>
+  <h2>Get a catering quote</h2>
+  <div class="contact-cards">
+    <div class="cc-card"><b>Address</b><span>219 Sycamore Way, Brookhaven</span></div>
+    <div class="cc-card"><b>Phone</b><span>(555) 249-1371</span></div>
+    <div class="cc-card"><b>Email</b><span>info@alsalaam-events-catering-example.org</span></div>
+  </div>
+  <div class="contact-form-narrow">
+    <form id="bizForm">
+      <label for="bname">Name</label>
+      <input id="bname" required>
+      <label for="bmsg">Message</label>
+      <textarea id="bmsg" placeholder="Event date, guest count, and menu preferences"></textarea>
+      <button class="btn gold" type="submit">Get a quote</button>
+      <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email, phone, or a booking system.</div>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById('bizForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  Al-Salaam Events Catering — sample site design. Built by <a href="../../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+</body>
+</html>

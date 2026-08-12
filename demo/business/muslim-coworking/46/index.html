@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bright Coworking — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample muslim co-working space website design for Bright Coworking — memberships, gallery, and contact. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#0F3D2E; --mid:#1C5C42; --soft:#E7F0EA; --accent:#C9A24B; --cream:#FBF8F1;
+    --ink:#1B211D; --inks:#5A6660; --line:#DDE3DC; --ond:#F6F2E4; --onds:#D9E4DC;
+    --font-disp:'Lora',serif; --font-body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:15px 0; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--deep); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:16px; font-weight:700;}
+  .brand .name{font-family:var(--font-disp); font-size:17px; font-weight:700;}
+  .navctas{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links{display:flex; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+  .nav-cta-btn{background:var(--accent); color:var(--deep); font-size:12.5px; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:20px;}
+
+
+  .hero{background:var(--cream); padding:74px 0 0; text-align:center;}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 14px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(28px,4.6vw,44px); margin:0 0 16px; font-weight:700; color:var(--deep);}
+  .hero p{color:var(--inks); font-size:16px; max-width:56ch; margin:0 auto 26px;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:40px;}
+  .hero-statsbar{background:var(--deep); color:var(--ond); padding:22px 0; display:flex; justify-content:center; gap:50px; flex-wrap:wrap;}
+  .hero-statsbar div{text-align:center;}
+  .hero-statsbar b{display:block; font-family:var(--font-disp); font-size:22px; color:var(--accent);}
+  .hero-statsbar span{font-size:11.5px; color:var(--onds); text-transform:uppercase; letter-spacing:0.04em;}
+
+
+  .services-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .svc-card{background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px;}
+  .svc-card .num{font-family:var(--font-disp); color:var(--accent); font-size:20px; font-weight:700; margin-bottom:10px;}
+  .svc-card h3{margin:0 0 8px; font-size:16px; color:var(--deep);}
+  .svc-card p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.services-grid{grid-template-columns:1fr;}}
+
+
+  .feat-split{display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start;}
+  .feat-split p.lead{color:var(--inks); font-size:15px; margin:0;}
+  .feat-checklist{list-style:none; margin:0; padding:0; background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px 24px;}
+  .feat-checklist li{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink);}
+  .feat-checklist li:last-child{border-bottom:none;}
+  .feat-checklist li::before{content:"✓"; color:var(--mid); font-weight:700;}
+  @media (max-width:760px){.feat-split{grid-template-columns:1fr;}}
+
+
+  .gallery-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .gallery-tile{aspect-ratio:4/3; border-radius:8px; display:flex; align-items:flex-end; position:relative; overflow:hidden;}
+  .gallery-tile span{position:relative; background:rgba(0,0,0,0.42); color:#fff; font-size:12px; padding:8px 12px; width:100%; box-sizing:border-box;}
+  .gallery-note{margin-top:14px; font-size:12.5px; color:var(--inks);}
+  @media (max-width:760px){.gallery-grid{grid-template-columns:1fr 1fr;}}
+
+
+  .testi-ticker{display:flex; flex-direction:column;}
+  .testi-tick-item{display:flex; gap:20px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .testi-tick-item:first-child{border-top:1px solid var(--line);}
+  .testi-tick-item .mark{font-family:var(--font-disp); font-size:30px; color:var(--accent); line-height:1;}
+  .testi-tick-item p{margin:0 0 6px; font-size:14.5px; color:var(--inks); font-style:italic;}
+  .testi-tick-item .who{font-size:13px; font-weight:600; color:var(--deep);}
+
+
+  .contact-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:30px;}
+  .cc-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:20px; text-align:center;}
+  .cc-card b{display:block; color:var(--deep); font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+  .cc-card span{font-size:14px; color:var(--inks);}
+  .contact-form-narrow{max-width:560px; margin:0 auto;}
+  @media (max-width:760px){.contact-cards{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real business. Want a site like this? <a href="../../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top"><span class="mark">ط</span><span class="name">Bright Coworking</span></a>
+    <div class="navctas">
+      <nav class="links">
+        <a href="#services">Memberships</a>
+        <a href="#features">Why Us</a>
+        <a href="#gallery">Gallery</a>
+      </nav>
+      <a class="nav-cta-btn" href="#contact">Book a tour</a>
+    </div>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow-tag">Wintermere &middot; Muslim Co-Working Space</p>
+    <h1>A workspace built around your schedule and your salah.</h1>
+    <p>We built the workspace we wished existed — productive, professional, and comfortable with who you are.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#contact">Book a tour</a>
+      <a class="btn outline-dark" href="#services">See memberships</a>
+    </div>
+  </div>
+  <div class="hero-statsbar">
+    <div><b>7</b><span>Years in business</span></div>
+    <div><b>3,500+</b><span>Members served</span></div>
+  </div>
+</section>
+
+
+<section id="services">
+
+<div class="wrap">
+  <p class="eyebrow">Memberships</p>
+  <h2>Membership options</h2>
+  <div class="services-grid">
+    <div class="svc-card"><div class="num">01</div><h3>Private Office Suites</h3><p>Enclosed offices for teams and growing businesses.</p></div>
+    <div class="svc-card"><div class="num">02</div><h3>Hot Desk Membership</h3><p>Flexible daily access to shared desk space.</p></div>
+    <div class="svc-card"><div class="num">03</div><h3>Meeting Room Rentals</h3><p>Bookable meeting rooms for client calls and team sessions.</p></div>
+    <div class="svc-card"><div class="num">04</div><h3>Community Networking Events</h3><p>Regular events connecting members across industries.</p></div>
+    <div class="svc-card"><div class="num">05</div><h3>Prayer Room Access</h3><p>On-site prayer rooms available to every member.</p></div>
+    <div class="svc-card"><div class="num">06</div><h3>Dedicated Desk Membership</h3><p>A reserved desk that's yours every day.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="features">
+
+<div class="wrap feat-split">
+  <div>
+    <p class="eyebrow">Why choose us</p>
+    <h2>What sets us apart</h2>
+    <p class="lead">Prayer rooms, flexible hours, and a community that actually gets what you need to focus.</p>
+  </div>
+  <ul class="feat-checklist">
+    <li>Trusted by the Community</li>
+    <li>Consistent Quality</li>
+    <li>Easy to Reach & Book</li>
+    <li>Convenient Location & Hours</li>
+  </ul>
+</div>
+
+</section>
+
+<section class="alt" id="gallery">
+
+<div class="wrap">
+  <p class="eyebrow">Gallery</p>
+  <h2>A look inside</h2>
+  <div class="gallery-grid">
+    <div class="gallery-tile" style="background:repeating-linear-gradient(45deg, var(--deep), var(--deep) 14px, var(--mid) 14px, var(--mid) 28px);"><span>Open coworking floor</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 30% 30%, var(--accent), var(--mid) 70%);"><span>Private office suite</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(135deg, var(--mid), var(--deep));"><span>Meeting room</span></div>
+    <div class="gallery-tile" style="background:repeating-linear-gradient(-45deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px);"><span>Prayer room interior</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 70% 70%, var(--soft), var(--mid) 80%);"><span>Community lounge area</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(160deg, var(--accent), var(--deep) 70%);"><span>Reception desk</span></div>
+  </div>
+  <p class="gallery-note">Photo placeholders shown here — a real build uses your own photography.</p>
+</div>
+
+</section>
+
+<section>
+
+<div class="wrap">
+  <p class="eyebrow">What members say</p>
+  <h2>Reviews &amp; feedback</h2>
+  <div class="testi-ticker">
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Private office gave my small team a real professional space without the overhead.</p><div class="who">— A team lead member</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Quiet enough to focus, social enough that I actually look forward to coming in.</p><div class="who">— A regular member</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Met two of my current business partners through their networking events.</p><div class="who">— A member</div></div></div>
+  </div>
+</div>
+
+</section>
+
+<section id="contact">
+
+<div class="wrap">
+  <p class="eyebrow">Get in touch</p>
+  <h2>Book a tour or ask about membership</h2>
+  <div class="contact-cards">
+    <div class="cc-card"><b>Address</b><span>865 Mill Street, Wintermere</span></div>
+    <div class="cc-card"><b>Phone</b><span>(555) 515-3385</span></div>
+    <div class="cc-card"><b>Email</b><span>info@bright-coworking-example.org</span></div>
+  </div>
+  <div class="contact-form-narrow">
+    <form id="bizForm">
+      <label for="bname">Name</label>
+      <input id="bname" required>
+      <label for="bmsg">Message</label>
+      <textarea id="bmsg" placeholder="Team size and membership type you're interested in"></textarea>
+      <button class="btn gold" type="submit">Book a tour</button>
+      <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email, phone, or a booking system.</div>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById('bizForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  Bright Coworking — sample site design. Built by <a href="../../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+</body>
+</html>

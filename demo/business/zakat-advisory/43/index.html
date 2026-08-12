@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noble Giving Advisors — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample zakat advisory service website design for Noble Giving Advisors — services, gallery, and contact. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#123A34; --mid:#1D5C52; --soft:#E7F1EE; --accent:#C9A24B; --cream:#F7F5EE;
+    --ink:#16211E; --inks:#566863; --line:#D9E5E1; --ond:#EAF5F1; --onds:#C3DBD4;
+    --font-disp:'Playfair Display',serif; --font-body:'Source Sans 3',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:16px 0; flex-wrap:wrap; gap:10px;}
+  .brand{display:flex; align-items:center; gap:10px; text-decoration:none;}
+  .brand .mark{width:36px; height:36px; border-radius:8px; background:var(--deep); color:var(--ond); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-weight:700; font-size:16px;}
+  .brand .name{font-family:var(--font-disp); font-size:17px; font-weight:700; color:var(--deep);}
+  nav.links{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13.5px; text-decoration:none; color:var(--inks); font-weight:500;}
+  nav.links a:hover{color:var(--mid);}
+  nav.links a.cta{background:var(--deep); color:var(--ond); padding:9px 16px; border-radius:4px;}
+  nav.links a.cta:hover{background:var(--mid);}
+
+
+  .hero{background:var(--cream); padding:74px 0 0; text-align:center;}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 14px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(28px,4.6vw,44px); margin:0 0 16px; font-weight:700; color:var(--deep);}
+  .hero p{color:var(--inks); font-size:16px; max-width:56ch; margin:0 auto 26px;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:40px;}
+  .hero-statsbar{background:var(--deep); color:var(--ond); padding:22px 0; display:flex; justify-content:center; gap:50px; flex-wrap:wrap;}
+  .hero-statsbar div{text-align:center;}
+  .hero-statsbar b{display:block; font-family:var(--font-disp); font-size:22px; color:var(--accent);}
+  .hero-statsbar span{font-size:11.5px; color:var(--onds); text-transform:uppercase; letter-spacing:0.04em;}
+
+
+  .services-feat{display:grid; grid-template-columns:1.2fr 1fr; gap:20px;}
+  .svc-main{background:var(--deep); color:var(--ond); border-radius:10px; padding:30px 28px; display:flex; flex-direction:column; justify-content:flex-end; min-height:220px;}
+  .svc-main .tag{color:var(--accent); font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:10px;}
+  .svc-main h3{font-family:var(--font-disp); font-size:21px; margin:0 0 10px;}
+  .svc-main p{margin:0; color:var(--onds); font-size:14px;}
+  .svc-side{display:flex; flex-direction:column; gap:14px;}
+  .svc-side .side-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:15px 18px;}
+  .svc-side h3{margin:0 0 4px; font-size:14.5px; color:var(--deep);}
+  .svc-side p{margin:0; font-size:13px; color:var(--inks);}
+  @media (max-width:760px){.services-feat{grid-template-columns:1fr;}}
+
+
+  .feat-lead{color:var(--inks); font-size:15px; max-width:70ch; margin:-14px 0 30px;}
+  .feat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .feat-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:22px 18px;}
+  .feat-card .num{font-family:var(--font-disp); color:var(--accent); font-size:22px; font-weight:700; margin-bottom:10px;}
+  .feat-card h3{margin:0 0 8px; font-size:15.5px; color:var(--deep);}
+  .feat-card p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.feat-grid{grid-template-columns:1fr 1fr;}}
+
+
+  .gallery-strip{display:flex; gap:14px; overflow-x:auto; padding-bottom:6px;}
+  .gallery-strip .gtile{flex:0 0 220px; aspect-ratio:4/3; border-radius:8px; display:flex; align-items:flex-end; position:relative; overflow:hidden;}
+  .gallery-strip .gtile span{background:rgba(0,0,0,0.42); color:#fff; font-size:12px; padding:8px 12px; width:100%; box-sizing:border-box;}
+  .gallery-note{margin-top:14px; font-size:12.5px; color:var(--inks);}
+
+
+  .testi-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:18px;}
+  .testi-card{background:#fff; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:20px 22px;}
+  .testi-card p{margin:0 0 10px; font-size:14.5px; color:var(--inks); font-style:italic;}
+  .testi-card .who{font-size:13px; font-weight:600; color:var(--deep);}
+  @media (max-width:760px){.testi-grid{grid-template-columns:1fr;}}
+
+
+  .contact-narrow{max-width:520px; margin:0 auto; text-align:center;}
+  .contact-narrow form{text-align:left;}
+  .contact-line{margin-top:26px; font-size:13.5px; color:var(--inks);}
+  .contact-line b{color:var(--deep);}
+
+
+  footer{background:var(--deep); color:var(--onds); padding:38px 0 22px; font-size:13px;}
+  .foot-cols{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:30px; padding-bottom:22px; border-bottom:1px solid rgba(255,255,255,0.14);}
+  .foot-cols h4{color:var(--ond); font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 12px;}
+  .foot-cols p, .foot-cols a{color:var(--onds); font-size:13px; text-decoration:none; display:block; margin-bottom:8px;}
+  .foot-cols a:hover{color:var(--accent);}
+  .foot-bottom{text-align:center; padding-top:18px; font-size:12px; color:var(--onds);}
+  .foot-bottom a{color:var(--accent); text-decoration:none;}
+  @media (max-width:760px){.foot-cols{grid-template-columns:1fr;}}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real business. Want a site like this? <a href="../../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top"><span class="mark">ه</span><span class="name">Noble Giving Advisors</span></a>
+    <nav class="links">
+      <a href="#services">Services</a>
+      <a href="#features">Why Us</a>
+      <a href="#gallery">Gallery</a>
+      <a class="cta" href="#contact">Calculate my zakat</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow-tag">Fernvale &middot; Zakat Advisory Service</p>
+    <h1>Calculating zakat, made simple and accurate.</h1>
+    <p>We help individuals and businesses calculate zakat accurately and connect it to causes that matter to them.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#contact">Calculate my zakat</a>
+      <a class="btn outline-dark" href="#services">See services</a>
+    </div>
+  </div>
+  <div class="hero-statsbar">
+    <div><b>10</b><span>Years in business</span></div>
+    <div><b>1,200+</b><span>Clients served</span></div>
+  </div>
+</section>
+
+
+<section id="services">
+
+<div class="wrap">
+  <p class="eyebrow">Services</p>
+  <h2>Our services</h2>
+  <div class="services-feat">
+    <div class="svc-main"><span class="tag">Most popular</span><h3>Giving Strategy Planning</h3><p>Help directing zakat to causes and organizations that matter to you.</p></div>
+    <div class="svc-side">
+    <div class="side-card"><h3>Scholar-Reviewed Guidance</h3><p>Calculations reviewed against established fiqh positions.</p></div>
+    <div class="side-card"><h3>Annual Reminder Service</h3><p>A yearly reminder so your zakat date never slips by.</p></div>
+    <div class="side-card"><h3>Business Zakat Assessment</h3><p>Zakat calculation for business assets and inventory.</p></div>
+    <div class="side-card"><h3>Personal Zakat Calculation</h3><p>One-on-one calculation of your annual zakat obligation.</p></div>
+    <div class="side-card"><h3>Zakat on Investments & Retirement</h3><p>Guidance on calculating zakat for stocks, funds, and retirement accounts.</p></div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="features">
+
+<div class="wrap">
+  <p class="eyebrow">Why choose us</p>
+  <h2>What sets us apart</h2>
+  <p class="feat-lead">Every calculation is scholar-reviewed, so you can give with full confidence it's correct.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="num">01</div><h3>Friendly, Knowledgeable Team</h3><p>Our staff take the time to explain your options and answer every question.</p></div>
+    <div class="feat-card"><div class="num">02</div><h3>Locally Owned & Operated</h3><p>A community business, not a franchise — decisions are made right here.</p></div>
+    <div class="feat-card"><div class="num">03</div><h3>Easy to Reach & Book</h3><p>Call, message, or fill out the form below — we respond quickly.</p></div>
+    <div class="feat-card"><div class="num">04</div><h3>Halal & Shariah-Compliant</h3><p>Every part of what we do follows Islamic principles, from sourcing to service.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="gallery">
+
+<div class="wrap">
+  <p class="eyebrow">Gallery</p>
+  <h2>A look inside</h2>
+  <div class="gallery-strip">
+    <div class="gtile" style="background:repeating-linear-gradient(45deg, var(--deep), var(--deep) 14px, var(--mid) 14px, var(--mid) 28px);"><span>Calculation consultation</span></div>
+    <div class="gtile" style="background:radial-gradient(circle at 30% 30%, var(--accent), var(--mid) 70%);"><span>Financial documents review</span></div>
+    <div class="gtile" style="background:linear-gradient(135deg, var(--mid), var(--deep));"><span>Planning session</span></div>
+    <div class="gtile" style="background:repeating-linear-gradient(-45deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px);"><span>Office desk setup</span></div>
+    <div class="gtile" style="background:radial-gradient(circle at 70% 70%, var(--soft), var(--mid) 80%);"><span>Client meeting</span></div>
+    <div class="gtile" style="background:linear-gradient(160deg, var(--accent), var(--deep) 70%);"><span>Annual review appointment</span></div>
+  </div>
+  <p class="gallery-note">Photo placeholders shown here — a real build uses your own photography.</p>
+</div>
+
+</section>
+
+<section>
+
+<div class="wrap">
+  <p class="eyebrow">What clients say</p>
+  <h2>Reviews &amp; feedback</h2>
+  <div class="testi-grid">
+    <div class="testi-card"><p>"Patient, thorough, and clearly knowledgeable about the fiqh."</p><div class="who">— A first-time client</div></div>
+    <div class="testi-card"><p>"The annual reminder alone is worth it — I never used to remember my zakat date."</p><div class="who">— A yearly client</div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="contact">
+
+<div class="wrap contact-narrow">
+  <p class="eyebrow">Get in touch</p>
+  <h2>Book a zakat calculation session</h2>
+  <form id="bizForm">
+    <label for="bname">Name</label>
+    <input id="bname" required>
+    <label for="bmsg">Message</label>
+    <textarea id="bmsg" placeholder="Assets, business, or investments you'd like reviewed"></textarea>
+    <button class="btn gold" type="submit">Calculate my zakat</button>
+    <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email, phone, or a booking system.</div>
+  </form>
+  <p class="contact-line"><b>814 Orchard Street, Fernvale</b> &middot; (555) 494-3226 &middot; info@noble-giving-advisors-example.org</p>
+</div>
+<script>
+  document.getElementById('bizForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  <div class="wrap">
+    <div class="foot-cols">
+      <div><h4>Noble Giving Advisors</h4><p>Zakat Advisory Service in Fernvale.</p></div>
+      <div><h4>Quick links</h4><a href="#services">Services</a><a href="#features">Why Us</a><a href="#gallery">Gallery</a></div>
+      <div><h4>Contact</h4><a href="#contact">814 Orchard Street, Fernvale</a><a href="#contact">(555) 494-3226</a></div>
+    </div>
+    <div class="foot-bottom">Noble Giving Advisors — sample site design. Built by <a href="../../../../index.html">Mohammed Ashraf</a>.</div>
+  </div>
+</footer>
+
+
+</body>
+</html>
