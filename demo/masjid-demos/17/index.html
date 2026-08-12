@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masjid Al-Muhajireen — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Masjid Al-Muhajireen — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#33204A; --mid:#4C2D6B; --soft:#EEE7F3; --accent:#D0A64E; --cream:#F8F5FB;
+    --ink:#221A2C; --inks:#63586E; --line:#DED2E7; --ond:#F1EAF7; --onds:#D5C4E4;
+    --font-disp:'Scheherazade New',serif; --font-body:'Poppins',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--cream); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;}
+  .navrow{padding:20px 0 16px; text-align:center;}
+  .brand{display:inline-flex; flex-direction:column; align-items:center; gap:6px; color:var(--deep); text-decoration:none;}
+  .brand .mark{width:44px; height:44px; border-radius:50%; background:var(--deep); color:var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:21px;}
+  .brand .name{font-family:var(--font-disp); font-size:21px; font-weight:700; color:var(--deep);}
+  .brand .name small{display:block; font-family:var(--font-body); font-size:11px; font-weight:400; color:var(--inks); letter-spacing:0.05em; margin-top:2px;}
+  nav.links{display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--inks); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;}
+  nav.links a:hover{color:var(--deep);}
+
+
+  .hero{background:var(--cream); padding:70px 0;}
+  .hero-split{display:grid; grid-template-columns:1.1fr 0.9fr; gap:44px; align-items:center;}
+  .hero .arabic{font-family:var(--font-disp); font-size:22px; color:var(--mid); margin:0 0 12px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(30px,4.6vw,46px); margin:0 0 16px; font-weight:700; color:var(--deep);}
+  .hero p{color:var(--inks); font-size:16px; margin:0 0 26px; max-width:46ch;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .hero-art{aspect-ratio:4/3.2; border-radius:14px; background:linear-gradient(150deg, var(--deep), var(--mid) 60%, var(--accent)); position:relative; overflow:hidden;}
+  .hero-art::before{content:""; position:absolute; inset:0; opacity:0.16; background-image:radial-gradient(circle, var(--cream) 2px, transparent 2.4px); background-size:26px 26px;}
+  .hero-art::after{content:"☪";font-family:var(--font-disp); position:absolute; bottom:18px; right:22px; font-size:44px; color:var(--ond); opacity:0.85;}
+
+
+  .prayer-list{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .prayer-item{display:flex; justify-content:space-between; align-items:center; padding:15px 22px; border-bottom:1px solid var(--line); border-left:4px solid transparent;}
+  .prayer-item:last-child{border-bottom:none;}
+  .prayer-item .name{font-family:var(--font-disp); font-size:17px; color:var(--deep); font-weight:700;}
+  .prayer-item .times{font-size:13.5px; color:var(--inks); text-align:right;}
+  .prayer-item.current{border-left-color:var(--accent); background:var(--soft);}
+
+
+  .about-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:start;}
+  .about-grid p{color:var(--inks); font-size:15px; margin:0 0 14px;}
+  .stat-box{border:1px solid var(--line); border-radius:8px; background:#fff; padding:22px;}
+  .stat-box .stat{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .stat-box .stat:last-child{border-bottom:none;}
+  .stat-box .stat b{color:var(--deep);}
+  @media (max-width:760px){.about-grid{grid-template-columns:1fr;}}
+
+
+  .events-list{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .events-row{display:grid; grid-template-columns:110px 1fr; gap:18px; padding:18px 20px; border-bottom:1px solid var(--line); align-items:center;}
+  .events-row:last-child{border-bottom:none;}
+  .events-row .badge{background:var(--soft); color:var(--deep); border-radius:6px; padding:8px 6px; text-align:center; font-size:12px; font-weight:700; letter-spacing:0.03em;}
+  .events-row h3{margin:0 0 4px; font-size:15px;}
+  .events-row p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.events-row{grid-template-columns:1fr;}}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px;}
+  .cc-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:20px; text-align:center;}
+  .cc-card b{display:block; color:var(--deep); font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+  .cc-card span{font-size:14px; color:var(--inks);}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:190px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px;}
+  @media (max-width:760px){.contact-cards{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:34px 0 26px; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+  .foot-social{display:flex; justify-content:center; gap:14px; margin-bottom:16px;}
+  .foot-social span{width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--onds);}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">م</span>
+      <span class="name">Masjid Al-Muhajireen<small>Serving Rosewood since 1997</small></span>
+    </a>
+    <nav class="links">
+      <a href="#prayer-times">Prayer Times</a>
+      <a href="#about">About</a>
+      <a href="#events">Events</a>
+      <a href="#donate">Donate</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-split">
+    <div>
+      <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+      <h1>Welcome to Masjid Al-Muhajireen</h1>
+      <p>A place of prayer, learning and community — five daily prayers, Friday Jummah, weekend classes, and a home for everyone in Rosewood.</p>
+      <div class="hero-ctas">
+        <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+        <a class="btn outline-dark" href="#donate">Donate</a>
+      </div>
+    </div>
+    <div class="hero-art"></div>
+  </div>
+</section>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-list" id="prayerTable">
+      <div class="prayer-item" data-prayer="Fajr" data-minutes="315"><span class="name">Fajr</span><span class="times">Adhan 5:15 AM &middot; Iqamah 5:40 AM</span></div>
+      <div class="prayer-item" data-prayer="Dhuhr" data-minutes="775"><span class="name">Dhuhr</span><span class="times">Adhan 12:55 PM &middot; Iqamah 1:25 PM</span></div>
+      <div class="prayer-item" data-prayer="Asr" data-minutes="965"><span class="name">Asr</span><span class="times">Adhan 4:05 PM &middot; Iqamah 4:30 PM</span></div>
+      <div class="prayer-item" data-prayer="Maghrib" data-minutes="1120"><span class="name">Maghrib</span><span class="times">Adhan 6:40 PM &middot; Iqamah 7:10 PM</span></div>
+      <div class="prayer-item" data-prayer="Isha" data-minutes="1245"><span class="name">Isha</span><span class="times">Adhan 8:45 PM &middot; Iqamah 9:15 PM</span></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:20 PM, prayer at 1:25 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section class="alt" id="about">
+  
+<div class="wrap about-grid">
+  <div>
+    <p class="eyebrow">About us</p>
+    <h2>Faith, family, and community — under one roof.</h2>
+    <p>Masjid Al-Muhajireen has served local families for over two decades, offering daily congregational prayers, weekend Islamic classes for children, and a welcoming space for new Muslims and visitors of every background.</p>
+    <p>We host weekly halaqas, a busy weekend school, and seasonal community events — all run by volunteers from within the congregation.</p>
+  </div>
+  <div class="stat-box">
+    <div class="stat"><span>Daily congregation</span><b>~220 worshippers</b></div>
+    <div class="stat"><span>Jummah attendance</span><b>~520 worshippers</b></div>
+    <div class="stat"><span>Weekend school</span><b>Sat &amp; Sun, 10am–1pm</b></div>
+    <div class="stat"><span>Established</span><b>1997</b></div>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events-list">
+    <div class="events-row"><div class="badge">WED, SEP 5</div><div><h3>Eid Prayer & Community Breakfast</h3><p>Join us for Eid prayer followed by a free breakfast for the whole community.</p></div></div>
+    <div class="events-row"><div class="badge">THU, OCT 14</div><div><h3>Youth Halaqa Night</h3><p>Weekly discussion circle for teens covering seerah, fiqh, and current topics.</p></div></div>
+    <div class="events-row"><div class="badge">FRI, AUG 23</div><div><h3>Weekend School Registration Opens</h3><p>New-term registration for children's Qur'an and Islamic studies classes.</p></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>From the electric bill to weekend school supplies, every gift — large or small — keeps this masjid running for the whole community.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  
+<div class="wrap">
+  <p class="eyebrow">Visit or reach out</p>
+  <h2>Contact &amp; location</h2>
+  <div class="contact-cards">
+    <div class="cc-card"><b>Address</b><span>372 Rowan Court, Rosewood</span></div>
+    <div class="cc-card"><b>Phone</b><span>(555) 312-1848</span></div>
+    <div class="cc-card"><b>Email</b><span>info@masjid-almuhajireen-example.org</span></div>
+  </div>
+  <div class="map-box">Map placeholder — a real build embeds your actual location</div>
+</div>
+
+</section>
+
+
+<footer>
+  <div class="foot-social"><span>f</span><span>ig</span><span>x</span></div>
+  Masjid Al-Muhajireen — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-item[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>

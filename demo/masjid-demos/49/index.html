@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fairview Masjid — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Fairview Masjid — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#3A3B22; --mid:#565A2E; --soft:#EFF1E4; --accent:#B85C38; --cream:#F8F6EC;
+    --ink:#242419; --inks:#6A6B54; --line:#DFE1CC; --ond:#F2F3E6; --onds:#D3D6B8;
+    --font-disp:'Aref Ruqaa',serif; --font-body:'Nunito Sans',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10; box-shadow:0 1px 0 rgba(0,0,0,0.08);}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:16px 0; flex-wrap:wrap; gap:10px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); color:var(--accent); font-size:18px;}
+  .brand .name{font-family:var(--font-disp); font-size:19px; font-weight:700;}
+  .brand .name small{display:block; font-family:var(--font-body); font-size:11px; font-weight:400; color:var(--onds); letter-spacing:0.04em;}
+  nav.links{display:flex; gap:20px; flex-wrap:wrap;}
+  nav.links a{font-size:13.5px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+
+
+  .hero{position:relative; padding:110px 0 90px; text-align:center; color:var(--ond); background:linear-gradient(0deg, rgba(0,0,0,0.55), rgba(0,0,0,0.3)), repeating-linear-gradient(135deg, var(--mid), var(--mid) 18px, var(--deep) 18px, var(--deep) 36px);}
+  .hero-inner{position:relative;}
+  .hero .arabic{font-family:var(--font-disp); font-size:24px; color:var(--accent); margin:0 0 14px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(32px,5.2vw,50px); margin:0 0 16px; font-weight:700;}
+  .hero p{max-width:50ch; margin:0 auto 28px; color:var(--onds); font-size:16px;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+  .hero-bar{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:10px; letter-spacing:0.03em;}
+
+
+  .prayer-table{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .prayer-row{display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; padding:16px 22px; border-bottom:1px solid var(--line); font-size:14.5px;}
+  .prayer-row:last-child{border-bottom:none;}
+  .prayer-row.head{background:var(--deep); color:var(--ond); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;}
+  .prayer-row .name{font-weight:600;}
+  .prayer-row .adhan, .prayer-row .iqamah{color:var(--inks);}
+  .prayer-row.current{background:var(--soft);}
+  .prayer-row.current .name::after{content:"● now"; color:var(--mid); font-size:11px; font-weight:600; margin-left:8px; letter-spacing:0.03em;}
+  @media (max-width:760px){.prayer-row{grid-template-columns:1fr 1fr; row-gap:4px;} .prayer-row .iqamah{grid-column:1/3; font-size:12.5px;}}
+
+
+  .about-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:start;}
+  .about-grid p{color:var(--inks); font-size:15px; margin:0 0 14px;}
+  .stat-box{border:1px solid var(--line); border-radius:8px; background:#fff; padding:22px;}
+  .stat-box .stat{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px;}
+  .stat-box .stat:last-child{border-bottom:none;}
+  .stat-box .stat b{color:var(--deep);}
+  @media (max-width:760px){.about-grid{grid-template-columns:1fr;}}
+
+
+  .events-list{display:flex; flex-direction:column; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .events-row{display:grid; grid-template-columns:110px 1fr; gap:18px; padding:18px 20px; border-bottom:1px solid var(--line); align-items:center;}
+  .events-row:last-child{border-bottom:none;}
+  .events-row .badge{background:var(--soft); color:var(--deep); border-radius:6px; padding:8px 6px; text-align:center; font-size:12px; font-weight:700; letter-spacing:0.03em;}
+  .events-row h3{margin:0 0 4px; font-size:15px;}
+  .events-row p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.events-row{grid-template-columns:1fr;}}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-grid .info p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-grid .info b{color:var(--deep); display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:200px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); padding:40px 0 22px; font-size:13px;}
+  .foot-cols{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:30px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.14);}
+  .foot-cols h4{color:var(--ond); font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 12px;}
+  .foot-cols p, .foot-cols a{color:var(--onds); font-size:13px; text-decoration:none; display:block; margin-bottom:8px;}
+  .foot-cols a:hover{color:var(--accent);}
+  .foot-bottom{text-align:center; padding-top:18px; font-size:12px; color:var(--onds);}
+  .foot-bottom a{color:var(--accent); text-decoration:none;}
+  @media (max-width:760px){.foot-cols{grid-template-columns:1fr;}}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">ح</span>
+      <span class="name">Fairview Masjid<small>Serving Fairview since 1991</small></span>
+    </a>
+    <nav class="links">
+      <a href="#prayer-times">Prayer Times</a>
+      <a href="#about">About</a>
+      <a href="#events">Events</a>
+      <a href="#donate">Donate</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+    <h1>Welcome to Fairview Masjid</h1>
+    <p>A place of prayer, learning and community — five daily prayers, Friday Jummah, weekend classes, and a home for everyone in Fairview.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+      <a class="btn outline" href="#donate">Donate</a>
+    </div>
+  </div>
+</section>
+<div class="hero-bar">Open daily for all five prayers &amp; Jummah — visitors always welcome</div>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-table" id="prayerTable">
+  <div class="prayer-row head"><div>Prayer</div><div>Adhan</div><div>Iqamah</div></div>
+      <div class="prayer-row" data-prayer="Fajr" data-minutes="305"><div class="name">Fajr</div><div class="adhan">5:05 AM</div><div class="iqamah">5:30 AM</div></div>
+      <div class="prayer-row" data-prayer="Dhuhr" data-minutes="735"><div class="name">Dhuhr</div><div class="adhan">12:15 PM</div><div class="iqamah">12:40 PM</div></div>
+      <div class="prayer-row" data-prayer="Asr" data-minutes="955"><div class="name">Asr</div><div class="adhan">3:55 PM</div><div class="iqamah">4:10 PM</div></div>
+      <div class="prayer-row" data-prayer="Maghrib" data-minutes="1140"><div class="name">Maghrib</div><div class="adhan">7:00 PM</div><div class="iqamah">7:10 PM</div></div>
+      <div class="prayer-row" data-prayer="Isha" data-minutes="1230"><div class="name">Isha</div><div class="adhan">8:30 PM</div><div class="iqamah">8:55 PM</div></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:20 PM, prayer at 1:25 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section class="alt" id="about">
+  
+<div class="wrap about-grid">
+  <div>
+    <p class="eyebrow">About us</p>
+    <h2>A welcoming home for prayer and learning.</h2>
+    <p>Fairview Masjid has served local families for over two decades, offering daily congregational prayers, weekend Islamic classes for children, and a welcoming space for new Muslims and visitors of every background.</p>
+    <p>We host weekly halaqas, a busy weekend school, and seasonal community events — all run by volunteers from within the congregation.</p>
+  </div>
+  <div class="stat-box">
+    <div class="stat"><span>Daily congregation</span><b>~180 worshippers</b></div>
+    <div class="stat"><span>Jummah attendance</span><b>~360 worshippers</b></div>
+    <div class="stat"><span>Weekend school</span><b>Sat &amp; Sun, 10am–1pm</b></div>
+    <div class="stat"><span>Established</span><b>1991</b></div>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events-list">
+    <div class="events-row"><div class="badge">SUN, AUG 9</div><div><h3>Community Food Drive</h3><p>Volunteers needed to pack and distribute grocery boxes to local families.</p></div></div>
+    <div class="events-row"><div class="badge">MON, SEP 18</div><div><h3>Sisters' Qur'an Study Group</h3><p>Weekly tajweed and tafsir circle open to sisters of all levels.</p></div></div>
+    <div class="events-row"><div class="badge">TUE, OCT 27</div><div><h3>Youth Halaqa Night</h3><p>Weekly discussion circle for teens covering seerah, fiqh, and current topics.</p></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>Building maintenance, educational programs, and community outreach are funded entirely by people like you. Thank you for giving.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  
+<div class="wrap contact-grid">
+  <div class="info">
+    <p class="eyebrow">Visit or reach out</p>
+    <h2>Contact &amp; location</h2>
+    <p><b>Address</b>916 Highfield Lane, Fairview</p>
+    <p><b>Phone</b>(555) 536-3544</p>
+    <p><b>Email</b>info@fairview-masjid-example.org</p>
+    <p><b>Office hours</b>Mon–Fri, 10am–5pm</p>
+  </div>
+  <div class="map-box">Map placeholder — a real build embeds your actual location</div>
+</div>
+
+</section>
+
+
+<footer>
+  <div class="wrap">
+    <div class="foot-cols">
+      <div><h4>Fairview Masjid</h4><p>Serving Fairview since 1991 — five daily prayers, weekend school, and a home for the whole community.</p></div>
+      <div><h4>Quick links</h4><a href="#prayer-times">Prayer times</a><a href="#events">Events</a><a href="#donate">Donate</a></div>
+      <div><h4>Contact</h4><a href="#contact">916 Highfield Lane, Fairview</a><a href="#contact">(555) 536-3544</a></div>
+    </div>
+    <div class="foot-bottom">Fairview Masjid — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.</div>
+  </div>
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-row[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>

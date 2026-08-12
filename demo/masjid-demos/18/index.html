@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masjid Al-Ansar — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Masjid Al-Ansar — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lateef:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#233348; --mid:#37516F; --soft:#E9EEF3; --accent:#C79E85; --cream:#F5F6F8;
+    --ink:#1B2531; --inks:#57677A; --line:#D6DDE6; --ond:#EDF1F5; --onds:#C6D2DE;
+    --font-disp:'Lateef',serif; --font-body:'Work Sans',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:15px 0; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--deep); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:16px; font-weight:700;}
+  .brand .name{font-family:var(--font-disp); font-size:18px; font-weight:700;}
+  .navctas{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links{display:flex; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+  .nav-donate{background:var(--accent); color:var(--deep); font-size:12.5px; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:20px;}
+  .nav-donate:hover{opacity:0.9;}
+
+
+  .hero{background:var(--cream); padding:76px 0 56px; border-bottom:1px solid var(--line);}
+  .hero-inner{max-width:60ch;}
+  .hero .arabic{font-family:var(--font-disp); font-size:20px; color:var(--mid); margin:0 0 10px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(30px,4.6vw,44px); margin:0 0 16px; font-weight:700; color:var(--deep); border-left:4px solid var(--accent); padding-left:18px;}
+  .hero p{color:var(--inks); font-size:15.5px; margin:0 0 26px; padding-left:22px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; padding-left:22px;}
+
+
+  .prayer-strip{display:flex; flex-wrap:wrap; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .prayer-cell{flex:1; min-width:110px; padding:16px 14px; text-align:center; border-right:1px solid var(--line);}
+  .prayer-cell:last-child{border-right:none;}
+  .prayer-cell .name{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--inks); margin-bottom:6px;}
+  .prayer-cell .adhan{font-family:var(--font-disp); font-size:19px; color:var(--deep); font-weight:700;}
+  .prayer-cell .iqamah{font-size:11px; color:var(--inks); margin-top:3px;}
+  .prayer-cell.current{background:var(--deep);}
+  .prayer-cell.current .name, .prayer-cell.current .iqamah{color:var(--onds);}
+  .prayer-cell.current .adhan{color:var(--accent);}
+
+
+  .timeline{border-left:2px solid var(--line); margin-left:6px; padding-left:26px; display:flex; flex-direction:column; gap:26px;}
+  .timeline .about-lead{color:var(--inks); font-size:15px; margin:0 0 30px; max-width:70ch;}
+  .tl-item{position:relative;}
+  .tl-item::before{content:""; position:absolute; left:-32px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--deep);}
+  .tl-item .yr{font-family:var(--font-disp); color:var(--deep); font-weight:700; font-size:16px; margin-bottom:4px;}
+  .tl-item p{margin:0; color:var(--inks); font-size:14.5px;}
+
+
+  .events-ticker{display:flex; flex-direction:column;}
+  .ticker-item{display:flex; gap:20px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .ticker-item:first-child{border-top:1px solid var(--line);}
+  .ticker-item .idx{font-family:var(--font-disp); font-size:22px; color:var(--accent); font-weight:700; min-width:34px;}
+  .ticker-item .date{font-size:11.5px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;}
+  .ticker-item h3{margin:0 0 4px; font-size:15.5px;}
+  .ticker-item p{margin:0; font-size:13.5px; color:var(--inks);}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-form-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-form-grid form{display:flex; flex-direction:column; gap:12px;}
+  .contact-form-grid label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em;}
+  .contact-form-grid input, .contact-form-grid textarea{font-family:var(--font-body); font-size:14.5px; padding:10px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  .contact-form-grid textarea{min-height:90px; resize:vertical;}
+  .contact-side-info p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-side-info b{color:var(--deep); display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:150px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px; margin-top:16px;}
+  @media (max-width:760px){.contact-form-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">ع</span>
+      <span class="name">Masjid Al-Ansar</span>
+    </a>
+    <div class="navctas">
+      <nav class="links">
+        <a href="#prayer-times">Prayer Times</a>
+        <a href="#about">About</a>
+        <a href="#events">Events</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="nav-donate" href="#donate">Donate</a>
+    </div>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+    <h1>Welcome to Masjid Al-Ansar</h1>
+    <p>Serving Bayside with daily congregational prayer, a busy weekend school, and a community that welcomes every visitor.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+      <a class="btn outline-dark" href="#donate">Donate</a>
+    </div>
+  </div>
+</section>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-strip" id="prayerTable">
+      <div class="prayer-cell" data-prayer="Fajr" data-minutes="345"><div class="name">Fajr</div><div class="adhan">5:45 AM</div><div class="iqamah">iq. 5:55 AM</div></div>
+      <div class="prayer-cell" data-prayer="Dhuhr" data-minutes="735"><div class="name">Dhuhr</div><div class="adhan">12:15 PM</div><div class="iqamah">iq. 12:35 PM</div></div>
+      <div class="prayer-cell" data-prayer="Asr" data-minutes="975"><div class="name">Asr</div><div class="adhan">4:15 PM</div><div class="iqamah">iq. 4:40 PM</div></div>
+      <div class="prayer-cell" data-prayer="Maghrib" data-minutes="1140"><div class="name">Maghrib</div><div class="adhan">7:00 PM</div><div class="iqamah">iq. 7:30 PM</div></div>
+      <div class="prayer-cell" data-prayer="Isha" data-minutes="1215"><div class="name">Isha</div><div class="adhan">8:15 PM</div><div class="iqamah">iq. 8:40 PM</div></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:15 PM, prayer at 1:40 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section id="about">
+  
+<div class="wrap">
+  <p class="eyebrow">Our history</p>
+  <h2>Serving worshippers of every background.</h2>
+  <p class="about-lead">Since opening, Masjid Al-Ansar has grown from a small prayer room into a full community hub — five daily prayers, weekend school, and regular programs for every age group.</p>
+  <div class="timeline">
+    <div class="tl-item"><div class="yr">2004</div><p>Masjid Al-Ansar opens its doors, holding its first Jummah prayer for a small group of local families.</p></div>
+    <div class="tl-item"><div class="yr">2012</div><p>Weekend Islamic school launches, and the community outgrows the original prayer hall.</p></div>
+    <div class="tl-item"><div class="yr">2019</div><p>A renovation adds a dedicated sisters' section, classrooms, and a larger parking area.</p></div>
+    <div class="tl-item"><div class="yr">Today</div><p>Beyond daily prayers, we run marriage counseling, new-Muslim support, and a food pantry that serves dozens of local families each month.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events-ticker">
+    <div class="ticker-item"><div class="idx">01</div><div><div class="date">THU, OCT 10</div><h3>New Muslim Support Circle</h3><p>Monthly gathering for new Muslims to ask questions and build community.</p></div></div>
+    <div class="ticker-item"><div class="idx">02</div><div><div class="date">FRI, AUG 19</div><h3>Weekend School Registration Opens</h3><p>New-term registration for children's Qur'an and Islamic studies classes.</p></div></div>
+    <div class="ticker-item"><div class="idx">03</div><div><div class="date">SAT, SEP 28</div><h3>Community Iftar Planning Meeting</h3><p>Open meeting for volunteers to help plan this year's Ramadan iftar schedule.</p></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>We rely entirely on the community we serve. Your support funds daily operations, outreach, and care for families in need.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="contact">
+  
+<div class="wrap">
+  <p class="eyebrow">Visit or reach out</p>
+  <h2>Contact &amp; location</h2>
+  <div class="contact-form-grid">
+    <form onsubmit="return false;">
+      <label for="cname">Name</label>
+      <input id="cname" type="text" placeholder="Your name">
+      <label for="cemail">Email</label>
+      <input id="cemail" type="email" placeholder="you@example.com">
+      <label for="cmsg">Message</label>
+      <textarea id="cmsg" placeholder="How can we help?"></textarea>
+      <a class="btn gold" href="#top" style="align-self:flex-start; margin-top:4px;">Send message</a>
+    </form>
+    <div class="contact-side-info">
+      <p><b>Address</b>389 Aspen Boulevard, Bayside</p>
+      <p><b>Phone</b>(555) 319-1901</p>
+      <p><b>Email</b>info@masjid-alansar-example.org</p>
+      <div class="map-box">Map placeholder</div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+
+<footer>
+  Masjid Al-Ansar — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-cell[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>

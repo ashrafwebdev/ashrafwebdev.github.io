@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Islamic Center of Rivertown — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Islamic Center of Rivertown — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#0B2545; --mid:#13315C; --soft:#E8EDF4; --accent:#9FB3C8; --cream:#F3F5F8;
+    --ink:#1A2230; --inks:#586576; --line:#D6DEE8; --ond:#EEF2F8; --onds:#C7D2E0;
+    --font-disp:'Scheherazade New',serif; --font-body:'Poppins',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:15px 0; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--deep); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:16px; font-weight:700;}
+  .brand .name{font-family:var(--font-disp); font-size:18px; font-weight:700;}
+  .navctas{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links{display:flex; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+  .nav-donate{background:var(--accent); color:var(--deep); font-size:12.5px; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:20px;}
+  .nav-donate:hover{opacity:0.9;}
+
+
+  .hero{background:var(--cream); padding:70px 0;}
+  .hero-split{display:grid; grid-template-columns:1.1fr 0.9fr; gap:44px; align-items:center;}
+  .hero .arabic{font-family:var(--font-disp); font-size:22px; color:var(--mid); margin:0 0 12px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(30px,4.6vw,46px); margin:0 0 16px; font-weight:700; color:var(--deep);}
+  .hero p{color:var(--inks); font-size:16px; margin:0 0 26px; max-width:46ch;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .hero-art{aspect-ratio:4/3.2; border-radius:14px; background:linear-gradient(150deg, var(--deep), var(--mid) 60%, var(--accent)); position:relative; overflow:hidden;}
+  .hero-art::before{content:""; position:absolute; inset:0; opacity:0.16; background-image:radial-gradient(circle, var(--cream) 2px, transparent 2.4px); background-size:26px 26px;}
+  .hero-art::after{content:"☪";font-family:var(--font-disp); position:absolute; bottom:18px; right:22px; font-size:44px; color:var(--ond); opacity:0.85;}
+
+
+  .prayer-list{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .prayer-item{display:flex; justify-content:space-between; align-items:center; padding:15px 22px; border-bottom:1px solid var(--line); border-left:4px solid transparent;}
+  .prayer-item:last-child{border-bottom:none;}
+  .prayer-item .name{font-family:var(--font-disp); font-size:17px; color:var(--deep); font-weight:700;}
+  .prayer-item .times{font-size:13.5px; color:var(--inks); text-align:right;}
+  .prayer-item.current{border-left-color:var(--accent); background:var(--soft);}
+
+
+  .feat-lead{color:var(--inks); font-size:15px; max-width:70ch; margin:-14px 0 30px;}
+  .feat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .feat-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:22px 18px;}
+  .feat-card .num{font-family:var(--font-disp); color:var(--accent); font-size:22px; font-weight:700; margin-bottom:10px;}
+  .feat-card h3{margin:0 0 8px; font-size:15.5px; color:var(--deep);}
+  .feat-card p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.feat-grid{grid-template-columns:1fr 1fr;}}
+
+
+  .events{display:grid; grid-template-columns:repeat(3,1fr); gap:18px;}
+  .event-card{background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+  .event-date{background:var(--deep); color:var(--ond); padding:10px 16px; font-size:12px; font-weight:600; letter-spacing:0.04em;}
+  .event-body{padding:16px 18px;}
+  .event-body h3{margin:0 0 6px; font-size:15.5px;}
+  .event-body p{margin:0; font-size:13.5px; color:var(--inks);}
+  @media (max-width:760px){.events{grid-template-columns:1fr;}}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-form-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-form-grid form{display:flex; flex-direction:column; gap:12px;}
+  .contact-form-grid label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em;}
+  .contact-form-grid input, .contact-form-grid textarea{font-family:var(--font-body); font-size:14.5px; padding:10px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  .contact-form-grid textarea{min-height:90px; resize:vertical;}
+  .contact-side-info p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-side-info b{color:var(--deep); display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:150px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px; margin-top:16px;}
+  @media (max-width:760px){.contact-form-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">ر</span>
+      <span class="name">Islamic Center of Rivertown</span>
+    </a>
+    <div class="navctas">
+      <nav class="links">
+        <a href="#prayer-times">Prayer Times</a>
+        <a href="#about">About</a>
+        <a href="#events">Events</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="nav-donate" href="#donate">Donate</a>
+    </div>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-split">
+    <div>
+      <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+      <h1>Welcome to Islamic Center of Rivertown</h1>
+      <p>Open every day for prayer, reflection, and learning — Islamic Center of Rivertown has been a cornerstone of Rivertown for years.</p>
+      <div class="hero-ctas">
+        <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+        <a class="btn outline-dark" href="#donate">Donate</a>
+      </div>
+    </div>
+    <div class="hero-art"></div>
+  </div>
+</section>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-list" id="prayerTable">
+      <div class="prayer-item" data-prayer="Fajr" data-minutes="320"><span class="name">Fajr</span><span class="times">Adhan 5:20 AM &middot; Iqamah 5:35 AM</span></div>
+      <div class="prayer-item" data-prayer="Dhuhr" data-minutes="745"><span class="name">Dhuhr</span><span class="times">Adhan 12:25 PM &middot; Iqamah 12:35 PM</span></div>
+      <div class="prayer-item" data-prayer="Asr" data-minutes="990"><span class="name">Asr</span><span class="times">Adhan 4:30 PM &middot; Iqamah 4:55 PM</span></div>
+      <div class="prayer-item" data-prayer="Maghrib" data-minutes="1150"><span class="name">Maghrib</span><span class="times">Adhan 7:10 PM &middot; Iqamah 7:30 PM</span></div>
+      <div class="prayer-item" data-prayer="Isha" data-minutes="1260"><span class="name">Isha</span><span class="times">Adhan 9:00 PM &middot; Iqamah 9:25 PM</span></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:30 PM, prayer at 1:40 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section id="about">
+  
+<div class="wrap">
+  <p class="eyebrow">About us</p>
+  <h2>Faith, family, and community — under one roof.</h2>
+  <p class="feat-lead">What began as a handful of families praying together has grown into one of Rivertown's most active community spaces, thanks entirely to local support.</p>
+  <div class="feat-grid">
+    <div class="feat-card"><div class="num">01</div><h3>Five Daily Prayers</h3><p>Congregational prayers held on time, every day, led by our resident imam.</p></div>
+    <div class="feat-card"><div class="num">02</div><h3>Weekend Islamic School</h3><p>Qur'an, Arabic, and Islamic studies classes for children every Saturday and Sunday.</p></div>
+    <div class="feat-card"><div class="num">03</div><h3>Community Support</h3><p>A small food-assistance program and counseling referrals for neighbors in need.</p></div>
+    <div class="feat-card"><div class="num">04</div><h3>New Muslim Care</h3><p>A dedicated welcome program pairing new Muslims with a mentor from the community.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events">
+    <div class="event-card"><div class="event-date">FRI, OCT 6</div><div class="event-body"><h3>Eid Prayer & Community Breakfast</h3><p>Join us for Eid prayer followed by a free breakfast for the whole community.</p></div></div>
+    <div class="event-card"><div class="event-date">SAT, AUG 15</div><div class="event-body"><h3>Marriage & Family Seminar</h3><p>Guest speaker session on building healthy, faith-centered family relationships.</p></div></div>
+    <div class="event-card"><div class="event-date">SUN, SEP 24</div><div class="event-body"><h3>Community Iftar Planning Meeting</h3><p>Open meeting for volunteers to help plan this year's Ramadan iftar schedule.</p></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>From the electric bill to weekend school supplies, every gift — large or small — keeps this masjid running for the whole community.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="contact">
+  
+<div class="wrap">
+  <p class="eyebrow">Visit or reach out</p>
+  <h2>Contact &amp; location</h2>
+  <div class="contact-form-grid">
+    <form onsubmit="return false;">
+      <label for="cname">Name</label>
+      <input id="cname" type="text" placeholder="Your name">
+      <label for="cemail">Email</label>
+      <input id="cemail" type="email" placeholder="you@example.com">
+      <label for="cmsg">Message</label>
+      <textarea id="cmsg" placeholder="How can we help?"></textarea>
+      <a class="btn gold" href="#top" style="align-self:flex-start; margin-top:4px;">Send message</a>
+    </form>
+    <div class="contact-side-info">
+      <p><b>Address</b>287 Magnolia Avenue, Rivertown</p>
+      <p><b>Phone</b>(555) 277-1583</p>
+      <p><b>Email</b>info@islamic-center-of-rivertown-example.org</p>
+      <div class="map-box">Map placeholder</div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+
+<footer>
+  Islamic Center of Rivertown — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-item[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>
