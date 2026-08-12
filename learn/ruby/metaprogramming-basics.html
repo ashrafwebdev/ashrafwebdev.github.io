@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Metaprogramming means writing code that writes or modifies code at runtime — Ruby is unusually flexible here, letting you define methods dynamically, intercept calls to undefined methods, and modify existing classes after they're defined.</p>
-    <p><code>method_missing</code> intercepts calls to methods that don't exist on an object, letting you handle them dynamically — used carefully, this powers elegant APIs; used carelessly, it makes code much harder to trace and debug.</p>
+    <p class="lead">Metaprogramming means writing code that writes or modifies code at runtime — Ruby is unusually flexible here, letting you define methods dynamically, intercept calls to methods that don't exist, and reopen and modify existing classes (including Ruby's own built-in ones) after they've already been defined. This flexibility is a big part of how gems like Rails achieve their expressive, seemingly 'magic' APIs.</p>
+    <p><code>method_missing</code> intercepts calls to methods that don't exist on an object, letting you handle them dynamically based on the method name and arguments that were called. Used carefully, this powers elegant APIs like ActiveRecord's dynamic finders; used carelessly, it makes code much harder to trace, since a reader (or an IDE's 'jump to definition') can't find where the method is actually implemented just by looking at the class.</p>
+    <p>Any class that overrides <code>method_missing</code> should also override <code>respond_to_missing?</code> to match — otherwise, calling <code>.respond_to?</code> on the object will incorrectly report <code>false</code> for methods it can actually handle, which breaks introspection and any code that checks <code>respond_to?</code> before calling a method. It's a small detail that's easy to skip and genuinely important to get right.</p>
+    <p><code>define_method</code> creates methods programmatically at class-definition time (rather than intercepting them at call time like <code>method_missing</code> does), and is often the clearer choice when the set of method names is known and finite — for example, generating a getter for each of a fixed list of attributes — because the resulting methods actually exist and show up normally in <code>.methods</code> and <code>respond_to?</code>.</p>
+    <p><code>send</code> lets you call a method by name (as a string or symbol) computed at runtime, even bypassing its usual private/protected visibility — extremely useful for things like generic serialization code that needs to call whatever attribute method a caller asks for, but also a way to accidentally violate an object's intended encapsulation if used carelessly on someone else's class.</p>
+    <p>Metaprogramming is a real tool with real tradeoffs, not a party trick: it always trades some readability, static analysis, and 'jump to definition' tooling support in exchange for flexibility and less repetition. The idiomatic guidance in the Ruby community is to reach for it deliberately, in library code where the flexibility earns its keep, rather than scattering it through ordinary application logic where a plain, explicit method would be just as easy to write.</p>
     <div class="code-block">
 <div class="cap">metaprogramming.rb</div>      <pre><code>class DynamicGreeter
   def method_missing(name, *args)
@@ -122,22 +126,63 @@
       super
     end
   end
+
+  def respond_to_missing?(name, include_private = false)
+    name.to_s.start_with?("greet_") || super
+  end
 end
 
-puts DynamicGreeter.new.greet_spanish</code></pre>
+greeter = DynamicGreeter.new
+puts greeter.greet_spanish
+puts greeter.respond_to?(:greet_french)  # true, thanks to respond_to_missing?</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">define_method.rb</div>      <pre><code>class Config
+  ATTRIBUTES = [:host, :port, :timeout]
+
+  ATTRIBUTES.each do |attr|
+    define_method(attr) { instance_variable_get("@#{attr}") }
+    define_method("#{attr}=") { |val| instance_variable_set("@#{attr}", val) }
+  end
+end
+
+c = Config.new
+c.port = 8080
+puts c.port          # 8080
+puts c.respond_to?(:port)  # true -- a real method, not intercepted</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">send_and_encapsulation.rb</div>      <pre><code>class Account
+  def initialize(balance)
+    @balance = balance
+  end
+
+  private
+
+  def balance
+    @balance
+  end
+end
+
+a = Account.new(500)
+# a.balance          # NoMethodError -- it's private
+puts a.send(:balance) # 500 -- send bypasses that on purpose</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>method_missing</code> must call <code>super</code> for names it doesn't recognize, or it silently swallows genuine errors.</li>
+        <li>Overriding <code>method_missing</code> without also overriding <code>respond_to_missing?</code> makes <code>respond_to?</code> lie about what the object can actually do.</li>
         <li><code>define_method</code> creates methods programmatically at class-definition time, often clearer than method_missing for known, finite sets of methods.</li>
+        <li>Methods created with <code>define_method</code> are real methods -- they appear normally in <code>.methods</code> and pass <code>respond_to?</code> checks.</li>
+        <li><code>send</code> calls a method by a runtime-computed name and can bypass private/protected visibility, which is powerful but easy to misuse.</li>
         <li>Metaprogramming is how gems like ActiveRecord dynamically generate methods like <code>find_by_email</code> from your table's columns.</li>
-        <li>Use metaprogramming deliberately — it trades some readability and 'jump to definition' tooling for flexibility.</li>
+        <li>Use metaprogramming deliberately in library-style code -- it trades some readability and tooling support for flexibility, and that trade isn't always worth it in ordinary application code.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a class using method_missing to dynamically respond to any method starting with 'is_' by returning true or false based on a stored attribute.</p>
+      <p>Write a class using method_missing to dynamically respond to any method starting with 'is_' by returning true or false based on a stored attribute, and make sure to implement respond_to_missing? to match. Then rewrite the same behavior using define_method for a fixed, known list of attributes instead, and write a short comment explaining which approach you'd prefer for a real project and why.</p>
     </div>
   </article>
 

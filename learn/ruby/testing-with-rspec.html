@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">RSpec is Ruby's most popular testing framework, favoring a readable, English-like syntax: <code>describe</code> groups related tests, <code>it</code> defines an individual example, and <code>expect(...).to</code> makes assertions.</p>
-    <p>Rails integrates deeply with RSpec (via the rspec-rails gem), adding specialized test types for models, controllers, and requests, each with helpers tailored to what that layer needs to verify.</p>
+    <p class="lead">RSpec is Ruby's most popular testing framework, favoring a readable, English-like syntax: <code>describe</code> groups related tests around a class or a specific behavior, <code>context</code> further groups examples by a particular condition or scenario, <code>it</code> defines an individual example with a description of the expected behavior, and <code>expect(...).to</code> makes the actual assertion.</p>
+    <p>Rails integrates deeply with RSpec through the <code>rspec-rails</code> gem, adding specialized spec types for each architectural layer — model specs for validations and business logic in isolation, request specs for full HTTP request/response cycles through the actual routing and controller stack, and system specs for full browser-driven end-to-end tests — each with helpers tailored to what that particular layer needs to verify.</p>
+    <p>Matchers are what make an assertion read naturally: <code>expect(x).to eq(y)</code> for exact equality, <code>be_valid</code>/<code>be_truthy</code> for predicate-style checks, <code>include</code> for collection membership, and <code>raise_error</code> for exceptions. RSpec also supports negation directly (<code>expect(x).not_to eq(y)</code>) rather than requiring a separate assertion style for the negative case.</p>
+    <p>Factories, most commonly built with the <code>factory_bot</code> gem, are the idiomatic way to build realistic test data instead of hand-writing static YAML fixtures. A factory defines sensible defaults for a model's attributes, and each spec can override only the specific attributes that matter for that particular test, keeping the setup code focused on what's actually relevant to what's being tested.</p>
+    <p><code>before</code> hooks run shared setup code before each example (or once per group with <code>before(:all)</code>, though per-example setup with <code>before(:each)</code>, the default, is by far the more common and generally safer choice, since it avoids state leaking between tests). <code>let</code> and <code>let!</code> memoize a value lazily per example — <code>let</code> only actually creates the value the first time it's referenced inside an example, while <code>let!</code> forces it to be created eagerly before every example runs, whether it's referenced or not.</p>
+    <p>A well-organized spec suite tests behavior, not implementation — asserting on what a method returns or what side effect it produces, rather than exactly how it internally accomplishes that, which keeps the tests useful as a safety net during refactoring instead of becoming brittle and needing constant updates for changes that don't actually change the code's observable behavior.</p>
     <div class="code-block">
 <div class="cap">spec/models/book_spec.rb</div>      <pre><code>require "rails_helper"
 
@@ -122,18 +126,53 @@ RSpec.describe Book, type: :model do
   end
 end</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">spec/models/book_spec.rb -- factories and let</div>      <pre><code>RSpec.describe Book, type: :model do
+  let(:author) { create(:author) }
+  let(:book)   { build(:book, author: author, title: "Ruby Basics") }
+
+  context "with a valid title" do
+    it "saves successfully" do
+      expect { book.save! }.not_to raise_error
+    end
+  end
+
+  context "without a title" do
+    before { book.title = nil }
+
+    it "is invalid" do
+      expect(book).to be_invalid
+      expect(book.errors[:title]).to include("can't be blank")
+    end
+  end
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">spec/requests/books_spec.rb</div>      <pre><code>RSpec.describe "Books API", type: :request do
+  it "returns a list of books" do
+    create_list(:book, 3)
+    get "/books.json"
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body).size).to eq(3)
+  end
+end</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>describe</code>/<code>context</code> group examples; <code>it</code> defines one specific expected behavior.</li>
-        <li><code>expect(x).to eq(y)</code> and its many matcher variants read close to natural English.</li>
+        <li><code>expect(x).to eq(y)</code> and its many matcher variants read close to natural English, including negation with <code>not_to</code>.</li>
         <li>Factories (via the <code>factory_bot</code> gem) are the idiomatic way to build test data instead of hand-writing fixtures.</li>
         <li>Request specs test full HTTP request/response cycles; model specs test validations and business logic in isolation.</li>
+        <li><code>let</code> lazily memoizes a value the first time it's referenced in an example; <code>let!</code> creates it eagerly before every example.</li>
+        <li><code>before</code> hooks run shared setup before each example -- per-example (<code>:each</code>) is the default and generally safer than per-group.</li>
+        <li>Good specs test observable behavior, not internal implementation, so they stay useful as a safety net through refactors.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write an RSpec model spec with two examples: one confirming a valid record saves, one confirming an invalid record (missing a required field) doesn't.</p>
+      <p>Write an RSpec model spec with two examples: one confirming a valid record saves, one confirming an invalid record (missing a required field) doesn't, using a factory_bot factory instead of hand-built objects. Then write a request spec that hits an index endpoint and asserts both the HTTP status and the number of records returned, using let to set up the test data.</p>
     </div>
   </article>
 

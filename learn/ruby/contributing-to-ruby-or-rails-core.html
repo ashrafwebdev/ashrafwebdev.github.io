@@ -110,21 +110,28 @@
   </div>
 
   <article>
-    <p class="lead">Both Ruby and Rails are developed entirely in the open — Ruby on GitHub with a formal feature-request process, and Rails on GitHub with active maintainers and a clear contribution guide covering everything from documentation to core framework code.</p>
-    <p>For most developers, a more approachable starting point is a smaller, widely-used gem in the Ruby ecosystem — the same contribution skills apply, with a codebase small enough to understand fully before your first pull request.</p>
+    <p class="lead">Both Ruby and Rails are developed entirely in the open. Ruby itself is developed primarily through a formal, tracked issue and feature-request process on its own bug tracker (mirrored on GitHub), where language changes go through real design discussion among core committers before being accepted — even small changes to a language used this widely require real deliberation. Rails is developed on GitHub with active maintainers and a clear, published contribution guide covering everything from documentation fixes to core framework changes.</p>
+    <p>For most developers, a more approachable starting point than Ruby or Rails core is a smaller, widely-used gem in the surrounding ecosystem — the same contribution skills apply (reading an unfamiliar codebase, writing a clear pull request, working with maintainers' feedback), but with a codebase small enough to understand fully before your very first pull request, rather than needing to absorb years of accumulated design decisions in a framework the size of Rails.</p>
+    <p>Documentation fixes and well-written bug reports are genuinely valuable contributions in their own right, not just a warm-up before 'real' code contributions — a maintainer with limited time often gets far more leverage from a precisely-worded bug report with a minimal reproduction case than from a rushed, under-tested pull request that creates more review work than it saves.</p>
+    <p>A minimal, reliable reproduction case — the smallest possible piece of code that reliably demonstrates the bug, with unrelated application-specific complexity stripped away — is one of the single most valuable things you can hand a maintainer, since it's frequently what actually determines whether an issue gets picked up quickly or sits untouched for months for lack of anyone being able to confirm and understand it.</p>
+    <p>Reading Rails' own source code is one of the best ways to internalize idiomatic Ruby and Rails patterns, and it's more approachable than it might sound — Rails is deliberately written to be readable, and stepping through how a familiar method like <code>find_by</code> or <code>validates</code> is actually implemented under the hood often teaches more about proper Ruby style than any tutorial could.</p>
+    <p>Before opening a pull request against a large project, it's worth reading its CONTRIBUTING guide closely and, for anything beyond a small, obviously correct fix, opening an issue to discuss the change first — large projects reject a meaningful number of well-intentioned pull requests simply because they weren't discussed or aligned with the maintainers' direction before the work was already done.</p>
 
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Rails' CONTRIBUTING.md documents exactly how to set up a development environment and submit a first patch.</li>
         <li>Documentation fixes and well-written bug reports are genuinely valuable contributions, not just a warm-up before 'real' code contributions.</li>
-        <li>Reading Rails' own source code (it's surprisingly readable) is one of the best ways to internalize idiomatic Ruby and Rails patterns.</li>
+        <li>Reading Rails' own source code (it's deliberately written to be readable) is one of the best ways to internalize idiomatic Ruby and Rails patterns.</li>
         <li>A minimal, reliable reproduction case is often more valuable to maintainers than a hastily-written fix without one.</li>
+        <li>A smaller, widely-used gem is usually a more approachable first contribution target than Ruby or Rails core itself.</li>
+        <li>Discussing a non-trivial change in an issue before opening a pull request avoids wasted work that doesn't align with maintainers' direction.</li>
+        <li>Ruby language changes go through real design discussion among core committers, even for small proposals, given how widely the language is used.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Ruby gem or Rails itself, find an open issue labeled 'good first issue' or a documentation gap, and submit a fix or a clear, reproducible bug report.</p>
+      <p>Pick a Ruby gem or Rails itself, find an open issue labeled 'good first issue' or a documentation gap, and submit a fix or a clear, reproducible bug report. Before opening a pull request, read the project's CONTRIBUTING guide in full and, if the change is more than a trivial fix, open an issue first describing your proposed approach and confirm it aligns with the maintainers' direction.</p>
     </div>
   </article>
 

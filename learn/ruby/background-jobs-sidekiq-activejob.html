@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">ActiveJob is Rails' built-in abstraction for background jobs, with Sidekiq as the most popular backend — work like sending an email or processing an image gets queued and run outside the request/response cycle, keeping requests fast.</p>
-    <p>Sidekiq uses Redis to store the job queue and runs jobs in separate worker processes, letting you scale background processing independently from your web servers.</p>
+    <p class="lead">ActiveJob is Rails' built-in abstraction for background jobs, providing one consistent API regardless of which backend actually executes the work — Sidekiq is the most popular backend in production, but ActiveJob can also run on Resque, Delayed::Job, or Rails' own lightweight Async adapter without changing how a job is written or enqueued.</p>
+    <p>Moving work like sending an email, processing an uploaded image, or calling a slow third-party API out of the request/response cycle and into a background job keeps requests fast and responsive for the user, at the cost of that work no longer completing before the response is sent — which means the calling code needs to be comfortable with the job's effects happening slightly later, asynchronously.</p>
+    <p>Sidekiq specifically uses Redis to store the job queue and runs jobs in separate worker processes (not separate web server processes), letting you scale background processing independently from your web servers — a spike in background work doesn't have to compete with incoming web requests for the same process pool.</p>
+    <p>Jobs are serialized before being placed on the queue and deserialized again when a worker picks them up, so you should pass simple identifiers — like a record's ID — rather than full ActiveRecord objects. Passing an object directly can silently serialize a stale snapshot of it, and by the time the job actually runs, the real record in the database may have already changed or even been deleted.</p>
+    <p>Jobs should be written to be idempotent wherever realistically possible — safe to run more than once with the same result — because Sidekiq (and most job backends) will retry a job that raises an error partway through, and a job that isn't safe to re-run can cause duplicate side effects, like sending the same notification email twice, on that retry.</p>
+    <p><code>perform_later</code> enqueues a job to actually run asynchronously through the configured backend; <code>perform_now</code> runs the exact same job inline, synchronously, in the current process — genuinely useful in tests and for local debugging, where you often want a job's effects to happen immediately and deterministically rather than waiting on an asynchronous queue.</p>
     <div class="code-block">
 <div class="cap">app/jobs/welcome_email_job.rb</div>      <pre><code>class WelcomeEmailJob &lt; ApplicationJob
   queue_as :default
@@ -125,18 +129,45 @@ end
 # Enqueue it:
 WelcomeEmailJob.perform_later(user.id)</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">retries_and_idempotency.rb</div>      <pre><code>class ChargeCardJob &lt; ApplicationJob
+  queue_as :critical
+  retry_on Stripe::RateLimitError, wait: :polynomially_longer, attempts: 5
+
+  def perform(order_id)
+    order = Order.find(order_id)
+    return if order.charged?  # idempotency guard -- safe if retried
+
+    order.charge!
+  end
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">spec -- testing a job runs inline</div>      <pre><code>RSpec.describe WelcomeEmailJob, type: :job do
+  it "sends a welcome email" do
+    user = create(:user)
+
+    expect {
+      described_class.perform_now(user.id)  # inline, no queue involved
+    }.to change { ActionMailer::Base.deliveries.count }.by(1)
+  end
+end</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>perform_later</code> enqueues a job to run asynchronously; <code>perform_now</code> runs it immediately, inline — useful in tests.</li>
-        <li>Pass simple identifiers (like an ID) to jobs, not full objects — jobs are serialized, and objects can go stale between enqueue and execution.</li>
-        <li>Jobs should be idempotent where possible — Sidekiq can retry a job that failed partway through.</li>
+        <li><code>perform_later</code> enqueues a job to run asynchronously; <code>perform_now</code> runs it immediately, inline -- useful in tests.</li>
+        <li>Pass simple identifiers (like an ID) to jobs, not full objects -- jobs are serialized, and objects can go stale between enqueue and execution.</li>
+        <li>Jobs should be idempotent where possible -- Sidekiq can retry a job that failed partway through, and a non-idempotent job can then cause duplicate side effects.</li>
         <li>Sidekiq requires Redis running as its backing store for the job queue.</li>
+        <li>ActiveJob is a single consistent API over multiple possible backends (Sidekiq, Resque, Async), so job code doesn't need to change if the backend does.</li>
+        <li>Sidekiq workers run as separate processes from your web servers, letting background load scale independently from web traffic.</li>
+        <li><code>retry_on</code> configures automatic retries for specific error types, with configurable backoff and a maximum attempt count.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create an ActiveJob that logs a message, enqueue it from a controller action with perform_later, and confirm it runs via a Sidekiq (or the default async) worker.</p>
+      <p>Create an ActiveJob that logs a message, enqueue it from a controller action with perform_later, and confirm it runs via a Sidekiq (or the default async) worker. Then add an idempotency guard to the job so it's safe to run twice, and write a test that calls perform_now directly to verify the job's effect happens synchronously and only once even if invoked twice.</p>
     </div>
   </article>
 

@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Before optimizing Ruby or Rails code, measure. Tools like <code>rack-mini-profiler</code> show per-request timing breakdowns in development, and <code>benchmark-ips</code> compares the real-world speed of alternative implementations of the same logic.</p>
-    <p>In Rails specifically, N+1 queries are the most common real-world performance bug — the <code>bullet</code> gem detects them automatically during development and flags exactly where <code>includes</code> is needed.</p>
+    <p class="lead">Before optimizing Ruby or Rails code, measure — intuition about what's slow is frequently wrong, and optimizing the wrong thing wastes real effort while leaving the actual bottleneck untouched. Tools like <code>rack-mini-profiler</code> show a per-request timing breakdown directly in the browser during development, and <code>benchmark-ips</code> compares the real-world speed of alternative implementations of the same logic with statistically meaningful results, not just a single noisy timing run.</p>
+    <p>In Rails specifically, N+1 queries are the most common real-world performance bug — accessing an association inside a loop looks completely innocent in the code, but silently fires one additional database query per iteration. The <code>bullet</code> gem detects this pattern automatically during development and flags exactly where an <code>includes</code> (or a similar eager-loading call) is needed, before it ever reaches production traffic.</p>
+    <p>Database indexes are one of the highest-leverage fixes available, and a missing index on a frequently-queried or frequently-joined-on column can make an otherwise well-written query dramatically slower as a table grows — <code>EXPLAIN ANALYZE</code> on the underlying SQL query (which Rails' logs show for every query it runs) reveals whether the database is actually using an index or falling back to a full table scan.</p>
+    <p>Rails offers several layers of caching — fragment caching for reusable pieces of a rendered view, low-level caching (<code>Rails.cache.fetch</code>) for the result of an expensive computation or external API call, and Russian Doll caching for nested view fragments that invalidate cleanly as their underlying data changes — and reaching for caching is usually a much bigger performance win than micro-optimizing the Ruby code that runs on every request.</p>
+    <p>Memory matters too, not just raw speed: loading an entire large table into memory with <code>Book.all.each</code> can exhaust available memory as a table grows, where <code>Book.find_each</code> processes the same records in fixed-size batches instead, keeping memory use flat regardless of how large the table eventually becomes.</p>
+    <p>Profiling tools like <code>stackprof</code> or <code>rbspy</code> go a level deeper than simple timing, sampling exactly where a running Ruby process is spending its CPU time and producing a flame graph — genuinely useful once you already know a specific piece of code is slow and need to find precisely which line or method inside it is actually responsible, rather than guessing.</p>
     <div class="code-block">
 <div class="cap">Benchmarking two approaches</div>      <pre><code>require "benchmark/ips"
 
@@ -121,18 +125,37 @@ Benchmark.ips do |x|
   x.compare!
 end</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Caching an expensive computation</div>      <pre><code>class BooksController &lt; ApplicationController
+  def index
+    @summary = Rails.cache.fetch("books_summary", expires_in: 1.hour) do
+      Book.all.group(:genre).count  # only recomputed once per hour
+    end
+  end
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">find_each -- constant memory over a big table</div>      <pre><code># BAD: loads every single Book into memory at once
+Book.all.each { |b| ReindexJob.perform_later(b.id) }
+
+# GOOD: processes in batches of 1000 by default, flat memory usage
+Book.find_each(batch_size: 1000) { |b| ReindexJob.perform_later(b.id) }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Always measure before optimizing — Ruby's expressive syntax can hide surprisingly expensive operations.</li>
-        <li>N+1 queries are the single most common Rails performance issue in practice — the <code>bullet</code> gem catches them during development.</li>
+        <li>Always measure before optimizing -- Ruby's expressive syntax can hide surprisingly expensive operations.</li>
+        <li>N+1 queries are the single most common Rails performance issue in practice -- the <code>bullet</code> gem catches them during development.</li>
         <li><code>benchmark-ips</code> gives statistically meaningful comparisons between two implementations, not just a single noisy timing run.</li>
-        <li>Database indexes, caching (Rails' built-in fragment/query caching), and background jobs are usually higher-leverage fixes than micro-optimizing Ruby code itself.</li>
+        <li>A missing database index on a frequently-queried column can dramatically slow a query as the underlying table grows.</li>
+        <li>Rails' built-in fragment and low-level caching (<code>Rails.cache.fetch</code>) is usually a bigger win than micro-optimizing Ruby code that runs on every request.</li>
+        <li><code>find_each</code> processes a large table in fixed-size batches, keeping memory usage flat, unlike <code>.all.each</code> which loads everything at once.</li>
+        <li>Sampling profilers like <code>stackprof</code> pinpoint exactly which line is consuming CPU time once you already know a section of code is slow.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Install the bullet gem in a Rails app, trigger an N+1 query deliberately, confirm bullet flags it, then fix it with includes.</p>
+      <p>Install the bullet gem in a Rails app, trigger an N+1 query deliberately, confirm bullet flags it, then fix it with includes. Then write a benchmark-ips comparison between Book.all.each and Book.find_each over a table with several thousand rows, and add a Rails.cache.fetch around one expensive computed value in a controller, confirming with logs that it's only recomputed once per cache expiry.</p>
     </div>
   </article>
 

@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Ruby on Rails is a full-stack web framework built around convention over configuration — following Rails' naming and folder conventions means far less boilerplate configuration than most other frameworks require.</p>
-    <p>Rails structures an app as Model-View-Controller: models represent data (backed by ActiveRecord), controllers handle requests and prepare data, and views render the HTML response — routes in <code>config/routes.rb</code> map incoming URLs to controller actions.</p>
+    <p class="lead">Ruby on Rails is a full-stack web framework built around two guiding principles: convention over configuration, and don't repeat yourself. Following Rails' naming and folder conventions means far less explicit configuration than most other frameworks require — a model named <code>Book</code>, a table named <code>books</code>, and a controller named <code>BooksController</code> are all connected automatically, with no config file spelling out those relationships.</p>
+    <p>Rails structures an app as Model-View-Controller: models represent and validate data (backed by ActiveRecord), controllers receive an incoming request, coordinate whatever work is needed, and prepare data for a response, and views render that data into HTML (or JSON, or another format). This separation keeps business logic, request handling, and presentation from tangling together as an application grows.</p>
+    <p>Routes, declared in <code>config/routes.rb</code>, map incoming URLs and HTTP verbs to specific controller actions. <code>resources :books</code> is a single line that generates a full set of conventional RESTful routes — index, show, new, create, edit, update, destroy — covering the typical CRUD lifecycle for a resource, instead of requiring each route to be written out individually.</p>
+    <p>Instance variables set inside a controller action, like <code>@books = Book.all</code>, are automatically available inside the corresponding view without being passed explicitly — Rails wires this up by convention based on the controller and action name, which is convenient but also means it's easy to lose track of exactly which instance variables a given view depends on in a larger app.</p>
+    <p>Views are typically written in ERB (<code>.html.erb</code>), embedding Ruby inside HTML with <code>&lt;%= ... %&gt;</code> to output a value and <code>&lt;% ... %&gt;</code> to run Ruby logic without printing anything. Partial views (files prefixed with an underscore, like <code>_book.html.erb</code>) let you extract and reuse a repeated chunk of markup, such as a single book's display card, across multiple pages.</p>
+    <p>Running <code>rails routes</code> in the terminal lists every route the application currently defines, including the HTTP verb, URL pattern, and the controller action it maps to — an essential debugging tool the moment a request returns a routing error or hits an unexpected action.</p>
     <div class="code-block">
 <div class="cap">config/routes.rb + a controller action</div>      <pre><code># config/routes.rb
 Rails.application.routes.draw do
@@ -125,18 +129,42 @@ class BooksController &lt; ApplicationController
   end
 end</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">app/views/books/index.html.erb</div>      <pre><code>&lt;h1&gt;Books&lt;/h1&gt;
+
+&lt;ul&gt;
+  &lt;% @books.each do |book| %&gt;
+    &lt;li&gt;&lt;%= book.title %&gt; by &lt;%= book.author %&gt;&lt;/li&gt;
+  &lt;% end %&gt;
+&lt;/ul&gt;
+
+&lt;%= link_to "New book", new_book_path %&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal</div>      <pre><code>$ rails routes | grep books
+book_index GET    /books          books#index
+           POST   /books          books#create
+new_book   GET    /books/new      books#new
+edit_book  GET    /books/:id/edit books#edit
+book       GET    /books/:id      books#show
+           PATCH  /books/:id      books#update
+           DELETE /books/:id      books#destroy</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>resources :books</code> generates a full set of RESTful routes (index, show, new, create, edit, update, destroy) in one line.</li>
         <li>Instance variables set in a controller action (<code>@books</code>) are automatically available in the corresponding view.</li>
-        <li>Rails looks for a view file matching the controller action's name by convention — <code>app/views/books/index.html.erb</code> for the index action.</li>
-        <li><code>rails routes</code> in the terminal lists every route your app currently defines.</li>
+        <li>Rails looks for a view file matching the controller action's name by convention -- <code>app/views/books/index.html.erb</code> for the index action.</li>
+        <li><code>rails routes</code> in the terminal lists every route your app currently defines, which is the first place to check when a URL doesn't behave as expected.</li>
+        <li>ERB uses <code>&lt;%= %&gt;</code> to output a value into the page and <code>&lt;% %&gt;</code> to run logic silently.</li>
+        <li>Partial views (filenames starting with an underscore) let you reuse a chunk of markup across multiple pages.</li>
+        <li>Convention over configuration means the model name, table name, and controller name are linked automatically by naming alone, with no explicit wiring required.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Generate a new Rails app, define a resourceful route for a single model, and confirm rails routes shows the expected RESTful routes.</p>
+      <p>Generate a new Rails app, define a resourceful route for a single model, and confirm rails routes shows the expected RESTful routes. Then build out the index and show views with ERB, extract the repeated per-item markup into a partial, and add a link_to from the index page to each item's show page.</p>
     </div>
   </article>
 

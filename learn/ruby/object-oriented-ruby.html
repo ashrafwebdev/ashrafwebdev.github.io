@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Ruby classes use <code>class Name ... end</code>, with <code>initialize</code> as the constructor. Every class implicitly inherits from <code>Object</code>, and single inheritance works with <code>class Dog &lt; Animal</code>.</p>
-    <p>Modules group related methods and constants, and — unlike classes — can be 'mixed in' to multiple classes with <code>include</code>, giving Ruby a clean alternative to multiple inheritance called a mixin.</p>
+    <p class="lead">Ruby classes use <code>class Name ... end</code>, with <code>initialize</code> serving as the constructor, invoked automatically whenever you call <code>ClassName.new</code>. Every class implicitly inherits from <code>Object</code> (which itself descends from <code>BasicObject</code>), and single inheritance works with <code>class Dog &lt; Animal</code>, giving the subclass access to the parent's public and protected methods.</p>
+    <p>Instance variables (<code>@name</code>) are private to an object by default and are not accessible from outside without an explicit accessor method. <code>attr_reader</code>, <code>attr_writer</code>, and <code>attr_accessor</code> auto-generate those getter and setter methods for you, eliminating a large amount of otherwise-repetitive boilerplate that would exist in languages requiring explicit getters and setters for every field.</p>
+    <p>Modules group related methods and constants together, and — unlike classes — a module cannot be instantiated on its own; instead it can be 'mixed in' to one or many classes with <code>include</code> (adding instance methods) or <code>extend</code> (adding class-level methods), giving Ruby a clean, deliberate alternative to multiple inheritance called a mixin. A class can include as many modules as it likes, even though it can only subclass one other class.</p>
+    <p>When a module is included, Ruby inserts it into the class's method lookup chain, which you can inspect directly by calling <code>SomeClass.ancestors</code> — this reveals the actual order Ruby searches when resolving a method call, and it's the tool to reach for when two included modules define a method with the same name and the resolution order isn't obvious at a glance.</p>
+    <p>Method visibility comes in three levels: <code>public</code> (the default, callable from anywhere), <code>private</code> (callable only without an explicit receiver, essentially only from inside the same object), and <code>protected</code> (callable from other instances of the same class or its subclasses, useful for things like comparison methods that need to read another instance's internal state).</p>
+    <p>Ruby's built-in <code>Comparable</code> module is a good showcase of the mixin pattern in the standard library: a class only needs to implement the spaceship comparison method, and including <code>Comparable</code> automatically supplies working <code>&lt;</code>, <code>&gt;</code>, <code>==</code>, <code>&lt;=</code>, <code>&gt;=</code>, and <code>between?</code> methods built on top of that one comparison, entirely for free.</p>
     <div class="code-block">
 <div class="cap">classes.rb</div>      <pre><code>module Greetable
   def greet
@@ -130,18 +134,60 @@ end
 
 puts Person.new("Amina").greet</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">visibility_and_ancestors.rb</div>      <pre><code>class Account
+  def initialize(balance)
+    @balance = balance
+  end
+
+  def richer_than?(other)
+    balance &gt; other.balance  # protected lets us read other's balance
+  end
+
+  protected
+
+  attr_reader :balance
+end
+
+a = Account.new(100)
+b = Account.new(50)
+puts a.richer_than?(b)     # true
+puts Account.ancestors.first(3).inspect</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">comparable_mixin.rb</div>      <pre><code>class Money
+  include Comparable
+  attr_reader :cents
+
+  def initialize(cents)
+    @cents = cents
+  end
+
+  def &lt;=&gt;(other)
+    cents &lt;=&gt; other.cents  # define ONE method...
+  end
+end
+
+a, b = Money.new(500), Money.new(300)
+puts a &gt; b            # ...get &lt;, &gt;, ==, between? for free
+puts [a, b].sort.map(&amp;:cents).inspect</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>attr_reader</code>/<code>attr_writer</code>/<code>attr_accessor</code> auto-generate getter/setter methods for instance variables, removing boilerplate.</li>
-        <li><code>include</code> mixes a module's instance methods into a class — a common pattern for shared behavior across unrelated classes.</li>
+        <li><code>include</code> mixes a module's instance methods into a class; <code>extend</code> mixes them in as class-level methods instead.</li>
         <li>Instance variables (<code>@name</code>) are private to an object by default, unlike local variables.</li>
-        <li>Ruby supports single class inheritance, but unlimited module mixins, which is how it approximates multiple inheritance's benefits.</li>
+        <li>Ruby supports single class inheritance, but unlimited module mixins, which is how it approximates multiple inheritance's benefits without the ambiguity.</li>
+        <li><code>SomeClass.ancestors</code> reveals the actual method lookup chain, which is essential when included modules could otherwise define conflicting method names.</li>
+        <li><code>private</code> methods can't be called with an explicit receiver; <code>protected</code> methods can be called on other instances of the same class.</li>
+        <li>Including the built-in <code>Comparable</code> module and defining one comparison method gives you a whole family of comparison operators for free.</li>
+        <li>A module cannot be instantiated directly with <code>.new</code> -- it exists purely to be mixed in or used as a namespace.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Greetable module with a greet method, and mix it into two unrelated classes (like Person and Robot) that each define their own name.</p>
+      <p>Create a Greetable module with a greet method, and mix it into two unrelated classes (like Person and Robot) that each define their own name. Then write a Temperature class that includes Comparable by implementing the spaceship comparison method, and demonstrate sorting an array of Temperature instances using the comparison operators that Comparable supplies automatically.</p>
     </div>
   </article>
 

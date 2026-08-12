@@ -110,29 +110,62 @@
   </div>
 
   <article>
-    <p class="lead"><code>bundle gem my_gem_name</code> scaffolds a new gem's structure — a gemspec file for metadata, a lib folder for the actual code, and a spec folder for tests, ready to build and publish to RubyGems.org.</p>
-    <p>A gemspec declares the gem's name, version, dependencies, and files to include — <code>gem build</code> packages it, and <code>gem push</code> publishes it publicly for anyone to <code>gem install</code> or add to their Gemfile.</p>
+    <p class="lead"><code>bundle gem my_gem_name</code> scaffolds a new gem's structure — a gemspec file for metadata, a <code>lib</code> folder for the actual code, and a spec (or test) folder ready to go, along with a README, license file, and CHANGELOG stub — a complete, conventional gem structure in one command, ready to build and publish to RubyGems.org.</p>
+    <p>A gemspec declares the gem's name, version, summary, author, license, runtime and development dependencies, and which files to actually include in the packaged gem. Getting the file list right matters: including test files or development-only assets bloats the published gem unnecessarily, while accidentally excluding a required file breaks it for every user who installs it.</p>
+    <p>Semantic versioning (<code>MAJOR.MINOR.PATCH</code>) genuinely matters once other projects depend on your gem in production — a patch release should only fix bugs without changing behavior anyone could reasonably depend on, a minor release adds functionality in a backward-compatible way, and a major release is the only place a breaking change belongs, since consumers commonly pin their Gemfile with the pessimistic operator specifically to avoid getting an unexpected major-version break.</p>
+    <p><code>gem build my_gem.gemspec</code> packages the gem locally into a <code>.gem</code> file, which you can install and test directly with <code>gem install ./my_gem-0.1.0.gem</code> before ever publishing it — a good habit to catch packaging mistakes (like a missing file) before they reach real users.</p>
+    <p><code>gem push my_gem-0.1.0.gem</code> publishes the built package to RubyGems.org, the canonical public registry, making it installable by anyone with <code>gem install my_gem</code> or addable to any project's Gemfile — publishing requires an account on RubyGems.org and, once published, a given version number can never be reused, even if you immediately yank it.</p>
+    <p>A clear README explaining what the gem does, a quick installation and usage example, and an up-to-date CHANGELOG documenting what changed in each release make a genuine difference in whether a published gem actually gets adopted and trusted — the code itself being good is necessary but nowhere near sufficient for a gem to gain real usage.</p>
     <div class="code-block">
 <div class="cap">my_gem.gemspec</div>      <pre><code>Gem::Specification.new do |spec|
   spec.name = "my_gem"
   spec.version = "0.1.0"
   spec.summary = "A short, clear description"
-  spec.files = Dir["lib/**/*.rb"]
+  spec.authors = ["Amina"]
+  spec.license = "MIT"
+  spec.files = Dir["lib/**/*.rb"] + ["README.md", "LICENSE.txt"]
   spec.add_dependency "activesupport", "&gt;= 6.0"
+  spec.add_development_dependency "rspec", "~&gt; 3.0"
 end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">lib/my_gem.rb + a spec</div>      <pre><code># lib/my_gem.rb
+module MyGem
+  def self.shout(text)
+    "#{text.upcase}!"
+  end
+end
+
+# spec/my_gem_spec.rb
+require "my_gem"
+
+RSpec.describe MyGem do
+  it "upcases and adds an exclamation mark" do
+    expect(MyGem.shout("hello")).to eq("HELLO!")
+  end
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal -- build, install locally, publish</div>      <pre><code>$ gem build my_gem.gemspec
+$ gem install ./my_gem-0.1.0.gem   # test it locally first
+$ irb -r my_gem -e 'puts MyGem.shout("hi")'
+$ gem push my_gem-0.1.0.gem        # publish to RubyGems.org</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>bundle gem name</code> scaffolds a complete, conventional gem structure, including a test setup, in one command.</li>
-        <li>Semantic versioning matters once other projects depend on your gem in production.</li>
-        <li>RubyGems.org is the canonical public registry — <code>gem push</code> publishes there directly.</li>
-        <li>A clear README and a CHANGELOG file make a real difference in whether a published gem actually gets adopted.</li>
+        <li>The gemspec's file list controls exactly what ships in the package -- get it wrong and you either bloat the gem or ship something broken.</li>
+        <li>Semantic versioning matters once other projects depend on your gem in production, especially since consumers often pin with the pessimistic operator.</li>
+        <li><code>gem build</code> packages the gem locally, letting you test-install it before ever publishing, catching packaging mistakes early.</li>
+        <li>RubyGems.org is the canonical public registry -- <code>gem push</code> publishes there directly, and a published version number can never be reused.</li>
+        <li>A clear README and an up-to-date CHANGELOG make a real difference in whether a published gem actually gets adopted.</li>
+        <li>Development-only dependencies belong in <code>add_development_dependency</code>, not the main dependency list, so consumers of the gem don't install tools they'll never use.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Scaffold a gem with bundle gem, implement one small utility method in it, write a test for it, and build it locally with gem build.</p>
+      <p>Scaffold a gem with bundle gem, implement one small utility method in it, write a test for it, and build it locally with gem build. Then install the built .gem file locally with gem install and confirm the method works from a fresh irb session, and write a gemspec entry declaring one runtime dependency with an appropriate semantic version constraint.</p>
     </div>
   </article>
 

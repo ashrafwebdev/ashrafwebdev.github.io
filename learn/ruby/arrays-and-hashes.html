@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Arrays hold ordered lists, created with <code>[]</code>. Hashes map keys to values, created with <code>{}</code> — modern Ruby favors symbol keys (<code>:name</code>) over strings for hash keys, since symbols are more memory-efficient and faster to compare.</p>
-    <p>Both come with a huge library of built-in methods — <code>map</code>, <code>select</code>, <code>reduce</code>, <code>sort</code> — that make manual loops for common transformations rarely necessary in idiomatic Ruby.</p>
+    <p class="lead">Arrays hold ordered, indexable lists, created with <code>[]</code>. Hashes map keys to values, created with <code>{}</code> — modern Ruby favors symbol keys (<code>:name</code>) over string keys, since symbols are immutable and interned, making them more memory-efficient and faster to compare than equivalent strings.</p>
+    <p>Both collections come with a huge library of built-in methods — <code>map</code>, <code>select</code>, <code>reject</code>, <code>reduce</code>, <code>sort</code>, <code>group_by</code> — that make manual loops for common transformations rarely necessary in idiomatic Ruby. Most of these methods are non-mutating by default: they return a new collection and leave the original untouched, unless you reach for the bang (<code>!</code>) variant explicitly.</p>
+    <p>Ruby's <code>Enumerable</code> module is what actually supplies most of these methods, and it's mixed into both <code>Array</code> and <code>Hash</code> (and many other classes), which is why the same method names — <code>map</code>, <code>each</code>, <code>reduce</code> — behave consistently across very different kinds of collections. Understanding Enumerable is often more valuable than memorizing Array-specific or Hash-specific method lists.</p>
+    <p><code>reduce</code> (aliased <code>inject</code>) folds a collection down into a single value by repeatedly applying a block with an accumulator, and it's more general-purpose than it first appears — sums, products, building up a hash from an array, and flattening nested structures can all be expressed as a reduce once you're comfortable with the pattern.</p>
+    <p>Hashes preserve insertion order in modern Ruby (this has been guaranteed since Ruby 1.9), which many people don't expect coming from languages where hash/dictionary ordering is unspecified. Accessing a missing key returns <code>nil</code> by default rather than raising an error, though <code>Hash.new(default)</code> or <code>Hash.new { |h, k| ... }</code> can supply a default value or even compute one lazily on first access.</p>
+    <p>Ruby's range syntax integrates naturally with both collections: <code>(1..5).to_a</code> produces an array, and <code>array[1..3]</code> slices a subrange. The two-dot range (<code>1..5</code>) is inclusive of the end value, while the three-dot range (<code>1...5</code>) excludes it — a small syntactic difference that's easy to misread at a glance and worth double-checking in code review.</p>
     <div class="code-block">
 <div class="cap">collections.rb</div>      <pre><code>fruits = ["apple", "banana", "cherry"]
 user = { name: "Amina", age: 27 }  # symbol keys
@@ -122,18 +126,45 @@ puts user[:name]
 doubled = [1, 2, 3].map { |n| n * 2 }
 puts doubled.inspect  # [2, 4, 6]</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">enumerable_toolkit.rb</div>      <pre><code>orders = [
+  { item: "Book", price: 12, qty: 2 },
+  { item: "Pen",  price: 2,  qty: 5 },
+]
+
+total = orders.reduce(0) { |sum, o| sum + (o[:price] * o[:qty]) }
+puts total  # 34
+
+by_expensive = orders.sort_by { |o| -o[:price] }
+cheap, pricey = orders.partition { |o| o[:price] &lt; 5 }
+grouped = orders.group_by { |o| o[:price] &gt; 5 ? :expensive : :cheap }
+puts grouped.keys.inspect  # [:cheap, :expensive]</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">hash_defaults.rb</div>      <pre><code>counts = Hash.new(0)  # default value 0 for any missing key
+
+"mississippi".each_char { |c| counts[c] += 1 }
+puts counts.inspect  # {"m"=&gt;1, "i"=&gt;4, "s"=&gt;4, "p"=&gt;2}
+
+plain = {}
+puts plain[:missing].inspect  # nil, no error raised</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Symbol keys (<code>name:</code> / <code>:name</code>) are the idiomatic default for hash keys in modern Ruby.</li>
         <li><code>.map</code>, <code>.select</code>, <code>.reduce</code> return new collections — they don't mutate the original by default (methods ending in <code>!</code> do).</li>
+        <li>The <code>Enumerable</code> module is the actual source of most collection methods and is shared by Array, Hash, Range, and more.</li>
+        <li><code>reduce</code>/<code>inject</code> folds a collection into a single accumulated value and can express sums, groupings, and transformations alike.</li>
+        <li>Hashes preserve insertion order since Ruby 1.9, unlike hash/dictionary types in some other languages.</li>
+        <li>A missing hash key returns <code>nil</code> by default, but <code>Hash.new(default)</code> lets you supply a fallback value instead.</li>
         <li><code>.inspect</code> (or <code>p</code> instead of <code>puts</code>) shows a debug-friendly representation, useful for arrays and hashes.</li>
-        <li>Ruby's range syntax (<code>1..5</code>) integrates naturally with arrays: <code>(1..5).to_a</code>.</li>
+        <li>A two-dot range (<code>1..5</code>) is inclusive of the endpoint; a three-dot range (<code>1...5</code>) excludes it.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a hash representing a book (title, author, year) and an array of three such hashes, then print each title using map.</p>
+      <p>Create a hash representing a book (title, author, year) and an array of three such hashes, then print each title using map. Then use reduce to compute the average publication year across all three books, and use group_by to split the books into two groups based on whether they were published before or after 2000.</p>
     </div>
   </article>
 

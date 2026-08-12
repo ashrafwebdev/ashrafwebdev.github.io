@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">ActiveRecord is Rails' built-in ORM — a Ruby class like <code>Book</code> maps directly to a <code>books</code> database table, and instances map to rows, with no manual SQL required for common operations.</p>
-    <p>Migrations are version-controlled, incremental changes to your database schema, written in Ruby and run with <code>rails db:migrate</code> — keeping your schema history in sync with your codebase's git history.</p>
+    <p class="lead">ActiveRecord is Rails' built-in ORM (object-relational mapper) — a Ruby class like <code>Book</code> maps directly to a <code>books</code> database table, and instances of that class map to individual rows, with no manual SQL required for common operations. It follows the Active Record architectural pattern its name comes from: each model object both represents a row of data and knows how to persist itself.</p>
+    <p>Migrations are version-controlled, incremental changes to your database schema, written in Ruby (translated into the appropriate SQL for whichever database you're using) and run with <code>rails db:migrate</code>. Each migration is timestamped and reversible where possible, keeping your schema's history in sync with your codebase's own git history, and letting a team apply the exact same sequence of schema changes in the same order on every machine.</p>
+    <p><code>Model.create</code>, <code>.find</code>, <code>.find_by</code>, <code>.where</code>, <code>.update</code>, and <code>.destroy</code> cover the vast majority of everyday database work. <code>.where</code> in particular is lazy — it returns an ActiveRecord::Relation, not an already-executed query — which means you can keep chaining additional conditions onto it, and the actual SQL query only runs once you do something that needs the real data, like iterating over it or calling <code>.to_a</code>.</p>
+    <p>Validations (<code>validates :title, presence: true</code>) enforce data integrity at the model level, running automatically before a record is saved through ActiveRecord and rejecting invalid data before it ever reaches the database. It's important to understand that validations only run through ActiveRecord's own save path — a raw SQL update or a bulk operation like <code>update_all</code> bypasses them entirely, which is a common source of subtly invalid data slipping through.</p>
+    <p>ActiveRecord builds parameterized SQL queries for you internally, which means it is safe from SQL injection by default when used idiomatically (<code>where(name: params[:name])</code>). That safety disappears the moment you interpolate a raw value directly into a string passed to <code>where</code> or a similar method, so string interpolation inside a where clause is a red flag worth catching in code review.</p>
+    <p>Associations like <code>belongs_to</code> and <code>has_many</code> generate a family of convenience methods for you (<code>book.author</code>, <code>author.books</code>, <code>author.books.build</code>), and accessing them naively inside a loop is the classic source of the N+1 query problem — fetching one query for the outer collection, then one additional query per item for the association — which <code>includes</code> solves by loading everything in a small, fixed number of queries up front.</p>
     <div class="code-block">
 <div class="cap">Using a model</div>      <pre><code>book = Book.create(title: "Ruby Basics", author: "Amina")
 
@@ -121,18 +125,49 @@ end
 
 book.update(title: "Ruby Basics, 2nd Edition")</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Migration + validation</div>      <pre><code># db/migrate/20240101000000_create_books.rb
+class CreateBooks &lt; ActiveRecord::Migration[7.0]
+  def change
+    create_table :books do |t|
+      t.string :title, null: false
+      t.string :author
+      t.timestamps
+    end
+  end
+end
+
+class Book &lt; ApplicationRecord
+  validates :title, presence: true, length: { minimum: 2 }
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Chained queries and the N+1 fix</div>      <pre><code># Lazy chaining -- one query fires at the very end
+recent_by_amina = Book.where(author: "Amina")
+                       .where("created_at &gt; ?", 1.week.ago)
+                       .order(created_at: :desc)
+
+# N+1: 1 query for books, then 1 per book for its author
+Book.all.each { |b| puts b.author.name }
+
+# Fixed: 2 queries total, regardless of how many books there are
+Book.includes(:author).each { |b| puts b.author.name }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>Model.create</code>, <code>.find</code>, <code>.where</code>, <code>.update</code>, <code>.destroy</code> cover the vast majority of everyday database work.</li>
-        <li>Migrations (<code>rails generate migration</code>) are how schema changes are made and tracked over time, in order.</li>
-        <li>Validations (<code>validates :title, presence: true</code>) enforce data integrity at the model level before saving.</li>
-        <li>ActiveRecord builds SQL for you, using parameterized queries internally — safe from SQL injection by default when used idiomatically.</li>
+        <li>Migrations (<code>rails generate migration</code>) are how schema changes are made and tracked over time, in order, and shared across a whole team.</li>
+        <li>Validations (<code>validates :title, presence: true</code>) enforce data integrity at the model level before saving, but only through ActiveRecord's own save path.</li>
+        <li><code>.where</code> returns a lazy ActiveRecord::Relation -- the SQL query doesn't actually run until the data is needed.</li>
+        <li>ActiveRecord builds SQL for you using parameterized queries internally -- safe from SQL injection by default when used idiomatically.</li>
+        <li>Bulk operations like <code>update_all</code> bypass both validations and callbacks, which is a deliberate tradeoff for speed that's easy to forget.</li>
+        <li>N+1 queries from unoptimized association access are a common Rails performance trap -- <code>includes</code> solves it by eager loading.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Rails model with a migration, add a presence validation on one field, and use the Rails console to create, find, and update a record.</p>
+      <p>Create a Rails model with a migration, add a presence validation on one field, and use the Rails console to create, find, and update a record. Then create a second, associated model with a has_many/belongs_to relationship, deliberately trigger an N+1 query by looping over the parent and accessing the association, and fix it with includes.</p>
     </div>
   </article>
 

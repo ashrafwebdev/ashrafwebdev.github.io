@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Ruby strings come with an extensive built-in method set: <code>.upcase</code>, <code>.downcase</code>, <code>.strip</code>, <code>.split</code>, <code>.gsub</code> (global substitute), and more — most common text tasks are a single method call away.</p>
-    <p>Strings are mutable in Ruby by default (unlike Python), so methods ending in <code>!</code> like <code>.upcase!</code> modify the string in place, while the non-bang version returns a new string, leaving the original unchanged.</p>
+    <p class="lead">Ruby strings come with an extensive built-in method set: <code>.upcase</code>, <code>.downcase</code>, <code>.strip</code>, <code>.split</code>, <code>.gsub</code> (global substitute), and dozens more — most common text tasks are a single method call away, which is a big part of why Ruby feels pleasant for scripting and text processing.</p>
+    <p>Strings are mutable in Ruby by default (unlike Python or Java), so methods ending in <code>!</code> like <code>.upcase!</code> modify the string object in place and return <code>nil</code> if nothing actually changed, while the non-bang version always returns a new string and leaves the original untouched. That <code>nil</code>-on-no-change behavior of bang methods is a subtle trap: chaining off a bang method's result can blow up if the string was already in the target state.</p>
+    <p>Interpolation (<code>#{...}</code>) inside double-quoted strings is the everyday way to build formatted output, but Ruby also supports <code>%</code>-based and <code>format</code>/<code>sprintf</code>-style formatting for printf-style control over things like padding, decimal precision, and zero-fill, which interpolation alone can't easily express.</p>
+    <p>Ruby strings support regular expressions as first-class citizens through the <code>=~</code> match operator, <code>.match</code>, <code>.scan</code>, and <code>.gsub</code> with a regex pattern instead of a plain string. <code>.scan</code> in particular is underused but powerful — it returns every non-overlapping match in a string as an array in one call, which is handy for pulling all numbers, emails, or hashtags out of a block of text.</p>
+    <p>Single-quoted and double-quoted strings are not just a style choice: single-quoted strings do not interpolate and only recognize two escape sequences (<code>\'</code> and <code>\\</code>), while double-quoted strings interpolate and support the full range of escapes like <code>\n</code> and <code>\t</code>. Many style guides recommend single quotes by default and double quotes only when interpolation or an escape sequence is actually needed, as a small signal to readers about what a given string is doing.</p>
+    <p>Strings can be built incrementally with <code>&lt;&lt;</code> (append, mutating in place) or <code>+</code> (concatenate, returning a new string), and repeatedly using <code>+=</code> in a loop is noticeably less efficient than <code>&lt;&lt;</code> or building an array of pieces and joining them once, because each <code>+=</code> allocates a brand-new string object.</p>
     <div class="code-block">
 <div class="cap">strings.rb</div>      <pre><code>message = "  Hello, World!  "
 
@@ -119,18 +123,42 @@ puts message.strip.downcase          # "hello, world!"
 puts message.gsub("World", "Ruby")   # "  Hello, Ruby!  "
 puts "a,b,c".split(",").inspect       # ["a", "b", "c"]</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">formatting_and_regex.rb</div>      <pre><code>price = 4.5
+puts format("$%.2f", price)              # "$4.50"
+
+text = "Contact: amina@example.com, yusuf@example.org"
+emails = text.scan(/[\w.]+@[\w.]+/)
+puts emails.inspect                       # ["amina@example.com", "yusuf@example.org"]
+
+puts "hello world".sub(/o/, "0")          # "hell0 world" -- only first match</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">bang_gotcha.rb -- a common mistake</div>      <pre><code>name = "Amina"
+
+# BUG: upcase! returns nil when the string was already unchanged
+result = name.upcase!  # "AMINA" the first time -- fine
+result2 = name.upcase! # already all caps -&gt; returns nil, not "AMINA"!
+puts result2.inspect   # nil
+
+# Safer when you just want the transformed value:
+puts name.upcase       # always returns a string, never nil</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Bang methods (<code>!</code>) mutate the string in place; their non-bang counterparts return a new string.</li>
+        <li>Bang methods (<code>!</code>) mutate the string in place and return <code>nil</code> if nothing changed; their non-bang counterparts always return a new string.</li>
         <li><code>.gsub(pattern, replacement)</code> replaces every match; <code>.sub</code> replaces only the first.</li>
-        <li>String formatting can use interpolation (<code>#{}</code>) or <code>%</code>/<code>format</code> for more printf-style control.</li>
-        <li>Ruby strings support regular expressions directly through methods like <code>.match</code> and <code>=~</code>.</li>
+        <li>Double-quoted strings interpolate with <code>#{}</code> and support full escape sequences; single-quoted strings do neither, and are the leaner default when you need neither feature.</li>
+        <li><code>format</code>/<code>sprintf</code> gives printf-style control (padding, decimal precision) that plain interpolation can't express.</li>
+        <li><code>.scan(regex)</code> returns every match in a string as an array in one call, which is often cleaner than a manual loop over matches.</li>
+        <li>Building a string with repeated <code>+=</code> in a loop is less efficient than <code>&lt;&lt;</code> or joining an array of parts, because each <code>+=</code> allocates a new string.</li>
+        <li>Ruby strings support regular expressions directly through methods like <code>.match</code> and the <code>=~</code> operator.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that takes a messy string with extra whitespace and mixed case, and normalizes it to a clean, lowercase, trimmed version.</p>
+      <p>Write a script that takes a messy string with extra whitespace and mixed case, and normalizes it to a clean, lowercase, trimmed version. Then extend it to use a regular expression with scan to extract every word longer than four characters from the normalized string, and print the count of matches found.</p>
     </div>
   </article>
 
