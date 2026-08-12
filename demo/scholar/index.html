@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr. Yusuf Al-Karim — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample Islamic scholar website design — bio, lecture archive, publications and booking. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --maroon-deep:#3B1420;
+    --maroon:#6B2434;
+    --cream:#FAF6EF;
+    --cream-raised:#F2EBDE;
+    --gold:#B08D3F;
+    --ink:#221A1A;
+    --ink-soft:#5E534E;
+    --line:#E1D7C6;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:'Inter',sans-serif; line-height:1.65;}
+  a{color:inherit;}
+  .wrap{max-width:1040px; margin:0 auto; padding:0 24px;}
+
+  .demo-badge{background:var(--maroon-deep); color:#F0E4D8; text-align:center; font-size:13px; padding:9px 16px;}
+  .demo-badge a{color:var(--gold); text-decoration:none; border-bottom:1px solid var(--gold); margin-left:6px;}
+  .demo-badge a:hover{color:#D2AF63;}
+
+  header.site{background:var(--cream); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:16px 0; flex-wrap:wrap; gap:10px;}
+  .brand{text-decoration:none; font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:700; color:var(--maroon-deep);}
+  nav.links{display:flex; gap:22px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--ink-soft); font-weight:500; letter-spacing:0.02em;}
+  nav.links a:hover{color:var(--maroon);}
+
+  .hero{padding:70px 0 60px; border-bottom:1px solid var(--line);}
+  .hero-grid{display:grid; grid-template-columns:190px 1fr; gap:40px; align-items:center;}
+  .portrait{width:190px; height:190px; border-radius:50%; background:linear-gradient(150deg, var(--maroon), var(--maroon-deep)); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:56px; color:var(--gold); border:3px solid var(--gold);}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gold); font-weight:700; margin:0 0 12px;}
+  .hero h1{font-family:'Cormorant Garamond',serif; font-size:clamp(32px,4.5vw,46px); margin:0 0 10px; color:var(--maroon-deep); font-weight:700;}
+  .hero .role{font-size:15px; color:var(--ink-soft); margin:0 0 16px;}
+  .hero p.bio{max-width:60ch; color:var(--ink-soft); font-size:15px; margin:0 0 20px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{font-family:'Inter',sans-serif; font-weight:600; font-size:14px; text-decoration:none; padding:12px 22px; border-radius:3px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.maroon{background:var(--maroon-deep); color:#F5EAE0;}
+  .btn.maroon:hover{background:var(--maroon);}
+  .btn.line{border-color:var(--maroon-deep); color:var(--maroon-deep); background:transparent;}
+  .btn.line:hover{background:var(--cream-raised);}
+
+  section{padding:60px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--maroon); font-weight:700; margin:0 0 10px;}
+  h2{font-family:'Cormorant Garamond',serif; font-size:30px; margin:0 0 28px; color:var(--maroon-deep); font-weight:700;}
+  section.alt{background:var(--cream-raised);}
+
+  /* lectures */
+  .filterbar{display:flex; gap:9px; margin-bottom:24px; flex-wrap:wrap;}
+  .filterbar button{font-family:'Inter',sans-serif; font-size:13px; font-weight:600; padding:8px 16px; border-radius:20px; border:1px solid var(--line); background:var(--cream); color:var(--ink-soft); cursor:pointer;}
+  .filterbar button.active{background:var(--maroon-deep); border-color:var(--maroon-deep); color:#F5EAE0;}
+  .lecture-list{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--cream);}
+  .lecture-row{display:grid; grid-template-columns:100px 1fr 110px; gap:16px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); font-size:14px;}
+  .lecture-row:last-child{border-bottom:none;}
+  .lecture-row .tag{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:var(--gold);}
+  .lecture-row h3{margin:0 0 3px; font-size:15px; font-weight:600;}
+  .lecture-row .meta{color:var(--ink-soft); font-size:12.5px;}
+  .lecture-row .len{color:var(--ink-soft); font-size:12.5px; text-align:right;}
+
+  /* publications */
+  .pubs{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  .pub-card{background:var(--cream); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:6px; padding:18px 20px;}
+  .pub-card h3{margin:0 0 6px; font-size:15px;}
+  .pub-card p{margin:0; font-size:13.5px; color:var(--ink-soft);}
+
+  /* schedule */
+  .schedule{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--cream);}
+  .sched-row{display:grid; grid-template-columns:130px 1fr 140px; gap:16px; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); font-size:14px;}
+  .sched-row:last-child{border-bottom:none;}
+  .sched-row .when{font-weight:600; color:var(--maroon-deep);}
+  .sched-row .where{color:var(--ink-soft); font-size:12.5px; text-align:right;}
+
+  /* contact */
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  form{display:flex; flex-direction:column; gap:14px;}
+  label{font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:'Inter',sans-serif; font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:4px; background:var(--cream); color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  #formMsg{font-size:13.5px; color:var(--maroon-deep); background:var(--cream-raised); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+  .contact-side p{font-size:14.5px; color:var(--ink-soft); margin:0 0 10px;}
+  .contact-side b{display:block; color:var(--maroon-deep); font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+
+  footer{background:var(--maroon-deep); color:#DCC8A9; text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--gold); text-decoration:none;}
+
+  @media (max-width:760px){
+    .hero-grid{grid-template-columns:1fr; text-align:center;}
+    .portrait{margin:0 auto;}
+    .hero-ctas{justify-content:center;}
+    .pubs, .contact-grid{grid-template-columns:1fr;}
+    .lecture-row{grid-template-columns:1fr; row-gap:4px;}
+    .lecture-row .len{text-align:left;}
+    .sched-row{grid-template-columns:1fr; row-gap:4px;}
+    .sched-row .where{text-align:left;}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real person. Want a site like this? <a href="../../index.html#contact">Get in touch →</a></div>
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">Dr. Yusuf Al-Karim</a>
+    <nav class="links">
+      <a href="#lectures">Lectures</a>
+      <a href="#publications">Publications</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="portrait">YK</div>
+    <div>
+      <p class="eyebrow-tag">Islamic Scholar &amp; Educator</p>
+      <h1>Dr. Yusuf Al-Karim</h1>
+      <p class="role">Tafsir, Islamic jurisprudence, and comparative theology</p>
+      <p class="bio">Dr. Al-Karim teaches classical Islamic sciences with a focus on Qur'anic exegesis and contemporary fiqh questions, drawing on over fifteen years of study and teaching across three continents.</p>
+      <div class="hero-ctas">
+        <a class="btn maroon" href="#schedule">Upcoming sessions</a>
+        <a class="btn line" href="#contact">Book a talk</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="lectures">
+  <div class="wrap">
+    <p class="eyebrow">Lecture archive</p>
+    <h2>Recent talks &amp; classes</h2>
+    <div class="filterbar">
+      <button type="button" class="active" data-filter="all">All</button>
+      <button type="button" data-filter="tafsir">Tafsir</button>
+      <button type="button" data-filter="fiqh">Fiqh</button>
+      <button type="button" data-filter="aqeedah">Aqeedah</button>
+      <button type="button" data-filter="seerah">Seerah</button>
+    </div>
+    <div class="lecture-list" id="lectureList">
+      <div class="lecture-row" data-cat="tafsir"><span class="tag">Tafsir</span><div><h3>Surah Al-Kahf: Four Trials, Four Lessons</h3><span class="meta">Recorded at Masjid An-Noor</span></div><span class="len">42 min</span></div>
+      <div class="lecture-row" data-cat="fiqh"><span class="tag">Fiqh</span><div><h3>Rulings on Combining Prayers While Travelling</h3><span class="meta">Weekly fiqh circle</span></div><span class="len">28 min</span></div>
+      <div class="lecture-row" data-cat="aqeedah"><span class="tag">Aqeedah</span><div><h3>Understanding Tawakkul in Difficult Times</h3><span class="meta">Friday evening class</span></div><span class="len">35 min</span></div>
+      <div class="lecture-row" data-cat="seerah"><span class="tag">Seerah</span><div><h3>The Treaty of Hudaybiyyah: Patience as Strategy</h3><span class="meta">Seerah series, part 9</span></div><span class="len">50 min</span></div>
+      <div class="lecture-row" data-cat="tafsir"><span class="tag">Tafsir</span><div><h3>Surah Yusuf: Trust, Patience &amp; Forgiveness</h3><span class="meta">Ramadan night series</span></div><span class="len">46 min</span></div>
+      <div class="lecture-row" data-cat="fiqh"><span class="tag">Fiqh</span><div><h3>Zakat on Modern Investments</h3><span class="meta">Community Q&amp;A</span></div><span class="len">33 min</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="publications">
+  <div class="wrap">
+    <p class="eyebrow">Writing</p>
+    <h2>Publications</h2>
+    <div class="pubs">
+      <div class="pub-card"><h3>Reading the Qur'an in Difficult Times</h3><p>A short book on applying Qur'anic guidance to modern anxiety and uncertainty. 2023.</p></div>
+      <div class="pub-card"><h3>Fiqh of Minorities: A Practical Guide</h3><p>Essay collection on jurisprudence for Muslims living outside Muslim-majority countries. 2021.</p></div>
+      <div class="pub-card"><h3>Notes on the Seerah</h3><p>A study guide accompanying the weekly seerah class, used by over a dozen study circles. 2020.</p></div>
+      <div class="pub-card"><h3>Monthly column — "Ask a Scholar"</h3><p>Ongoing Q&amp;A column addressing reader questions on fiqh and daily practice.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="schedule">
+  <div class="wrap">
+    <p class="eyebrow">What's next</p>
+    <h2>Upcoming sessions &amp; Q&amp;A</h2>
+    <div class="schedule">
+      <div class="sched-row"><span class="when">Fri, Aug 21</span><span>Live Q&amp;A: Marriage &amp; Family in Islam</span><span class="where">Online, 7:00 PM</span></div>
+      <div class="sched-row"><span class="when">Sun, Aug 30</span><span>Guest khutbah: Masjid An-Noor</span><span class="where">Springvale, 1:15 PM</span></div>
+      <div class="sched-row"><span class="when">Sat, Sep 12</span><span>Weekend seminar: Foundations of Aqeedah</span><span class="where">Al-Furqan Madrasa</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="contact">
+  <div class="wrap contact-grid">
+    <div>
+      <p class="eyebrow">Get in touch</p>
+      <h2>Book a talk or ask a question</h2>
+      <form id="bookForm">
+        <label for="bname">Name</label>
+        <input id="bname" required>
+        <label for="borg">Organization (optional)</label>
+        <input id="borg">
+        <label for="btype">Request type</label>
+        <select id="btype">
+          <option>Speaking invitation</option>
+          <option>Media interview</option>
+          <option>General question</option>
+        </select>
+        <label for="bmsg">Message</label>
+        <textarea id="bmsg" required></textarea>
+        <button class="btn maroon" type="submit">Send request</button>
+        <div id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email or a booking calendar.</div>
+      </form>
+    </div>
+    <div class="contact-side">
+      <p><b>Email</b>office@yusufalkarim-example.org</p>
+      <p><b>Response time</b>Usually within 3–5 days</p>
+      <p><b>Based in</b>Springvale</p>
+      <p><b>Available for</b>Khutbahs, seminars, media commentary, private classes</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Dr. Yusuf Al-Karim — sample site design. Built by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+<script>
+  document.querySelectorAll('.filterbar button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.filterbar button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      var filter = btn.getAttribute('data-filter');
+      document.querySelectorAll('#lectureList .lecture-row').forEach(function(row){
+        row.style.display = (filter === 'all' || row.getAttribute('data-cat') === filter) ? '' : 'none';
+      });
+    });
+  });
+
+  document.getElementById('bookForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</body>
+</html>

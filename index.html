@@ -186,9 +186,54 @@
   /* ---------- Services ---------- */
   .services{
     display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:18px;
+  }
+  .service a{color:var(--teal-deep); text-decoration:none; border-bottom:1px solid var(--teal-deep); white-space:nowrap;}
+  .service a:hover{color:var(--teal);}
+
+  /* ---------- Religious sites examples ---------- */
+  .site-examples{
+    display:grid;
     grid-template-columns:repeat(3, 1fr);
     gap:18px;
   }
+  .site-card{
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    border-radius:6px;
+    padding:22px 20px;
+    display:flex;
+    flex-direction:column;
+  }
+  section:not(.alt) .site-card{background:var(--paper-raised);}
+  .site-card .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--teal-deep);
+    margin-bottom:10px;
+    display:block;
+  }
+  .site-card h3{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:17px;
+    margin:0 0 8px;
+  }
+  .site-card p{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    flex:1;
+  }
+  .site-card .view-link{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    text-decoration:none;
+    color:var(--teal-deep);
+    border-bottom:1px solid var(--teal-deep);
+    align-self:flex-start;
+  }
+  .site-card .view-link:hover{color:var(--teal);}
   .service{
     border:1px solid var(--line);
     background:var(--paper);
@@ -311,6 +356,7 @@
 
   @media (max-width:760px){
     .services{grid-template-columns:1fr;}
+    .site-examples{grid-template-columns:1fr;}
     .direct-grid{grid-template-columns:1fr;}
     .contact-shell{grid-template-columns:1fr;}
     .log-entry{grid-template-columns:1fr; gap:6px;}
@@ -324,6 +370,7 @@
     <div class="name"><b>Mohammed Ashraf</b> / automation &amp; systems</div>
     <nav>
       <a href="#work">Work</a>
+      <a href="#religious-sites">Web Design</a>
       <a href="#contact">Contact</a>
     </nav>
   </div>
@@ -354,7 +401,7 @@
 <section class="alt" id="services">
   <div class="wrap">
     <p class="eyebrow">What I do</p>
-    <h2>Three things, done properly, no subcontracting.</h2>
+    <h2>A few things, done properly, no subcontracting.</h2>
     <div class="services">
       <div class="service">
         <span class="tag">HL7 / HEALTH DATA</span>
@@ -370,6 +417,39 @@
         <span class="tag">LINUX / APACHE</span>
         <h3>Server administration</h3>
         <p>Setup, maintenance, and troubleshooting for Linux servers — keeping the systems underneath everything else actually up.</p>
+      </div>
+      <div class="service">
+        <span class="tag">WEB DESIGN</span>
+        <h3>Masjid, madrasa &amp; scholar websites</h3>
+        <p>Clean, fast, mobile-friendly sites for masajid, madrasas, and Islamic scholars — prayer times, programs, lectures, and donations, hand-built in HTML, CSS &amp; JavaScript. <a href="#religious-sites">See examples →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="religious-sites">
+  <div class="wrap">
+    <p class="eyebrow">Web design</p>
+    <h2>Websites for masjids, madrasas &amp; Islamic scholars.</h2>
+    <p style="color:var(--ink-soft); font-size:15px; max-width:60ch; margin:-14px 0 30px;">Sample builds showing the kind of site I'd design for your community or organization — click through to view each one live.</p>
+    <div class="site-examples">
+      <div class="site-card">
+        <span class="tag">MASJID</span>
+        <h3>Masjid website</h3>
+        <p>Prayer &amp; Jummah times, announcements, events calendar, and donation info in one clean, mobile-friendly site.</p>
+        <a class="view-link" href="demo/masjid/index.html" target="_blank" rel="noopener">View example →</a>
+      </div>
+      <div class="site-card">
+        <span class="tag">MADRASA</span>
+        <h3>Madrasa website</h3>
+        <p>Programs, admissions, teacher profiles, and a contact form built for parents and prospective students.</p>
+        <a class="view-link" href="demo/madrasa/index.html" target="_blank" rel="noopener">View example →</a>
+      </div>
+      <div class="site-card">
+        <span class="tag">ISLAMIC SCHOLAR</span>
+        <h3>Scholar website</h3>
+        <p>Bio, lecture &amp; publication archive, upcoming sessions, and a simple way for people to get in touch.</p>
+        <a class="view-link" href="demo/scholar/index.html" target="_blank" rel="noopener">View example →</a>
       </div>
     </div>
   </div>
