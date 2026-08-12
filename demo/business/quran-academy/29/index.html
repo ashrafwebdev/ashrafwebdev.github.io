@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al-Khair Qur'an Academy — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample online qur'an academy website design for Al-Khair Qur'an Academy — programs, gallery, and contact. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#1B2E3C; --mid:#254256; --soft:#E8EFF3; --accent:#C9932E; --cream:#F5F6F5;
+    --ink:#18232C; --inks:#556674; --line:#D5DFE5; --ond:#EAF0F4; --onds:#C3D3DD;
+    --font-disp:'Fraunces',serif; --font-body:'Karla',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:var(--cream); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10;}
+  .navrow{padding:20px 0 16px; text-align:center;}
+  .brand{display:inline-flex; flex-direction:column; align-items:center; gap:6px; text-decoration:none;}
+  .brand .mark{width:44px; height:44px; border-radius:50%; background:var(--deep); color:var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:21px;}
+  .brand .name{font-family:var(--font-disp); font-size:20px; font-weight:700; color:var(--deep);}
+  nav.links{display:flex; gap:22px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--inks); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;}
+  nav.links a:hover{color:var(--deep);}
+
+
+  .hero{background:var(--cream); padding:70px 0 54px; border-bottom:1px solid var(--line);}
+  .hero-inner{max-width:64ch;}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 12px; padding-left:22px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(28px,4.4vw,42px); margin:0 0 16px; font-weight:700; color:var(--deep); border-left:4px solid var(--accent); padding-left:18px;}
+  .hero p{color:var(--inks); font-size:15.5px; margin:0 0 26px; padding-left:22px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; padding-left:22px;}
+
+
+  .services-list{border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .svc-row{display:grid; grid-template-columns:200px 1fr; gap:20px; padding:20px 24px; border-bottom:1px solid var(--line); align-items:start;}
+  .svc-row:last-child{border-bottom:none;}
+  .svc-row h3{margin:0; font-size:16px; color:var(--deep); font-family:var(--font-disp);}
+  .svc-row p{margin:0; font-size:14px; color:var(--inks);}
+  @media (max-width:760px){.svc-row{grid-template-columns:1fr; gap:6px;}}
+
+
+  .feat-bars{display:flex; flex-direction:column;}
+  .feat-bar-row{padding:16px 0; border-bottom:1px solid var(--line);}
+  .feat-bar-row:first-child{border-top:1px solid var(--line);}
+  .feat-bar-row .label{font-size:14.5px; color:var(--ink); font-weight:600;}
+  .feat-bar-track{height:8px; background:var(--soft); border-radius:6px; overflow:hidden; margin:10px 0 8px;}
+  .feat-bar-fill{height:100%; background:var(--accent); border-radius:6px;}
+  .feat-bar-row .desc{font-size:13.5px; color:var(--inks); margin:0;}
+
+
+  .gallery-feat{display:grid; grid-template-columns:1.4fr 1fr; gap:14px;}
+  .gallery-feat .g-main{aspect-ratio:16/11; border-radius:10px; display:flex; align-items:flex-end; position:relative; overflow:hidden;}
+  .gallery-feat .g-main span{background:rgba(0,0,0,0.42); color:#fff; font-size:13px; padding:10px 14px; width:100%; box-sizing:border-box;}
+  .gallery-feat .g-side{display:flex; flex-direction:column; gap:14px;}
+  .gallery-feat .g-side .gtile{flex:1; border-radius:10px; display:flex; align-items:flex-end; position:relative; overflow:hidden; min-height:80px;}
+  .gallery-feat .g-side .gtile span{background:rgba(0,0,0,0.42); color:#fff; font-size:11.5px; padding:7px 10px; width:100%; box-sizing:border-box;}
+  .gallery-note{margin-top:14px; font-size:12.5px; color:var(--inks);}
+  @media (max-width:760px){.gallery-feat{grid-template-columns:1fr;}}
+
+
+  .testi-feature{max-width:760px; margin:0 auto; text-align:center;}
+  .testi-feature blockquote{font-family:var(--font-disp); font-size:22px; color:var(--deep); margin:0 0 16px; font-style:italic;}
+  .testi-feature .who{font-size:13px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.04em;}
+
+
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-side p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-side b{display:block; color:var(--deep); font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:32px 0 26px; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+  .foot-social{display:flex; justify-content:center; gap:14px; margin-bottom:16px;}
+  .foot-social span{width:34px; height:34px; border-radius:50%; border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--onds);}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real business. Want a site like this? <a href="../../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top"><span class="mark">ب</span><span class="name">Al-Khair Qur'an Academy</span></a>
+    <nav class="links">
+      <a href="#services">Programs</a>
+      <a href="#features">Why Us</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#contact">Book a free trial</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <p class="eyebrow-tag">Bayside &middot; Online Qur'an Academy</p>
+    <h1>Live online Qur'an classes, taught by qualified teachers.</h1>
+    <p>Live, one-on-one online Qur'an classes with certified teachers, scheduled around your family's day.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#contact">Book a free trial</a>
+      <a class="btn outline-dark" href="#services">See programs</a>
+    </div>
+  </div>
+</section>
+
+
+<section id="services">
+
+<div class="wrap">
+  <p class="eyebrow">Programs</p>
+  <h2>Our programs</h2>
+  <div class="services-list">
+    <div class="svc-row"><h3>Adult Qur'an Classes</h3><p>Classes designed specifically for adult beginners.</p></div>
+    <div class="svc-row"><h3>Hifz Program</h3><p>One-on-one memorization with structured revision tracking.</p></div>
+    <div class="svc-row"><h3>Noorani Qa'ida</h3><p>Foundational Arabic letter recognition for beginners.</p></div>
+    <div class="svc-row"><h3>Islamic Studies</h3><p>Supplementary classes on aqeedah, fiqh, and seerah.</p></div>
+    <div class="svc-row"><h3>Trial Class</h3><p>A free first class to find the right teacher and level.</p></div>
+    <div class="svc-row"><h3>Qur'an Reading with Tajweed</h3><p>Structured reading classes with proper tajweed rules.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="features">
+
+<div class="wrap">
+  <p class="eyebrow">Why choose us</p>
+  <h2>What sets us apart</h2>
+  <div class="feat-bars">
+    <div class="feat-bar-row"><span class="label">Friendly, Knowledgeable Team</span><div class="feat-bar-track"><div class="feat-bar-fill" style="width:92%;"></div></div><p class="desc">Our staff take the time to explain your options and answer every question.</p></div>
+    <div class="feat-bar-row"><span class="label">Convenient Location & Hours</span><div class="feat-bar-track"><div class="feat-bar-fill" style="width:78%;"></div></div><p class="desc">Easy to reach, with hours built around what actually works for our community.</p></div>
+    <div class="feat-bar-row"><span class="label">Halal & Shariah-Compliant</span><div class="feat-bar-track"><div class="feat-bar-fill" style="width:65%;"></div></div><p class="desc">Every part of what we do follows Islamic principles, from sourcing to service.</p></div>
+    <div class="feat-bar-row"><span class="label">Locally Owned & Operated</span><div class="feat-bar-track"><div class="feat-bar-fill" style="width:88%;"></div></div><p class="desc">A community business, not a franchise — decisions are made right here.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="gallery">
+
+<div class="wrap">
+  <p class="eyebrow">Gallery</p>
+  <h2>A look inside</h2>
+  <div class="gallery-feat">
+    <div class="g-main" style="background:repeating-linear-gradient(45deg, var(--deep), var(--deep) 14px, var(--mid) 14px, var(--mid) 28px);"><span>Online classroom interface</span></div>
+    <div class="g-side">
+    <div class="gtile" style="background:radial-gradient(circle at 30% 30%, var(--accent), var(--mid) 70%);"><span>Student progress tracker</span></div>
+    <div class="gtile" style="background:linear-gradient(135deg, var(--mid), var(--deep));"><span>Teacher profile cards</span></div>
+    </div>
+  </div>
+  <p class="gallery-note">Photo placeholders shown here — a real build uses your own photography.</p>
+</div>
+
+</section>
+
+<section>
+
+<div class="wrap">
+  <p class="eyebrow" style="text-align:center;">What students say</p>
+  <h2 style="text-align:center;">Reviews &amp; feedback</h2>
+  <div class="testi-feature"><blockquote>&ldquo;As an adult beginner, I never felt embarrassed asking basic questions.&rdquo;</blockquote><div class="who">— An adult student</div></div>
+</div>
+
+</section>
+
+<section class="alt" id="contact">
+
+<div class="wrap contact-grid">
+  <div>
+    <p class="eyebrow">Get in touch</p>
+    <h2>Book a free trial class</h2>
+    <form id="bizForm">
+      <label for="bname">Name</label>
+      <input id="bname" required>
+      <label for="bmsg">Message</label>
+      <textarea id="bmsg" placeholder="Student's age and current Qur'an level"></textarea>
+      <button class="btn gold" type="submit">Book a free trial</button>
+      <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email, phone, or a booking system.</div>
+    </form>
+  </div>
+  <div class="contact-side">
+    <p><b>Address</b>576 Mulberry Court, Bayside</p>
+    <p><b>Phone</b>(555) 396-2484</p>
+    <p><b>Email</b>info@alkhair-quran-academy-example.org</p>
+    <p><b>Hours</b>Classes available 7 days a week, flexible scheduling</p>
+  </div>
+</div>
+<script>
+  document.getElementById('bizForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  <div class="foot-social"><span>f</span><span>ig</span><span>x</span></div>
+  Al-Khair Qur'an Academy — sample site design. Built by <a href="../../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+</body>
+</html>

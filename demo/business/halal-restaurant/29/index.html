@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al-Khair Kebab House — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample halal restaurant website design for Al-Khair Kebab House — menu, gallery, and contact. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#1B2E3C; --mid:#254256; --soft:#E8EFF3; --accent:#C9932E; --cream:#F5F6F5;
+    --ink:#18232C; --inks:#556674; --line:#D5DFE5; --ond:#EAF0F4; --onds:#C3D3DD;
+    --font-disp:'Fraunces',serif; --font-body:'Karla',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:62px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:29px; margin:0 0 28px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:12px 24px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond); background:transparent;}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep); background:transparent;}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  form{display:flex; flex-direction:column; gap:13px;}
+  label{font-size:12px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; font-weight:600;}
+  input, textarea, select{font-family:var(--font-body); font-size:14.5px; padding:11px 12px; border:1px solid var(--line); border-radius:5px; background:#fff; color:var(--ink);}
+  textarea{min-height:100px; resize:vertical;}
+  .form-msg{font-size:13.5px; color:var(--deep); background:var(--soft); border:1px solid var(--line); border-radius:5px; padding:10px 12px; display:none;}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10;}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:15px 0; flex-wrap:wrap; gap:12px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:var(--deep); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); font-size:16px; font-weight:700;}
+  .brand .name{font-family:var(--font-disp); font-size:17px; font-weight:700;}
+  .navctas{display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
+  nav.links{display:flex; gap:18px; flex-wrap:wrap;}
+  nav.links a{font-size:13px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+  .nav-cta-btn{background:var(--accent); color:var(--deep); font-size:12.5px; font-weight:700; text-decoration:none; padding:9px 16px; border-radius:20px;}
+
+
+  .hero{padding:66px 0 84px; background:repeating-linear-gradient(45deg, var(--soft), var(--soft) 22px, var(--cream) 22px, var(--cream) 44px);}
+  .hero-card-outer{max-width:660px; margin:0 auto; background:var(--deep); color:var(--ond); border-radius:16px; padding:48px 42px; text-align:center; box-shadow:0 20px 44px rgba(0,0,0,0.16);}
+  .hero .eyebrow-tag{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0 0 14px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(26px,4.2vw,38px); margin:0 0 16px; font-weight:700;}
+  .hero p{margin:0 auto 24px; color:var(--onds); font-size:15px;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+
+
+  .services-accordion{display:flex; flex-direction:column; gap:10px;}
+  .services-accordion details{background:#fff; border:1px solid var(--line); border-radius:8px; padding:2px 20px;}
+  .services-accordion summary{font-family:var(--font-disp); font-size:16px; color:var(--deep); padding:15px 0; cursor:pointer;}
+  .services-accordion p{margin:0 0 16px; font-size:13.5px; color:var(--inks);}
+
+
+  .feat-split{display:grid; grid-template-columns:1fr 1fr; gap:36px; align-items:start;}
+  .feat-split p.lead{color:var(--inks); font-size:15px; margin:0;}
+  .feat-checklist{list-style:none; margin:0; padding:0; background:#fff; border:1px solid var(--line); border-radius:8px; padding:22px 24px;}
+  .feat-checklist li{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14px; color:var(--ink);}
+  .feat-checklist li:last-child{border-bottom:none;}
+  .feat-checklist li::before{content:"✓"; color:var(--mid); font-weight:700;}
+  @media (max-width:760px){.feat-split{grid-template-columns:1fr;}}
+
+
+  .gallery-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+  .gallery-tile{aspect-ratio:4/3; border-radius:8px; display:flex; align-items:flex-end; position:relative; overflow:hidden;}
+  .gallery-tile span{position:relative; background:rgba(0,0,0,0.42); color:#fff; font-size:12px; padding:8px 12px; width:100%; box-sizing:border-box;}
+  .gallery-note{margin-top:14px; font-size:12.5px; color:var(--inks);}
+  @media (max-width:760px){.gallery-grid{grid-template-columns:1fr 1fr;}}
+
+
+  .testi-ticker{display:flex; flex-direction:column;}
+  .testi-tick-item{display:flex; gap:20px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .testi-tick-item:first-child{border-top:1px solid var(--line);}
+  .testi-tick-item .mark{font-family:var(--font-disp); font-size:30px; color:var(--accent); line-height:1;}
+  .testi-tick-item p{margin:0 0 6px; font-size:14.5px; color:var(--inks); font-style:italic;}
+  .testi-tick-item .who{font-size:13px; font-weight:600; color:var(--deep);}
+
+
+  .contact-cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:30px;}
+  .cc-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:20px; text-align:center;}
+  .cc-card b{display:block; color:var(--deep); font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
+  .cc-card span{font-size:14px; color:var(--inks);}
+  .contact-form-narrow{max-width:560px; margin:0 auto;}
+  @media (max-width:760px){.contact-cards{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); text-align:center; padding:26px 0; font-size:12.5px;}
+  footer a{color:var(--accent); text-decoration:none;}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real business. Want a site like this? <a href="../../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top"><span class="mark">ب</span><span class="name">Al-Khair Kebab House</span></a>
+    <div class="navctas">
+      <nav class="links">
+        <a href="#services">Menu</a>
+        <a href="#features">Why Us</a>
+        <a href="#gallery">Gallery</a>
+      </nav>
+      <a class="nav-cta-btn" href="#contact">Reserve a table</a>
+    </div>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-card-outer">
+      <p class="eyebrow-tag">Bayside &middot; Halal Restaurant</p>
+      <h1>A table for you, always halal, always fresh.</h1>
+      <p>100% halal-certified ingredients, made fresh daily, served in a warm, family-friendly dining room.</p>
+      <div class="hero-ctas">
+        <a class="btn gold" href="#contact">Reserve a table</a>
+        <a class="btn outline" href="#services">View menu</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section id="services">
+
+<div class="wrap">
+  <p class="eyebrow">Menu</p>
+  <h2>What's on the menu</h2>
+  <div class="services-accordion">
+    <details open><summary>Vegetarian Plates</summary><p>Fresh, flavorful meat-free options on every visit.</p></details>
+    <details><summary>Signature Grill Platters</summary><p>Marinated, char-grilled halal meats served with rice, salad, and warm bread.</p></details>
+    <details><summary>Family Feasts</summary><p>Large sharing platters built for tables of four or more.</p></details>
+    <details><summary>Catering Trays</summary><p>Party-sized trays for office lunches, iftars, and celebrations.</p></details>
+    <details><summary>Weekday Lunch Specials</summary><p>Quick, affordable halal lunch combos ready in minutes.</p></details>
+    <details><summary>Fresh-Baked Bread</summary><p>Baked in-house daily to go with every meal.</p></details>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="features">
+
+<div class="wrap feat-split">
+  <div>
+    <p class="eyebrow">Why choose us</p>
+    <h2>What sets us apart</h2>
+    <p class="lead">Every ingredient is halal-certified, and every dish is made to order.</p>
+  </div>
+  <ul class="feat-checklist">
+    <li>Friendly, Knowledgeable Team</li>
+    <li>Trusted by the Community</li>
+    <li>Convenient Location & Hours</li>
+    <li>Locally Owned & Operated</li>
+  </ul>
+</div>
+
+</section>
+
+<section id="gallery">
+
+<div class="wrap">
+  <p class="eyebrow">Gallery</p>
+  <h2>A look inside</h2>
+  <div class="gallery-grid">
+    <div class="gallery-tile" style="background:repeating-linear-gradient(45deg, var(--deep), var(--deep) 14px, var(--mid) 14px, var(--mid) 28px);"><span>Signature grill platter</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 30% 30%, var(--accent), var(--mid) 70%);"><span>Dining room seating</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(135deg, var(--mid), var(--deep));"><span>Fresh bread coming out of the oven</span></div>
+    <div class="gallery-tile" style="background:repeating-linear-gradient(-45deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px);"><span>Family feast spread</span></div>
+    <div class="gallery-tile" style="background:radial-gradient(circle at 70% 70%, var(--soft), var(--mid) 80%);"><span>Weekend evening crowd</span></div>
+    <div class="gallery-tile" style="background:linear-gradient(160deg, var(--accent), var(--deep) 70%);"><span>Takeout counter</span></div>
+  </div>
+  <p class="gallery-note">Photo placeholders shown here — a real build uses your own photography.</p>
+</div>
+
+</section>
+
+<section>
+
+<div class="wrap">
+  <p class="eyebrow">What guests say</p>
+  <h2>Reviews &amp; feedback</h2>
+  <div class="testi-ticker">
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>We ordered catering for our whole office and everyone asked where it was from.</p><div class="who">— A catering client</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Fresh, hot, and fast — exactly what you want from a weekday lunch spot.</p><div class="who">— A lunch regular</div></div></div>
+    <div class="testi-tick-item"><div class="mark">&ldquo;</div><div><p>Finally a halal restaurant where the kids' menu doesn't feel like an afterthought.</p><div class="who">— A parent</div></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="contact">
+
+<div class="wrap">
+  <p class="eyebrow">Get in touch</p>
+  <h2>Reserve a table or place an order</h2>
+  <div class="contact-cards">
+    <div class="cc-card"><b>Address</b><span>576 Mulberry Court, Bayside</span></div>
+    <div class="cc-card"><b>Phone</b><span>(555) 396-2484</span></div>
+    <div class="cc-card"><b>Email</b><span>info@alkhair-kebab-house-example.org</span></div>
+  </div>
+  <div class="contact-form-narrow">
+    <form id="bizForm">
+      <label for="bname">Name</label>
+      <input id="bname" required>
+      <label for="bmsg">Message</label>
+      <textarea id="bmsg" placeholder="Party size, date, or any dietary notes"></textarea>
+      <button class="btn gold" type="submit">Reserve a table</button>
+      <div class="form-msg" id="formMsg">Thanks — this is a demo form, so nothing was actually sent. A real build connects this to email, phone, or a booking system.</div>
+    </form>
+  </div>
+</div>
+<script>
+  document.getElementById('bizForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    document.getElementById('formMsg').style.display = 'block';
+  });
+</script>
+
+</section>
+
+
+<footer>
+  Al-Khair Kebab House — sample site design. Built by <a href="../../../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+
+</body>
+</html>
