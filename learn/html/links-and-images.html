@@ -112,9 +112,13 @@
   <article>
     <p class="lead">The <code>&lt;a&gt;</code> (anchor) tag creates a hyperlink using its <code>href</code> attribute. Links can point to other sites, other pages on your own site, or a spot further down the same page using an <code>id</code> and a <code>#</code> in the href.</p>
     <p>The <code>&lt;img&gt;</code> tag embeds an image using <code>src</code> for the file path and a required <code>alt</code> attribute describing the image in words — screen readers read it aloud, and browsers show it if the image fails to load.</p>
+    <p>Not every href needs a full URL. A <b>relative path</b> like <code>about.html</code> or <code>../images/logo.png</code> is resolved against the current page's location, which is why the same site can be moved between domains without rewriting every internal link — as long as the relative structure stays the same. An <b>absolute path</b> starting with <code>/</code>, like <code>/about.html</code>, always resolves from the site's root regardless of which page you're currently on.</p>
+    <p>Links that leave your site and open in a new tab (<code>target="_blank"</code>) should almost always also carry <code>rel="noopener"</code>. Without it, the newly opened page gets a live JavaScript reference back to your original tab (<code>window.opener</code>), which a malicious destination site could abuse to redirect your original tab to a phishing page while the user is looking at the new one — a real, documented attack technique known as tab-nabbing.</p>
+    <p>Images have their own performance dimension: <code>width</code> and <code>height</code> attributes on <code>&lt;img&gt;</code> aren't just for sizing — specifying them lets the browser reserve the correct space before the image file finishes downloading, preventing the rest of the page from jumping around as images pop in (a metric called Cumulative Layout Shift). For images that need to look sharp on both regular and high-density ("Retina") screens, or that should swap to a different crop on mobile, the <code>srcset</code> and <code>sizes</code> attributes let the browser choose the best file for the visitor's actual screen instead of always downloading one fixed image.</p>
+    <p>For images that themselves need to link somewhere, wrap the <code>&lt;img&gt;</code> in an <code>&lt;a&gt;</code> tag rather than trying to fake click behavior with CSS or JavaScript — it's simpler, keyboard-accessible by default, and works exactly the way every visitor already expects a link to work.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;a href="https://developer.mozilla.org"&gt;MDN Web Docs&lt;/a&gt;
-&lt;a href="/about.html"&gt;About page (relative link)&lt;/a&gt;
+&lt;a href="/about.html"&gt;About page (relative to site root)&lt;/a&gt;
 &lt;a href="#section-2"&gt;Jump to Section 2&lt;/a&gt;
 
 &lt;img src="logo.png" alt="Company logo" width="120"&gt;
@@ -122,18 +126,42 @@
 &lt;h2 id="section-2"&gt;Section 2&lt;/h2&gt;
 &lt;p&gt;You'll land here when the link above is clicked.&lt;/p&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">safe external links and responsive images</div>      <pre><code>&lt;a href="https://example.com" target="_blank" rel="noopener noreferrer"&gt;
+  Opens in a new tab, safely
+&lt;/a&gt;
+
+&lt;!-- Browser picks the best file for the screen's pixel density --&gt;
+&lt;img
+  src="photo-800.jpg"
+  srcset="photo-400.jpg 400w, photo-800.jpg 800w, photo-1600.jpg 1600w"
+  sizes="(max-width: 600px) 100vw, 800px"
+  width="800" height="450"
+  alt="A hiking trail at sunrise"&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: an unsafe blank-target link</div>      <pre><code>&lt;!-- Risky: the new tab can access window.opener and
+     redirect this original tab to a phishing page --&gt;
+&lt;a href="https://untrusted-site.example" target="_blank"&gt;Click here&lt;/a&gt;
+
+&lt;!-- Safer: always pair target="_blank" with rel="noopener" --&gt;
+&lt;a href="https://untrusted-site.example" target="_blank" rel="noopener"&gt;Click here&lt;/a&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>href</code> can be an absolute URL, a relative path, or an in-page anchor (<code>#id</code>).</li>
         <li><code>alt</code> text is not optional for meaningful images — it's an accessibility requirement.</li>
         <li>Decorative images that add no information can use <code>alt=""</code> (empty, not omitted).</li>
-        <li>Use <code>target="_blank" rel="noopener"</code> if a link should open in a new tab.</li>
+        <li>Always pair <code>target="_blank"</code> with <code>rel="noopener"</code> to prevent tab-nabbing.</li>
+        <li>Set <code>width</code> and <code>height</code> on images to prevent layout shift while they load.</li>
+        <li><code>srcset</code>/<code>sizes</code> let the browser choose the right image file for the visitor's screen instead of one-size-fits-all.</li>
+        <li>A relative path resolves against the current page's location; a path starting with <code>/</code> resolves from the site root.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a navigation list of three links to your recipe page from the last lesson, including one that jumps to the Ingredients heading using an anchor link.</p>
+      <p>Add a navigation list of three links to your recipe page from the last lesson, including one that jumps to the Ingredients heading using an anchor link and one external link that safely opens in a new tab. Then add width, height, and a srcset with two sizes to one image, and use dev tools to confirm the browser picks a different file on a narrower viewport.</p>
     </div>
   </article>
 

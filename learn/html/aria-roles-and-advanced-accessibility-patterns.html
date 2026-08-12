@@ -111,27 +111,53 @@
 
   <article>
     <p class="lead">ARIA (Accessible Rich Internet Applications) attributes fill gaps semantic HTML can't cover on its own — mostly for custom, JavaScript-driven widgets like tabs, modals, and dropdowns that don't have a native HTML equivalent.</p>
-    <p>The first rule of ARIA is: don't use ARIA if a native element already does the job. A <code>&lt;button&gt;</code> is already a button; adding <code>role="button"</code> to a <code>&lt;div&gt;</code> just to save a bit of styling effort throws away built-in keyboard support you'd have to rebuild by hand.</p>
+    <p>The first rule of ARIA is: don't use ARIA if a native element already does the job. A <code>&lt;button&gt;</code> is already a button; adding <code>role="button"</code> to a <code>&lt;div&gt;</code> just to save a bit of styling effort throws away built-in keyboard support you'd have to rebuild by hand — Enter and Space activation, focusability, and correct screen reader announcement all come free with the real element and all have to be manually reimplemented (and easily gotten wrong) with a div.</p>
+    <p>ARIA works in three broad categories: <b>roles</b> (<code>role="tablist"</code>, <code>role="dialog"</code>) declare what a custom widget <i>is</i>; <b>properties</b> (<code>aria-label</code>, <code>aria-required</code>) describe characteristics that mostly don't change; and <b>states</b> (<code>aria-expanded</code>, <code>aria-selected</code>, <code>aria-checked</code>) describe conditions that change as the user interacts, and which your JavaScript is responsible for keeping in sync with the actual visible state — an <code>aria-expanded="false"</code> left stale after a menu opens is worse than no ARIA at all, because it actively lies to the screen reader user.</p>
+    <p><code>aria-live</code> regions solve a real problem: content that changes without a page reload — a form validation error, a "3 items added to cart" toast, a chat message arriving — needs to be announced to a screen reader even though focus never moves there. <code>aria-live="polite"</code> waits for a natural pause before announcing; <code>aria-live="assertive"</code> interrupts immediately and should be reserved for genuinely urgent, time-sensitive messages.</p>
+    <p>Building a fully correct custom widget from scratch is deceptively hard: a proper tab interface needs arrow-key navigation between tabs, Home/End key support, correct <code>tabindex</code> roving so only the active tab is in the normal tab order, and <code>aria-selected</code> kept in sync — all documented in the WAI-ARIA Authoring Practices Guide (APG), which provides tested reference patterns for exactly this reason. Reaching for that guide, or a well-tested existing library, is usually smarter than inventing a new keyboard interaction model from scratch.</p>
+    <p>It's worth internalizing that ARIA attributes change absolutely nothing about behavior — they are purely announcements to assistive technology. Adding <code>role="button"</code> and <code>aria-pressed="false"</code> to a <code>&lt;div&gt;</code> makes a screen reader describe it as a toggle button, but the div still won't respond to a Tab key or an Enter press unless you add <code>tabindex="0"</code> and your own keydown event handlers for both.</p>
     <div class="code-block">
 <div class="cap">A custom tab widget needs ARIA</div>      <pre><code>&lt;div role="tablist"&gt;
   &lt;button role="tab" aria-selected="true" id="tab-1" aria-controls="panel-1"&gt;Profile&lt;/button&gt;
-  &lt;button role="tab" aria-selected="false" id="tab-2" aria-controls="panel-2"&gt;Settings&lt;/button&gt;
+  &lt;button role="tab" aria-selected="false" id="tab-2" aria-controls="panel-2" tabindex="-1"&gt;Settings&lt;/button&gt;
 &lt;/div&gt;
 &lt;div role="tabpanel" id="panel-1" aria-labelledby="tab-1"&gt;Profile content...&lt;/div&gt;
 &lt;div role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden&gt;Settings content...&lt;/div&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">a live region announcing a toast</div>      <pre><code>&lt;div aria-live="polite" class="visually-hidden-until-populated"&gt;
+  &lt;!-- JS inserts text here; screen readers announce it automatically --&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+  function announce(message) {
+    document.querySelector('[aria-live]').textContent = message;
+  }
+  announce('3 items added to cart');
+&lt;/script&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: ARIA without behavior</div>      <pre><code>&lt;!-- Wrong: announced as a button, but not keyboard-operable at all --&gt;
+&lt;div role="button" aria-pressed="false"&gt;Toggle&lt;/div&gt;
+
+&lt;!-- Right: use a real &lt;button&gt;, which gets keyboard behavior for free --&gt;
+&lt;button aria-pressed="false"&gt;Toggle&lt;/button&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Rule one of ARIA: no ARIA is better than bad ARIA — prefer native elements whenever one exists.</li>
         <li><code>aria-label</code> and <code>aria-labelledby</code> give accessible names when visible text isn't enough.</li>
-        <li><code>aria-live</code> regions announce dynamic content changes (like a form error) to screen readers.</li>
+        <li><code>aria-live</code> regions announce dynamic content changes (like a form error or toast) to screen readers.</li>
         <li>Custom widgets built with ARIA must also handle keyboard interaction manually — ARIA alone changes nothing about behavior.</li>
+        <li>ARIA states like <code>aria-expanded</code> and <code>aria-selected</code> must be kept in sync with the real UI state by your JavaScript, or they actively mislead users.</li>
+        <li>The WAI-ARIA Authoring Practices Guide has tested reference patterns for common widgets — use it instead of inventing keyboard behavior from scratch.</li>
+        <li><code>aria-live="assertive"</code> interrupts immediately and should be reserved for genuinely urgent messages; default to <code>"polite"</code>.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Find a custom dropdown or tab component on a site you use, open dev tools, and inspect what ARIA attributes it uses.</p>
+      <p>Find a custom dropdown or tab component on a site you use, open dev tools, and inspect what ARIA attributes it uses. Then build your own minimal two-tab widget by hand with role="tablist"/role="tab"/role="tabpanel", wire up aria-selected and a hidden attribute correctly with JavaScript, and add arrow-key navigation between the two tabs.</p>
     </div>
   </article>
 

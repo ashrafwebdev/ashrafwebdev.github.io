@@ -111,7 +111,11 @@
 
   <article>
     <p class="lead">Beyond basic text inputs, HTML gives you a full toolkit: <code>&lt;select&gt;</code> for dropdowns, <code>&lt;textarea&gt;</code> for multi-line text, and input types like <code>date</code>, <code>number</code>, <code>tel</code>, and <code>checkbox</code>/<code>radio</code> for structured choices.</p>
-    <p>Validation attributes let the browser catch obvious mistakes before anything is submitted: <code>required</code>, <code>minlength</code>/<code>maxlength</code>, <code>min</code>/<code>max</code> for numbers, and <code>pattern</code> for a custom regular expression. This is a first line of defense — always validate again on the server too.</p>
+    <p>Validation attributes let the browser catch obvious mistakes before anything is submitted: <code>required</code>, <code>minlength</code>/<code>maxlength</code>, <code>min</code>/<code>max</code> for numbers, and <code>pattern</code> for a custom regular expression. This is a first line of defense — always validate again on the server too, since anyone can submit a request that bypasses the browser entirely with a tool like curl.</p>
+    <p>Radio buttons and checkboxes behave differently even though they look similar: radio buttons sharing the same <code>name</code> form a mutually exclusive group where only one can be checked, while checkboxes with the same <code>name</code> let multiple be checked at once and are typically submitted as an array-like set of values. A common bug is forgetting to give every radio button in a group the identical <code>name</code>, which silently breaks the exclusivity.</p>
+    <p><code>&lt;select&gt;</code> elements need a <code>value</code> on each <code>&lt;option&gt;</code> — if you omit it, the browser falls back to using the option's visible text as the value, which is rarely what you want once that text needs to change for wording reasons without breaking whatever consumes the submitted data. Options can also be grouped visually with <code>&lt;optgroup label="..."&gt;</code>, and the <code>multiple</code> attribute turns a dropdown into a multi-select list.</p>
+    <p>The browser's built-in validation UI (that little "Please fill out this field" bubble) is convenient but limited — it can't easily be restyled to match your design, and its wording isn't translated automatically. Many real-world forms disable it with the <code>novalidate</code> attribute on <code>&lt;form&gt;</code> and implement custom validation messages with the Constraint Validation API in JavaScript, while still keeping the HTML validation attributes in place as a fallback and for basic accessibility.</p>
+    <p>Two attributes worth knowing beyond the basics: <code>placeholder</code> shows greyed-out example text inside an empty input, but it disappears the moment the user types and is never a substitute for a real <code>&lt;label&gt;</code> — screen readers and low-vision users lose that hint entirely once typing starts. <code>autocomplete</code>, set to values like <code>"email"</code> or <code>"given-name"</code>, lets the browser correctly offer to autofill a field from saved data, which meaningfully speeds up checkout and signup forms.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;label for="plan"&gt;Choose a plan&lt;/label&gt;
 &lt;select id="plan" name="plan"&gt;
@@ -125,18 +129,48 @@
 &lt;label for="bio"&gt;Short bio&lt;/label&gt;
 &lt;textarea id="bio" name="bio" maxlength="200"&gt;&lt;/textarea&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">radio group, checkboxes, and pattern validation</div>      <pre><code>&lt;fieldset&gt;
+  &lt;legend&gt;Preferred contact method&lt;/legend&gt;
+  &lt;input type="radio" id="contact-email" name="contact" value="email" checked&gt;
+  &lt;label for="contact-email"&gt;Email&lt;/label&gt;
+
+  &lt;input type="radio" id="contact-phone" name="contact" value="phone"&gt;
+  &lt;label for="contact-phone"&gt;Phone&lt;/label&gt;
+&lt;/fieldset&gt;
+
+&lt;input type="checkbox" id="newsletter" name="newsletter" value="yes"&gt;
+&lt;label for="newsletter"&gt;Subscribe to the newsletter&lt;/label&gt;
+
+&lt;label for="zip"&gt;US ZIP code&lt;/label&gt;
+&lt;input type="text" id="zip" name="zip" pattern="[0-9]{5}" title="Five digits" required&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: mismatched radio names</div>      <pre><code>&lt;!-- Wrong: different names mean both can be selected at once,
+     defeating the point of radio buttons --&gt;
+&lt;input type="radio" name="size-a" value="small"&gt; Small
+&lt;input type="radio" name="size-b" value="large"&gt; Large
+
+&lt;!-- Right: identical name groups them into one exclusive choice --&gt;
+&lt;input type="radio" name="size" value="small"&gt; Small
+&lt;input type="radio" name="size" value="large"&gt; Large</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>required</code>, <code>min</code>/<code>max</code>, <code>pattern</code> give free client-side validation.</li>
         <li>Client-side validation is a UX nicety, never a security boundary — always re-check on the server.</li>
         <li><code>&lt;select&gt;</code> options need a <code>value</code>; the visible text can differ from what's submitted.</li>
+        <li>Radio buttons need an identical <code>name</code> across the group to become mutually exclusive; checkboxes don't require exclusivity at all.</li>
+        <li><code>placeholder</code> is not a replacement for <code>&lt;label&gt;</code> — it disappears once the user starts typing.</li>
+        <li><code>autocomplete</code> values like <code>"email"</code> let browsers correctly offer saved-data autofill.</li>
+        <li><code>novalidate</code> on <code>&lt;form&gt;</code> lets you replace the browser's default validation bubbles with custom messaging.</li>
         <li><code>&lt;textarea&gt;</code> sizes with rows/cols attributes or, better, CSS.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Extend your contact form with an age number input (min 13), a subject dropdown with 3 options, and a required message textarea with a max length.</p>
+      <p>Extend your contact form with an age number input (min 13), a subject dropdown with 3 options, a required message textarea with a max length, and a fieldset of radio buttons for preferred contact method. Test what happens when you submit with a missing required field, then add novalidate to the form and observe that the browser's default validation bubbles disappear.</p>
     </div>
   </article>
 

@@ -112,6 +112,10 @@
   <article>
     <p class="lead">Accessibility (often shortened to a11y) means your page works for people using screen readers, keyboard-only navigation, or other assistive technology — not as an afterthought, but built in from the start, because most of it is just writing correct HTML.</p>
     <p>Three habits cover most of the ground: meaningful <code>alt</code> text on every informative image, a <code>&lt;label&gt;</code> for every form input, and using semantic landmark elements (<code>header</code>, <code>nav</code>, <code>main</code>, <code>footer</code>) so assistive tech users can jump straight to the part of the page they need.</p>
+    <p>A large and easy-to-miss category of accessibility bugs comes from keyboard access alone, with no screen reader involved. Every interactive element — links, buttons, form fields, custom widgets — needs to be reachable and operable using only Tab, Shift+Tab, Enter, and Space. A quick, free test: unplug your mouse (or just stop touching it) for five minutes and try to use your own page. Anything you can't reach or activate is a real bug for anyone with a motor impairment, and often for power users too.</p>
+    <p>Related to keyboard access is <b>focus order</b> and <b>visible focus</b>. Focus order should follow the same logical order a sighted mouse user would naturally move through the page — which usually just means writing your HTML in a sensible reading order and letting the browser's default tab order do its job, rather than fighting it with a <code>tabindex</code> that reorders things unexpectedly. Visible focus means never removing the focus outline with CSS (<code>outline: none</code>) without providing an equally visible replacement — without it, keyboard users lose track of where they are on the page entirely.</p>
+    <p>Color and visual styling alone should never be the only way information is conveyed. A form error shown only by turning the input's border red is invisible to a colorblind user and to anyone using a screen reader; pairing it with actual error text (and, ideally, an icon) fixes both at once. The same principle applies to "required" fields, status indicators, and links that are distinguished from body text by color alone.</p>
+    <p>Accessibility overlaps heavily with good HTML in general — a page built with the right semantic elements, real form labels, and meaningful alt text is most of the way to being accessible before any dedicated "accessibility pass" even begins. Later lessons cover ARIA for the gaps semantic HTML can't fill and formal WCAG audits, but this foundation is what makes those later techniques effective rather than a patch over broken markup.</p>
     <div class="code-block">
 <div class="cap">Good vs. bad alt text</div>      <pre><code>&lt;!-- Bad: unhelpful --&gt;
 &lt;img src="chart.png" alt="image"&gt;
@@ -122,6 +126,19 @@
 &lt;!-- Decorative image: empty alt, not missing alt --&gt;
 &lt;img src="divider-swirl.png" alt=""&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">error message that doesn't rely on color alone</div>      <pre><code>&lt;label for="email"&gt;Email&lt;/label&gt;
+&lt;input type="email" id="email" name="email" aria-describedby="email-error"&gt;
+&lt;p id="email-error" class="error-text"&gt;
+  ⚠️ Please enter a valid email address.
+&lt;/p&gt;
+
+&lt;style&gt;
+  /* Never remove focus outlines without a replacement */
+  input:focus-visible { outline: 3px solid #1F4E44; outline-offset: 2px; }
+  .error-text { color: #b3261e; }
+&lt;/style&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -129,11 +146,14 @@
         <li>Decorative images get <code>alt=""</code> (empty) so screen readers skip them silently.</li>
         <li>Every interactive element needs a keyboard-reachable, clearly labeled path — test by unplugging your mouse.</li>
         <li>Landmarks (header/nav/main/footer) let screen reader users skip repeated navigation instantly.</li>
+        <li>Never remove the focus outline with CSS unless you replace it with an equally visible alternative.</li>
+        <li>Never convey information (errors, required fields, status) through color alone — pair it with text or an icon.</li>
+        <li>Focus order should follow the natural reading order of your HTML rather than being reshuffled with <code>tabindex</code>.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Go back through every page you've built so far and check: does every image have real alt text, and every input have a label? Fix any you find.</p>
+      <p>Go back through every page you've built so far and check: does every image have real alt text, and every input have a label? Fix any you find. Then unplug your mouse and try to complete your contact form using only the keyboard, noting anywhere you get stuck or lose track of where focus is.</p>
     </div>
   </article>
 

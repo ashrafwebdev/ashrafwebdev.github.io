@@ -112,16 +112,66 @@
   <article>
     <p class="lead">Tables exist for one job: real tabular data with rows and columns, like a price list or a schedule. They are not a layout tool — that misuse from the 1990s and 2000s is exactly what CSS Grid and Flexbox replaced.</p>
     <p>A table is built from <code>&lt;table&gt;</code>, with <code>&lt;tr&gt;</code> for each row, <code>&lt;th&gt;</code> for header cells, and <code>&lt;td&gt;</code> for data cells. Wrapping the header row in <code>&lt;thead&gt;</code> and the data rows in <code>&lt;tbody&gt;</code> is good practice for larger tables.</p>
+    <p>A quick way to tell if content genuinely belongs in a table: read it aloud row by row. "Basic plan: $5 a month, 10 gigabytes of storage" makes sense spoken aloud, because it's real tabular data. If reading the layout aloud produces nonsense — because it was really just three boxes arranged side by side for visual effect — a table is the wrong tool, and a flex or grid layout is the right one.</p>
+    <p>The <code>scope</code> attribute on a <code>&lt;th&gt;</code> — <code>scope="col"</code> or <code>scope="row"</code> — tells a screen reader exactly which cells that header applies to, so as it reads down a data row it can announce "Price: $15 per month" instead of just a bare number. Without <code>scope</code>, a screen reader has to guess the association from position alone, which breaks down fast on any table more complex than a simple grid.</p>
+    <p><code>&lt;caption&gt;</code>, placed immediately after the opening <code>&lt;table&gt;</code> tag, gives the table an accessible title that's announced before its contents — this is different from putting a heading above the table, because a caption stays programmatically tied to that specific table even if the surrounding page structure changes.</p>
+    <p>Tables can span cells across multiple rows or columns using the <code>colspan</code> and <code>rowspan</code> attributes on a <code>&lt;td&gt;</code> or <code>&lt;th&gt;</code>, which is common in schedules and pricing grids where one label applies to several cells at once. Complex spanning tables are exactly the case where <code>scope</code> and even <code>headers</code>/<code>id</code> attribute pairing become important — otherwise the visual layout and the announced structure drift apart.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;table&gt;
+  &lt;caption&gt;Subscription plans&lt;/caption&gt;
   &lt;thead&gt;
-    &lt;tr&gt;&lt;th&gt;Plan&lt;/th&gt;&lt;th&gt;Price&lt;/th&gt;&lt;th&gt;Storage&lt;/th&gt;&lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th scope="col"&gt;Plan&lt;/th&gt;
+      &lt;th scope="col"&gt;Price&lt;/th&gt;
+      &lt;th scope="col"&gt;Storage&lt;/th&gt;
+    &lt;/tr&gt;
   &lt;/thead&gt;
   &lt;tbody&gt;
-    &lt;tr&gt;&lt;td&gt;Basic&lt;/td&gt;&lt;td&gt;$5/mo&lt;/td&gt;&lt;td&gt;10 GB&lt;/td&gt;&lt;/tr&gt;
-    &lt;tr&gt;&lt;td&gt;Pro&lt;/td&gt;&lt;td&gt;$15/mo&lt;/td&gt;&lt;td&gt;100 GB&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th scope="row"&gt;Basic&lt;/th&gt;
+      &lt;td&gt;$5/mo&lt;/td&gt;
+      &lt;td&gt;10 GB&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th scope="row"&gt;Pro&lt;/th&gt;
+      &lt;td&gt;$15/mo&lt;/td&gt;
+      &lt;td&gt;100 GB&lt;/td&gt;
+    &lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">a spanning schedule table</div>      <pre><code>&lt;table&gt;
+  &lt;caption&gt;Weekly class schedule&lt;/caption&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;&lt;th scope="col"&gt;Time&lt;/th&gt;&lt;th scope="col"&gt;Monday&lt;/th&gt;&lt;th scope="col"&gt;Tuesday&lt;/th&gt;&lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;th scope="row"&gt;9-11am&lt;/th&gt;
+      &lt;td colspan="2"&gt;Studio time (both days)&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;th scope="row" rowspan="2"&gt;1-3pm&lt;/th&gt;
+      &lt;td&gt;Painting&lt;/td&gt;
+      &lt;td&gt;Sculpture&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: table used for layout</div>      <pre><code>&lt;!-- Wrong: three unrelated boxes forced into a table just for a
+     side-by-side layout — meaningless when read row by row --&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;td&gt;Fast shipping&lt;/td&gt;&lt;td&gt;24/7 support&lt;/td&gt;&lt;td&gt;Free returns&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;!-- Right: use CSS for layout, keep tables for tabular data --&gt;
+&lt;ul class="feature-grid"&gt;
+  &lt;li&gt;Fast shipping&lt;/li&gt;
+  &lt;li&gt;24/7 support&lt;/li&gt;
+  &lt;li&gt;Free returns&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -130,11 +180,14 @@
         <li><code>&lt;th&gt;</code> marks header cells and is announced differently by screen readers than <code>&lt;td&gt;</code>.</li>
         <li>The <code>scope</code> attribute (<code>scope="col"</code> / <code>scope="row"</code>) improves accessibility on complex tables.</li>
         <li><code>&lt;caption&gt;</code> gives a table an accessible title, right after the opening <code>&lt;table&gt;</code> tag.</li>
+        <li><code>colspan</code>/<code>rowspan</code> merge cells for schedules and pricing grids, but need extra care to stay accessible.</li>
+        <li>A good sanity check: if reading the content row by row aloud doesn't make sense, it probably isn't real tabular data.</li>
+        <li><code>&lt;thead&gt;</code> and <code>&lt;tbody&gt;</code> aren't required, but they make larger tables easier to style and to scan.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a table comparing three products you know (rows) across price, and two other features (columns), with proper thead/tbody structure.</p>
+      <p>Build a table comparing three products you know (rows) across price, and two other features (columns), with proper thead/tbody structure, a caption, and scope attributes on every header cell. Then add one cell that uses colspan to span two columns and check with a screen reader (or your browser's accessibility inspector) that it still announces sensibly.</p>
     </div>
   </article>
 

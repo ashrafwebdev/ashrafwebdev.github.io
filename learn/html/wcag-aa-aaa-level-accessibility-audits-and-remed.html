@@ -112,25 +112,51 @@
   <article>
     <p class="lead">WCAG (Web Content Accessibility Guidelines) defines concrete, testable success criteria at three levels: A (minimum), AA (the level most legal standards require), and AAA (the highest, not always achievable for all content types). A real audit checks a page against these criteria systematically, not just "does it feel accessible."</p>
     <p>A serious audit combines automated tools (which catch maybe 30-40% of issues — missing alt text, poor contrast, missing labels) with manual testing: full keyboard-only navigation, an actual screen reader (VoiceOver, NVDA, JAWS), and checking focus order and visible focus indicators.</p>
+    <p>WCAG's success criteria are organized under four principles, easy to remember by the acronym POUR: content must be <b>Perceivable</b> (available through more than one sense — alt text, captions, sufficient contrast), <b>Operable</b> (usable via keyboard, with enough time, without triggering seizures), <b>Understandable</b> (readable, predictable, with clear error messages), and <b>Robust</b> (works correctly with current and future assistive technology, largely a matter of valid, well-formed markup). Every specific criterion, like the 4.5:1 contrast requirement, falls under one of these four.</p>
+    <p>Remediation should be prioritized by real-world severity and reach, not by however the automated report happens to sort the list. A missing accessible name on the primary "Add to cart" button, or a modal dialog that traps keyboard focus so users literally cannot leave it, blocks a task entirely and should be fixed before something like slightly imperfect heading nesting on a rarely visited page, even if the scanner flags dozens of instances of the latter.</p>
+    <p>Text contrast is one of the most concretely testable AA criteria and a common failure point: 4.5:1 for normal-sized text and 3:1 for large text (defined as roughly 18pt/24px regular or 14pt/18.5px bold and larger). AAA raises this bar further to 7:1 and 4.5:1 respectively — a stricter target most organizations don't require but that meaningfully helps low-vision users beyond the AA minimum.</p>
+    <p>An audit isn't a one-time event — new features and new content can silently reintroduce fixed issues. Mature teams bake basic checks into their normal workflow: an automated scanner running in CI on every pull request, a documented manual testing checklist for anything genuinely new (a new widget, a new form flow), and periodic full manual audits by someone trained specifically in accessibility testing, since automated tools alone will never catch everything a real screen reader user would notice.</p>
     <div class="code-block">
 <div class="cap">A common AA failure: insufficient contrast</div>      <pre><code>/* Fails WCAG AA (contrast ratio ~2.5:1) */
 .muted-text { color: #999; background: #fff; }
 
 /* Passes WCAG AA for normal text (needs 4.5:1) */
-.muted-text { color: #6B6B6B; background: #fff; }</code></pre>
+.muted-text { color: #6B6B6B; background: #fff; }
+
+/* Passes WCAG AAA for normal text (needs 7:1) */
+.muted-text-strict { color: #595959; background: #fff; }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">a keyboard focus trap bug (Operable failure)</div>      <pre><code>&lt;!-- Wrong: a modal with no way to close via keyboard traps every
+     keyboard user inside it --&gt;
+&lt;div role="dialog" aria-modal="true"&gt;
+  &lt;p&gt;Confirm your subscription.&lt;/p&gt;
+  &lt;button onclick="confirmSub()"&gt;Confirm&lt;/button&gt;
+&lt;/div&gt;
+
+&lt;!-- Right: give every dialog a clear, keyboard-reachable close path,
+     and return focus to what opened it on close --&gt;
+&lt;div role="dialog" aria-modal="true" aria-labelledby="dialog-title"&gt;
+  &lt;h2 id="dialog-title"&gt;Confirm your subscription&lt;/h2&gt;
+  &lt;button onclick="confirmSub()"&gt;Confirm&lt;/button&gt;
+  &lt;button onclick="closeDialog()" aria-label="Close dialog"&gt;✕&lt;/button&gt;
+&lt;/div&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>WCAG AA is the level most accessibility laws and lawsuits reference — treat it as the real-world minimum bar.</li>
         <li>Automated scanners (axe, Lighthouse) catch a meaningful chunk of issues but miss most keyboard and screen-reader problems.</li>
-        <li>Text needs a 4.5:1 contrast ratio (3:1 for large text) to meet AA.</li>
+        <li>Text needs a 4.5:1 contrast ratio (3:1 for large text) to meet AA; AAA raises that to 7:1 and 4.5:1.</li>
+        <li>The four WCAG principles are Perceivable, Operable, Understandable, Robust (POUR) — every criterion falls under one.</li>
         <li>Every audit should include actual keyboard-only and screen-reader passes, not tooling alone.</li>
+        <li>Prioritize fixes by real task-blocking severity (like a keyboard focus trap), not just by how many instances a scanner reports.</li>
+        <li>Accessibility needs ongoing checks (CI scanning, manual review of new features), not a single one-time audit.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Run an automated accessibility scanner (like Lighthouse or axe DevTools) against a real site and manually fix the three highest-severity issues it finds.</p>
+      <p>Run an automated accessibility scanner (like Lighthouse or axe DevTools) against a real site and manually fix the three highest-severity issues it finds. Then do a manual pass with a screen reader on the same site's most important flow (like checkout or signup), and classify each new issue you find under Perceivable, Operable, Understandable, or Robust.</p>
     </div>
   </article>
 

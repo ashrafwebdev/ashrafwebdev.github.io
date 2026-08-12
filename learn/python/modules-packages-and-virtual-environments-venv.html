@@ -110,13 +110,34 @@
   </div>
 
   <article>
-    <p class="lead">A module is just a <code>.py</code> file you can import from another file. A package is a folder of modules with an <code>__init__.py</code> file, letting you organize related code into a namespace.</p>
-    <p>A virtual environment (<code>venv</code>) is an isolated Python installation for a single project, so its installed packages don't conflict with another project's different (possibly incompatible) versions of the same libraries.</p>
+    <p class="lead">A module is just a <code>.py</code> file you can import from another file. A package is a folder of modules — traditionally marked with an <code>__init__.py</code> file, though it's optional for a 'namespace package' since Python 3.3 — letting you organize related code into a hierarchy like <code>myapp.utils.strings</code>.</p>
+    <p><code>import module_name</code> pulls in a whole module, and you access its contents with <code>module_name.thing</code>; <code>from module_name import thing</code> pulls in one specific name directly into your file's namespace. <code>from module_name import *</code> exists but is generally discouraged in real code — it makes it unclear where a given name actually came from when you're reading the file later.</p>
+    <p>A virtual environment (<code>venv</code>) is an isolated Python installation for a single project, with its own <code>site-packages</code> directory, so its installed package versions don't conflict with another project's different — and possibly incompatible — versions of the same libraries. Without one, installing packages globally on your machine is a recipe for one project quietly breaking another.</p>
+    <p><code>requirements.txt</code>, generated with <code>pip freeze &gt; requirements.txt</code>, lets anyone recreate your exact dependency set with <code>pip install -r requirements.txt</code> — this reproducibility is what lets a teammate, a CI server, or a production deployment install the exact same package versions you developed and tested against.</p>
+    <p>Modern projects increasingly use <code>pyproject.toml</code> to declare both project metadata and dependencies in one standardized place, paired with faster tools like <code>uv</code> or <code>poetry</code> that resolve dependencies and manage the virtual environment together, rather than treating pip and venv as two separate manual steps.</p>
+    <p>Python finds modules by searching <code>sys.path</code>, which includes the current script's directory, installed site-packages, and anything listed in the <code>PYTHONPATH</code> environment variable — understanding this list is the key to debugging a mysterious <code>ModuleNotFoundError</code> for a module you're sure you installed (it's very often installed into the wrong environment).</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>python -m venv .venv
 source .venv/bin/activate   # on Windows: .venv\Scripts\activate
 pip install requests
 pip freeze &gt; requirements.txt</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">mypackage/__init__.py + usage</div>      <pre><code># mypackage/greetings.py
+def hello(name):
+    return f"Hello, {name}!"
+
+# main.py, in the same project root as mypackage/
+from mypackage.greetings import hello
+import mypackage.greetings as greetings
+
+print(hello("Amina"))
+print(greetings.hello("Yusuf"))</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal (checking your environment)</div>      <pre><code>which python           # confirm it points inside .venv, not the system Python
+pip list                # packages visible in the ACTIVE environment only
+deactivate               # leave the virtual environment</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -124,12 +145,15 @@ pip freeze &gt; requirements.txt</code></pre>
         <li>Always work inside a virtual environment per project — installing packages globally leads to version conflicts across projects.</li>
         <li><code>requirements.txt</code> (from <code>pip freeze</code>) lets anyone recreate your exact dependency set with <code>pip install -r requirements.txt</code>.</li>
         <li><code>import module_name</code> pulls in a whole module; <code>from module_name import thing</code> pulls in one specific name.</li>
+        <li>Avoid <code>from module import *</code> in real projects — it obscures where each name in your file actually came from.</li>
+        <li>Python resolves imports by searching <code>sys.path</code>; a mysterious <code>ModuleNotFoundError</code> is usually a sign the package was installed into the wrong environment.</li>
         <li>Modern projects increasingly use <code>pyproject.toml</code> and tools like <code>uv</code> or <code>poetry</code> instead of raw pip + requirements.txt.</li>
+        <li>A package needs (traditionally) an <code>__init__.py</code> file in its folder to be treated as a package rather than a plain directory.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a virtual environment, activate it, install the requests library, and confirm it's isolated by checking pip list before and after activation.</p>
+      <p>Create a virtual environment, activate it, install the requests library, and confirm it's isolated by comparing pip list before and after activation. Then create a small local package with two modules that import from each other, and write a main.py at the project root that imports and uses functions from both.</p>
     </div>
   </article>
 

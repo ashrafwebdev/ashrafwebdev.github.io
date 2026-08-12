@@ -112,6 +112,10 @@
   <article>
     <p class="lead">Structured data is machine-readable metadata that tells search engines exactly what your content <i>means</i> — this recipe has these ingredients and this cook time; this page is a product with this price and this rating — enabling rich results like star ratings or recipe cards directly in search results.</p>
     <p>The easiest format to add is JSON-LD: a single <code>&lt;script type="application/ld+json"&gt;</code> block in the page, following the vocabulary defined at schema.org, with no changes needed to your visible markup.</p>
+    <p>schema.org defines thousands of types, but a handful cover most real sites: <code>Article</code> or <code>BlogPosting</code> for written content, <code>Product</code> with a nested <code>AggregateRating</code> and <code>Offer</code> for e-commerce, <code>Recipe</code>, <code>Event</code>, <code>Organization</code>, and <code>BreadcrumbList</code> for navigation breadcrumbs. Each type has both required and recommended properties documented on schema.org itself; skipping a required property is the single most common reason a rich result fails to appear even though the JSON-LD is technically valid JSON.</p>
+    <p>A crucial rule search engines enforce: structured data must accurately describe content that's actually visible on the page. Marking a product with a 5-star <code>aggregateRating</code> that doesn't appear anywhere in the visible HTML is considered deceptive structured data and can get a page penalized in search results rather than rewarded — JSON-LD is a machine-readable summary of what's already there, not a way to inject claims that aren't.</p>
+    <p>There isn't just one structured data vocabulary in practice — older sites sometimes use Microdata (attributes like <code>itemscope</code>/<code>itemprop</code> woven directly into the visible HTML tags) instead of JSON-LD. Both are understood by Google, but JSON-LD is generally recommended today specifically because it lives in one separate block, decoupled from the visible markup, so redesigning the page's HTML doesn't risk silently breaking the structured data buried inside it.</p>
+    <p>Multiple JSON-LD blocks, or one block containing an array (<code>@graph</code>), can coexist on a single page — a blog post page might carry both <code>BlogPosting</code> data and a separate <code>BreadcrumbList</code> for its navigation path. Always validate the finished JSON-LD before shipping it; a single misplaced comma silently breaks the entire block with no visible error on the page itself.</p>
     <div class="code-block">
 <div class="cap">Recipe structured data</div>      <pre><code>&lt;script type="application/ld+json"&gt;
 {
@@ -119,7 +123,30 @@
   "@type": "Recipe",
   "name": "Fluffy Pancakes",
   "prepTime": "PT15M",
+  "cookTime": "PT15M",
+  "recipeYield": "4 servings",
   "recipeIngredient": ["2 cups flour", "2 eggs", "1.5 cups milk"]
+}
+&lt;/script&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">product with rating and breadcrumbs (@graph)</div>      <pre><code>&lt;script type="application/ld+json"&gt;
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Product",
+      "name": "Trail Running Shoes",
+      "offers": { "@type": "Offer", "price": "89.00", "priceCurrency": "USD" },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.6", "reviewCount": "213" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Shoes", "item": "https://example.com/shoes" }
+      ]
+    }
+  ]
 }
 &lt;/script&gt;</code></pre>
     </div>
@@ -130,11 +157,14 @@
         <li>schema.org defines the vocabulary (Recipe, Product, Article, Event, and dozens more types).</li>
         <li>Google's Rich Results Test tool validates your structured data before you rely on it.</li>
         <li>Structured data influences how you appear in search — it doesn't guarantee ranking improvements.</li>
+        <li>Structured data must match what's actually visible on the page, or it can be treated as deceptive and penalized.</li>
+        <li>Multiple types can be combined on one page using an <code>@graph</code> array.</li>
+        <li>JSON-LD is generally preferred over Microdata because it's decoupled from the visible HTML and survives redesigns better.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add Recipe JSON-LD structured data to your recipe page, then validate it with Google's Rich Results Test.</p>
+      <p>Add Recipe JSON-LD structured data to your recipe page, then validate it with Google's Rich Results Test. Extend it into an @graph that also includes a BreadcrumbList for the page's navigation path, and deliberately break the JSON with a missing comma to see how the validator reports the error.</p>
     </div>
   </article>
 

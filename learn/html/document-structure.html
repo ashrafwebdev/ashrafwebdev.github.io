@@ -112,7 +112,10 @@
   <article>
     <p class="lead">Every HTML document starts with the same skeleton. <code>&lt;!DOCTYPE html&gt;</code> tells the browser "treat this as modern HTML5," not some ancient dialect. Then a single <code>&lt;html&gt;</code> element wraps everything else, split into two children: <code>&lt;head&gt;</code> and <code>&lt;body&gt;</code>.</p>
     <p>The <code>&lt;head&gt;</code> holds information <i>about</i> the page — its title, character encoding, linked stylesheets, and metadata — none of which is directly visible on the page itself. The <code>&lt;body&gt;</code> holds everything the visitor actually sees and interacts with.</p>
-    <p>Two tags inside <code>&lt;head&gt;</code> matter from day one: <code>&lt;meta charset="UTF-8"&gt;</code> so text and emoji render correctly, and <code>&lt;title&gt;</code>, which sets the browser tab text and the default search-result headline.</p>
+    <p>Two tags inside <code>&lt;head&gt;</code> matter from day one: <code>&lt;meta charset="UTF-8"&gt;</code> so text and emoji render correctly, and <code>&lt;title&gt;</code>, which sets the browser tab text and the default search-result headline. Order matters slightly here: <code>&lt;meta charset&gt;</code> should be one of the very first tags inside <code>&lt;head&gt;</code>, because the browser needs to know the encoding before it can correctly parse any non-ASCII characters that appear later in the document.</p>
+    <p>Without a <code>&lt;!DOCTYPE&gt;</code>, older browsers fall back to "quirks mode," an intentionally bug-compatible rendering mode that reproduces decades-old layout inconsistencies from Internet Explorer. Modern browsers all support the short HTML5 doctype, so there's never a reason to use the long, XHTML-style doctypes you might see in old tutorials.</p>
+    <p>The <code>&lt;html&gt;</code> tag itself should carry a <code>lang</code> attribute, such as <code>lang="en"</code>. This single attribute tells screen readers which pronunciation rules to use, tells browsers which language to offer to translate from, and helps search engines serve the right page to the right audience — it costs nothing and is easy to forget.</p>
+    <p>A well-known but often skipped detail: everything visible on the page must live inside <code>&lt;body&gt;</code>. Text or images accidentally placed inside <code>&lt;head&gt;</code>, or outside the <code>&lt;html&gt;</code> element entirely, get silently moved or dropped by the browser's error-correcting parser — which is exactly the kind of "it works but I don't know why" bug that a clear mental model of head vs. body prevents.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html lang="en"&gt;
@@ -125,18 +128,50 @@
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">a more complete head</div>      <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+  &lt;title&gt;My Recipe Blog&lt;/title&gt;
+  &lt;link rel="stylesheet" href="styles.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;p&gt;Hello, world!&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">what NOT to do</div>      <pre><code>&lt;!-- Wrong: text placed inside &lt;head&gt;, browsers will drop or relocate it --&gt;
+&lt;head&gt;
+  &lt;title&gt;Broken Page&lt;/title&gt;
+  Welcome to my site!
+&lt;/head&gt;
+
+&lt;!-- Right: visible content always belongs in &lt;body&gt; --&gt;
+&lt;head&gt;
+  &lt;title&gt;Fixed Page&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  Welcome to my site!
+&lt;/body&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>&lt;!DOCTYPE html&gt;</code> must be the very first line of the file.</li>
         <li><code>&lt;head&gt;</code> = metadata (invisible), <code>&lt;body&gt;</code> = content (visible).</li>
-        <li>Always set <code>&lt;meta charset="UTF-8"&gt;</code> — it prevents garbled text.</li>
-        <li>The <code>lang</code> attribute on <code>&lt;html&gt;</code> helps screen readers and search engines.</li>
+        <li>Always set <code>&lt;meta charset="UTF-8"&gt;</code> near the top of <code>&lt;head&gt;</code> — it prevents garbled text.</li>
+        <li>The <code>lang</code> attribute on <code>&lt;html&gt;</code> helps screen readers, translation tools, and search engines.</li>
+        <li>Skipping the doctype triggers legacy "quirks mode" rendering in some browsers — always include it.</li>
+        <li>The short HTML5 doctype is the only one you need; ignore old XHTML-style doctypes from older tutorials.</li>
+        <li>Visible content placed outside <code>&lt;body&gt;</code> gets silently relocated or dropped by the browser's parser.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Save the example above as index.html and open it directly in your browser (double-click the file). Change the title and confirm the browser tab updates.</p>
+      <p>Save the example above as index.html and open it directly in your browser (double-click the file). Change the title and confirm the browser tab updates. Then add a lang attribute, a viewport meta tag, and deliberately move a sentence of text into the head to see how your browser's dev tools "fix" the resulting DOM.</p>
     </div>
   </article>
 

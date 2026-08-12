@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Flask and FastAPI are lightweight frameworks — you assemble the pieces you need. FastAPI additionally generates automatic interactive API docs and validates request data using type hints, making it a strong default for building JSON APIs today. Django is a full 'batteries-included' framework with a built-in ORM, admin panel, and authentication out of the box.</p>
-    <p>Choose based on the project: FastAPI/Flask for a focused API or microservice, Django when you want a complete, opinionated toolkit for a larger application with minimal setup decisions.</p>
+    <p class="lead">Flask and FastAPI are lightweight frameworks — you assemble the pieces you need rather than getting everything bundled in from the start. FastAPI additionally generates automatic interactive API docs (via Swagger/OpenAPI) and validates request data using ordinary Python type hints, making it a strong default for building JSON APIs today. Django is a full 'batteries-included' framework with a built-in ORM, admin panel, authentication, and templating out of the box.</p>
+    <p>All three use route decorators or URL patterns to map incoming requests to Python functions — a route is really just a mapping from an HTTP method and a URL path to the function that should handle it, and the framework's job is to parse the incoming request, call the right function, and turn its return value back into an HTTP response.</p>
+    <p>FastAPI's biggest practical advantage is how it uses type hints not just for editor autocomplete, but as real, enforced request validation: declaring a parameter as <code>user_id: int</code> means FastAPI automatically rejects a non-numeric value with a structured 422 error, without you writing any validation logic by hand. Pydantic models extend the same idea to entire JSON request bodies with nested fields.</p>
+    <p>Django's ORM lets you describe database tables as Python classes and query them with Python method calls instead of raw SQL — <code>User.objects.filter(active=True)</code> instead of a hand-written <code>SELECT</code> statement — and its migrations system tracks and applies schema changes over time, which Flask and FastAPI leave entirely up to you to add via a separate library like SQLAlchemy and Alembic.</p>
+    <p>Choose based on the project's actual shape: FastAPI or Flask for a focused API, a microservice, or something where you want full control over which pieces you include; Django when you want a complete, opinionated toolkit — auth, admin, ORM, forms — for a larger application where minimizing setup decisions matters more than flexibility.</p>
+    <p>Whichever framework you pick, the same core concepts carry over: request/response objects, route parameters versus query parameters versus request bodies, middleware that runs before or after every request, and dependency injection (explicit in FastAPI, more implicit in Django and Flask) for things like database sessions and authenticated users.</p>
     <div class="code-block">
 <div class="cap">main.py (FastAPI)</div>      <pre><code>from fastapi import FastAPI
 
@@ -123,6 +127,37 @@ def get_user(user_id: int):
 
 # Run with: uvicorn main:app --reload</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">main.py (FastAPI + Pydantic body validation)</div>      <pre><code>from fastapi import FastAPI
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class UserIn(BaseModel):
+    name: str
+    age: int
+
+@app.post("/users")
+def create_user(user: UserIn):
+    # user.name and user.age are already validated and typed
+    return {"created": user.name, "age": user.age}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">app.py (Flask, for comparison)</div>      <pre><code>from flask import Flask, jsonify, request
+
+app = Flask(__name__)
+
+@app.get("/users/&lt;int:user_id&gt;")
+def get_user(user_id):
+    return jsonify({"id": user_id, "name": "Amina"})
+
+@app.post("/users")
+def create_user():
+    data = request.get_json()   # no automatic validation, unlike FastAPI
+    return jsonify({"created": data["name"]}), 201
+
+# Run with: flask --app app run</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -130,11 +165,14 @@ def get_user(user_id: int):
         <li>Flask is more minimal and flexible; Django is more complete and opinionated, with a steeper but more guided learning curve.</li>
         <li>All three use route decorators or URL patterns to map incoming requests to Python functions.</li>
         <li>Type hints in FastAPI routes double as automatic request validation — invalid input returns a 422 error without you writing that logic.</li>
+        <li>Pydantic models let FastAPI validate an entire nested JSON request body, not just individual path or query parameters.</li>
+        <li>Django's ORM and migrations system are built in; Flask and FastAPI leave database tooling to a separate library like SQLAlchemy.</li>
+        <li>Choose Flask/FastAPI for a focused API with full control over the pieces; choose Django for a larger app where an opinionated, complete toolkit saves setup time.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a small FastAPI (or Flask) app with two routes: one that returns a static JSON message, and one that accepts a path parameter and echoes it back.</p>
+      <p>Build a small FastAPI (or Flask) app with two routes: one that returns a static JSON message, and one that accepts a path parameter and echoes it back. Then add a third route that accepts a POST body (using a Pydantic model if you're using FastAPI) and returns a confirmation including the data you received, and test all three routes with the framework's auto-generated docs or a tool like curl.</p>
     </div>
   </article>
 

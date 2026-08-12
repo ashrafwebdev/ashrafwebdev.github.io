@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Conditionals in Python read almost like English: <code>if condition:</code>, <code>elif other_condition:</code>, <code>else:</code>. Blocks are defined purely by indentation under each clause — there's no <code>end</code> keyword or closing brace.</p>
-    <p><code>for</code> loops iterate directly over a sequence's items (not a numeric index by default, unlike many other languages) — <code>range()</code> generates a sequence of numbers when you do need a counted loop. <code>while</code> loops repeat as long as a condition stays true.</p>
+    <p class="lead">Conditionals in Python read almost like English: <code>if condition:</code>, <code>elif other_condition:</code>, <code>else:</code>. Blocks are defined purely by indentation under each clause — there's no <code>end</code> keyword or closing brace, so a misplaced indent silently changes which statements belong to which branch.</p>
+    <p><code>for</code> loops iterate directly over a sequence's items, not a numeric index by default the way loops in many other languages work — <code>range(start, stop, step)</code> generates a sequence of numbers when you do need a counted loop, and <code>enumerate()</code> gives you both the index and the value at once without manual bookkeeping.</p>
+    <p><code>while</code> loops repeat as long as a condition stays true, which makes them the right tool when you don't know in advance how many iterations you'll need — reading input until the user types 'quit' is a classic example. Forgetting to update the condition inside the loop body is the most common way to accidentally write an infinite loop.</p>
+    <p><code>break</code> exits the nearest enclosing loop immediately, while <code>continue</code> skips the rest of the current iteration and moves on to the next one. Both work identically in <code>for</code> and <code>while</code> loops, and both only affect the single loop they're written inside — not any outer loop it's nested within.</p>
+    <p>A lesser-known feature: both <code>for</code> and <code>while</code> loops can have an <code>else</code> clause, which runs only if the loop finished naturally without hitting a <code>break</code>. It's underused, but genuinely handy for search-style loops where you want to know whether a match was found.</p>
+    <p>Python has no traditional switch statement before 3.10 — a chain of <code>elif</code> or a dictionary mapping values to functions typically fills that role. Python 3.10 added <code>match</code>/<code>case</code>, structural pattern matching that goes well beyond a simple switch, letting you match on the shape of a value, not just equality.</p>
     <div class="code-block">
 <div class="cap">control_flow.py</div>      <pre><code>scores = [72, 88, 95, 60]
 
@@ -123,18 +127,50 @@ for score in scores:
     else:
         print(score, "— needs work")</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">loop_tools.py</div>      <pre><code>names = ["Amina", "Yusuf", "Chen"]
+
+for i, name in enumerate(names, start=1):
+    print(f"{i}. {name}")
+
+target = "Chen"
+for name in names:
+    if name == target:
+        print("found it")
+        break
+else:
+    print("not found")   # runs only if the loop never broke</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">match_case.py</div>      <pre><code>def describe(status_code):
+    match status_code:
+        case 200 | 201 | 204:
+            return "success"
+        case 404:
+            return "not found"
+        case code if code &gt;= 500:
+            return "server error"
+        case _:
+            return "other"
+
+print(describe(201), describe(404), describe(503))</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Blocks are defined entirely by indentation — no braces, no end keyword.</li>
+        <li>Blocks are defined entirely by indentation — no braces, no end keyword, so an indentation mistake changes program behavior silently.</li>
         <li><code>for item in sequence:</code> iterates over values directly; use <code>enumerate(sequence)</code> when you also need the index.</li>
-        <li><code>range(5)</code> produces 0 through 4 — the end value is exclusive.</li>
-        <li>Python has no switch statement (pre-3.10); a chain of <code>elif</code> or a dictionary lookup fills that role.</li>
+        <li><code>range(5)</code> produces 0 through 4 — the end value is exclusive; <code>range(1, 10, 2)</code> adds a start and a step.</li>
+        <li><code>break</code> exits the loop entirely; <code>continue</code> skips to the next iteration; both apply only to the innermost loop.</li>
+        <li>A <code>for</code>/<code>while</code> loop's <code>else</code> clause runs only when the loop completes without a <code>break</code> — useful for search patterns.</li>
+        <li>Watch out for infinite <code>while</code> loops: the condition must eventually become false, so make sure the loop body actually updates whatever it checks.</li>
+        <li>Python has no switch statement before 3.10; a chain of <code>elif</code> or a dict lookup fills that role in older code.</li>
+        <li><code>match</code>/<code>case</code> (3.10+) supports structural pattern matching, guard clauses, and a catch-all <code>case _:</code>, going well beyond simple equality checks.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a for loop over a list of numbers that prints whether each is even or odd using if/else.</p>
+      <p>Write a for loop over a list of numbers that prints whether each is even or odd using if/else. Then write a second loop that searches the same list for a specific target value, using break when it's found and the loop's else clause to print a message when it isn't.</p>
     </div>
   </article>
 

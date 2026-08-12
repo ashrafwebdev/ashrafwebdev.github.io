@@ -110,9 +110,36 @@
   </div>
 
   <article>
-    <p class="lead">CPython (the reference Python implementation) is developed entirely in the open on GitHub, and welcomes contributions — from documentation fixes to bug reports to actual C and Python code changes, following a formal PEP process for language-level changes.</p>
-    <p>For most developers, contributing to a major library you already use (requests, Django, pandas, FastAPI) is a more approachable entry point than CPython itself — the same skills apply, with a smaller, more focused codebase to learn first.</p>
+    <p class="lead">CPython (the reference Python implementation) is developed entirely in the open on GitHub, and welcomes contributions — from documentation fixes to bug reports to actual C and Python code changes — following a formal PEP (Python Enhancement Proposal) process for any change that affects the language itself, not just its implementation details.</p>
+    <p>For most developers, contributing to a major library you already use (requests, Django, pandas, FastAPI) is a far more approachable entry point than CPython itself — the same core skills apply (reading an issue tracker, reproducing a bug, writing a focused patch, writing tests for it), but with a smaller, more focused codebase to learn first and usually a faster, friendlier review cycle for a first-time contributor.</p>
+    <p>A minimal, reliable bug reproduction is genuinely valuable on its own, even without a code fix attached — maintainers routinely spend more time confirming and narrowing down a vague bug report than they would spend fixing a well-isolated one, so a clear 'here's the smallest possible script that reproduces this' report is a real, welcome contribution by itself.</p>
+    <p>CPython's own "Developer's Guide" documents exactly how to set up a build environment and submit a first patch, including the project's specific coding style, its test suite conventions, and how the (fairly involved) core-developer review process works — worth skimming even if your first contribution is somewhere else entirely, since many major libraries model their own contributor docs on it.</p>
+    <p>PEPs are how language-level changes are proposed, discussed, and formally decided — worth reading even if you never write one yourself, since a surprising number of 'why does Python do it this way' questions are answered directly, with the actual reasoning and rejected alternatives, in the PEP that introduced the feature.</p>
+    <p>Contributing docs or tests to a project you already rely on is a realistic, high-value starting point before attempting deeper code changes: documentation gaps are common, lower-risk to review than a behavior change, and directly help the next person who hits the same confusion you did — often a maintainer's most-wanted kind of contribution precisely because so few people offer it.</p>
+    <div class="code-block">
+<div class="cap">A minimal, reproducible bug report</div>      <pre><code># BAD: "pandas crashes sometimes when I read my CSV, please fix"
 
+# GOOD: a minimal script anyone can run to see the exact failure
+import pandas as pd
+from io import StringIO
+
+csv_text = "a,b\n1,\"unterminated\n2,3\n"
+pd.read_csv(StringIO(csv_text))
+# Expected: a clear ParserError
+# Actual:   silently returns a malformed 1-row DataFrame
+# pandas version: 2.2.1, Python 3.12.1, OS: Ubuntu 22.04</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal (typical open-source contribution flow)</div>      <pre><code>git clone https://github.com/you/requests.git   # your fork
+cd requests
+git checkout -b fix/timeout-docstring
+
+# make your change, then:
+pytest tests/                     # confirm the existing test suite still passes
+git commit -am "Fix outdated timeout default in docstring"
+git push origin fix/timeout-docstring
+# then open a pull request against the upstream repository</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -120,11 +147,14 @@
         <li>A minimal, reliable bug reproduction is genuinely valuable, even without a code fix attached.</li>
         <li>PEPs (Python Enhancement Proposals) are how language-level changes are proposed, discussed, and decided — worth reading even if you never write one.</li>
         <li>Contributing docs or tests to a project you already rely on is a realistic, high-value starting point before attempting deeper code changes.</li>
+        <li>Search existing issues before opening a new one — someone may have already reported, or even started fixing, the same problem.</li>
+        <li>Run the existing test suite locally before submitting a change, and add a new test that specifically covers whatever you fixed.</li>
+        <li>A focused pull request that does one thing is reviewed faster, and more likely to be accepted, than a large one that mixes several unrelated changes together.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Python library you use regularly, find an open issue labeled 'good first issue' or a documentation gap, and submit a fix or a detailed, reproducible bug report.</p>
+      <p>Pick a Python library you use regularly, find an open issue labeled 'good first issue' or a documentation gap, and submit a fix or a detailed, reproducible bug report. Before submitting, write and run at least one test that covers the change you made, and check the project's CONTRIBUTING guide for its specific expectations around commit messages, branch naming, and pull request format.</p>
     </div>
   </article>
 

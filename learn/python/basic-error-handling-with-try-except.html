@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><code>try</code>/<code>except</code> catches errors so your program can respond gracefully instead of crashing. Catch specific exception types (<code>ValueError</code>, <code>KeyError</code>) rather than a bare <code>except:</code>, which silently swallows every error including ones you didn't anticipate.</p>
-    <p><code>finally</code> runs regardless of whether an exception occurred — useful for cleanup code like closing a connection. <code>else</code> on a try block runs only if no exception was raised.</p>
+    <p class="lead"><code>try</code>/<code>except</code> catches errors so your program can respond gracefully instead of crashing. Catch specific exception types (<code>ValueError</code>, <code>KeyError</code>) rather than a bare <code>except:</code>, which silently swallows every error including ones you didn't anticipate — even a typo turning into a <code>NameError</code> would be caught and hidden by a bare except, making the real bug much harder to find.</p>
+    <p>Python's exceptions form a hierarchy — <code>ValueError</code>, <code>TypeError</code>, and <code>KeyError</code> all inherit from <code>Exception</code>, which itself inherits from <code>BaseException</code>. Catching a broad type like <code>Exception</code> catches everything below it in the tree, so ordering matters: list more specific except clauses before more general ones, since Python checks them top to bottom and stops at the first match.</p>
+    <p><code>finally</code> runs regardless of whether an exception occurred, and even runs if the <code>try</code> or <code>except</code> block hits a <code>return</code> statement — it's the right place for cleanup code like closing a connection that absolutely must happen either way. <code>else</code> on a try block runs only if no exception was raised, which is a clean way to separate 'code that might fail' from 'code that should only run on success.'</p>
+    <p>You can catch multiple exception types in one clause with a tuple — <code>except (ValueError, TypeError):</code> — when you want the same handling for either. The <code>as</code> keyword (<code>except ValueError as e:</code>) binds the actual exception object to a name so you can inspect its message or attributes rather than just knowing that something went wrong.</p>
+    <p>Raise your own exceptions with <code>raise ValueError("message")</code> when a function receives genuinely invalid input it can't proceed with — this is the standard Python way to signal 'caller, you did something wrong,' and is generally preferred over returning a special sentinel value like <code>-1</code> or <code>None</code> that a caller might forget to check for.</p>
+    <p>Inside an <code>except</code> block, <code>raise</code> with no arguments re-raises the current exception unchanged, preserving its original traceback — useful when you want to log something and still let the error propagate. <code>raise NewError(...) from original_error</code> chains a new exception to the one that caused it, which keeps the root cause visible in the traceback instead of losing it.</p>
     <div class="code-block">
 <div class="cap">errors.py</div>      <pre><code>def safe_divide(a, b):
     try:
@@ -123,18 +127,55 @@
 print(safe_divide(10, 2))
 print(safe_divide(10, 0))</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">try_except_else_finally.py</div>      <pre><code>def load_config(path):
+    try:
+        with open(path) as f:
+            data = f.read()
+    except FileNotFoundError:
+        print(f"{path} not found, using defaults")
+        return {}
+    except PermissionError as e:
+        print(f"Can't read {path}: {e}")
+        return {}
+    else:
+        print("Loaded config successfully")   # only runs if no exception
+        return {"raw": data}
+    finally:
+        print("Done attempting to load config")  # always runs</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">custom_exceptions.py</div>      <pre><code>class InsufficientFundsError(Exception):
+    pass
+
+def withdraw(balance, amount):
+    if amount &gt; balance:
+        raise InsufficientFundsError(
+            f"Cannot withdraw {amount}, balance is only {balance}"
+        )
+    return balance - amount
+
+try:
+    withdraw(100, 250)
+except InsufficientFundsError as e:
+    print(f"Transaction failed: {e}")</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Catch specific exceptions (<code>except ValueError:</code>), never a bare <code>except:</code> that hides unrelated bugs.</li>
+        <li>Exceptions form a hierarchy under <code>Exception</code>; list more specific except clauses before more general ones.</li>
         <li><code>finally</code> always runs, exception or not — the right place for cleanup like closing files or connections.</li>
+        <li><code>else</code> on a try block runs only when no exception was raised, cleanly separating risky code from success-only code.</li>
         <li>You can catch multiple exception types in one clause: <code>except (ValueError, TypeError):</code>.</li>
-        <li>Raise your own exceptions with <code>raise ValueError("message")</code> when a function receives genuinely invalid input.</li>
+        <li>Raise your own exceptions with <code>raise ValueError("message")</code> when a function receives genuinely invalid input, rather than returning a sentinel value.</li>
+        <li>Custom exception classes (subclassing <code>Exception</code>) let calling code catch your specific error type instead of a generic one.</li>
+        <li><code>raise ... from original_error</code> chains exceptions so the underlying cause stays visible in the traceback.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that safely converts user input to an integer, catching ValueError and returning None with a friendly message on invalid input.</p>
+      <p>Write a function that safely converts user input to an integer, catching ValueError and returning None with a friendly message on invalid input. Then define a custom NegativeValueError exception, raise it from a second function when given a negative number, and write a try/except/else/finally block that calls the function and demonstrates all four clauses running (or not) as appropriate.</p>
     </div>
   </article>
 

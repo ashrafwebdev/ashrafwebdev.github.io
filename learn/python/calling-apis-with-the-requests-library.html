@@ -110,16 +110,56 @@
   </div>
 
   <article>
-    <p class="lead"><code>requests</code> is the de facto standard library for making HTTP calls from Python — dramatically simpler than the built-in <code>urllib</code>. <code>requests.get(url)</code> returns a Response object with <code>.status_code</code>, <code>.text</code>, and <code>.json()</code>.</p>
-    <p>Always check whether a request succeeded before trusting its data — <code>response.raise_for_status()</code> throws an exception automatically if the server returned an error status.</p>
+    <p class="lead"><code>requests</code> is the de facto standard library for making HTTP calls from Python — dramatically simpler than the built-in <code>urllib</code>. <code>requests.get(url)</code> returns a <code>Response</code> object with <code>.status_code</code>, <code>.text</code> (raw body as a string), and <code>.json()</code> (body parsed directly into a Python dict/list, when the response actually is JSON).</p>
+    <p>Always check whether a request succeeded before trusting its data — <code>response.raise_for_status()</code> raises an exception automatically if the server returned a 4xx or 5xx status, which is far more reliable than manually checking <code>status_code == 200</code> and remembering every other success code that might come back.</p>
+    <p>Pass query parameters with the <code>params=</code> dict argument rather than hand-building the URL string — <code>requests</code> handles URL-encoding special characters correctly, which is easy to get subtly wrong by string concatenation, especially with spaces or ampersands in a value.</p>
+    <p>For POST requests, <code>requests.post(url, json=payload)</code> serializes a Python dict to a JSON body and sets the <code>Content-Type: application/json</code> header automatically; <code>requests.post(url, data=payload)</code> instead sends form-encoded data, which is a different wire format entirely and a common source of confusing 400 errors when the two get mixed up.</p>
+    <p>Real-world API calls should set a timeout — <code>requests.get(url, timeout=5)</code> — because without one, a hung server on the other end will block your program indefinitely. It's also worth wrapping calls in <code>try</code>/<code>except requests.RequestException</code> to handle network failures (DNS errors, connection refused, timeouts) distinctly from HTTP error status codes.</p>
+    <p>For repeated calls to the same host, a <code>requests.Session()</code> reuses the underlying TCP connection (via HTTP keep-alive) and lets you set shared headers — like an auth token — once instead of on every single call, which is both faster and less repetitive than calling <code>requests.get</code> directly each time.</p>
     <div class="code-block">
 <div class="cap">api.py</div>      <pre><code>import requests
 
-response = requests.get("https://api.example.com/users/1")
+response = requests.get("https://api.example.com/users/1", timeout=5)
 response.raise_for_status()  # raises an exception on 4xx/5xx
 
 user = response.json()
 print(user["name"])</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">post_and_params.py</div>      <pre><code>import requests
+
+# GET with query params -- becomes ?q=python&amp;page=2
+search = requests.get(
+    "https://api.example.com/search",
+    params={"q": "python", "page": 2},
+    timeout=5,
+)
+
+# POST with a JSON body
+created = requests.post(
+    "https://api.example.com/users",
+    json={"name": "Amina", "role": "admin"},
+    timeout=5,
+)
+created.raise_for_status()
+print(created.status_code, created.json())</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">session_and_errors.py</div>      <pre><code>import requests
+
+session = requests.Session()
+session.headers.update({"Authorization": "Bearer TOKEN123"})
+
+try:
+    r = session.get("https://api.example.com/me", timeout=5)
+    r.raise_for_status()
+    print(r.json())
+except requests.exceptions.Timeout:
+    print("The request timed out")
+except requests.exceptions.HTTPError as e:
+    print(f"Server returned an error: {e}")
+except requests.exceptions.RequestException as e:
+    print(f"Network problem: {e}")</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -127,12 +167,15 @@ print(user["name"])</code></pre>
         <li><code>response.json()</code> parses the response body directly into a Python dict/list.</li>
         <li><code>response.raise_for_status()</code> is the idiomatic way to fail fast on HTTP errors instead of silently continuing with bad data.</li>
         <li>Pass query parameters with the <code>params=</code> dict argument rather than hand-building the URL string.</li>
-        <li>For POST requests, use <code>requests.post(url, json=payload)</code> to send a JSON body with the correct content-type header set automatically.</li>
+        <li>Use <code>json=payload</code> for a JSON body versus <code>data=payload</code> for form-encoded data — they are not interchangeable.</li>
+        <li>Always set a <code>timeout=</code> — without one, a hung server blocks your program indefinitely.</li>
+        <li>Catch <code>requests.exceptions.RequestException</code> (and its subclasses like <code>Timeout</code> and <code>HTTPError</code>) to distinguish network failures from HTTP error responses.</li>
+        <li><code>requests.Session()</code> reuses connections and lets you set headers like auth tokens once instead of per-call.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script using requests to fetch data from a free public API (like https://jsonplaceholder.typicode.com/users) and print each user's name.</p>
+      <p>Write a script using requests to fetch data from a free public API (like https://jsonplaceholder.typicode.com/users) and print each user's name, being sure to call raise_for_status() and set a timeout. Then extend it to POST a new record to a test endpoint (jsonplaceholder supports this) and print the status code and JSON response you get back.</p>
     </div>
   </article>
 

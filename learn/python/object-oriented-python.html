@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">A class is a blueprint for creating objects. <code>__init__</code> is the constructor, run automatically when a new instance is created, and <code>self</code> refers to the specific instance a method is being called on.</p>
-    <p>Inheritance lets a class reuse and extend another class's behavior with <code>class Dog(Animal):</code>. Overriding a method in the subclass replaces the parent's version for instances of that subclass.</p>
+    <p class="lead">A class is a blueprint for creating objects. <code>__init__</code> is the constructor, run automatically when a new instance is created, and <code>self</code> refers to the specific instance a method is being called on — it must be the first parameter of every instance method, and Python supplies it automatically when you call <code>instance.method()</code>.</p>
+    <p>Inheritance lets a class reuse and extend another class's behavior with <code>class Dog(Animal):</code>. Overriding a method in the subclass replaces the parent's version for instances of that subclass, and calling <code>super().__init__(...)</code> from the subclass's constructor lets it extend the parent's setup logic instead of fully duplicating it.</p>
+    <p>Instance attributes (set on <code>self</code> inside <code>__init__</code>) belong to each individual object, while class attributes (defined directly in the class body) are shared by every instance — a subtle but important distinction, since mutating a shared mutable class attribute from one instance can unexpectedly affect every other instance.</p>
+    <p>Python supports a handful of special/'dunder' methods beyond <code>__init__</code> that let your objects work naturally with built-in syntax: <code>__str__</code> controls what <code>print(obj)</code> shows, <code>__eq__</code> controls what <code>==</code> does between two instances, and <code>__repr__</code> controls the unambiguous, developer-facing representation shown in a debugger or REPL.</p>
+    <p>'Properties' (<code>@property</code>) let a method be accessed like a plain attribute — <code>obj.area</code> instead of <code>obj.area()</code> — which is useful for computed values that should look read-only from the outside, and lets you add validation logic to attribute access later without breaking every caller's existing code.</p>
+    <p>Python supports multiple inheritance, and resolves ambiguous method lookups using the Method Resolution Order (MRO), computed with the C3 linearization algorithm — but deep or diamond-shaped inheritance hierarchies get hard to reason about fast, so most experienced Python developers favor composition (an object holding a reference to another) over deep inheritance chains whenever it's a reasonable option.</p>
     <div class="code-block">
 <div class="cap">classes.py</div>      <pre><code>class Animal:
     def __init__(self, name):
@@ -127,18 +131,57 @@ class Dog(Animal):
 rex = Dog("Rex")
 print(rex.speak())</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">dunder_and_property.py</div>      <pre><code>class Rectangle:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    @property
+    def area(self):
+        return self.width * self.height
+
+    def __repr__(self):
+        return f"Rectangle({self.width}, {self.height})"
+
+    def __eq__(self, other):
+        return (self.width, self.height) == (other.width, other.height)
+
+r = Rectangle(4, 5)
+print(r)          # Rectangle(4, 5) -- uses __repr__
+print(r.area)     # 20 -- looks like an attribute, runs like a method
+print(r == Rectangle(4, 5))  # True</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">super_and_shared_state.py</div>      <pre><code>class Vehicle:
+    def __init__(self, make, model):
+        self.make = make
+        self.model = model
+
+class Car(Vehicle):
+    def __init__(self, make, model, doors):
+        super().__init__(make, model)  # extend, don't duplicate
+        self.doors = doors
+
+car = Car("Toyota", "Corolla", 4)
+print(car.make, car.doors)</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>self</code> must be the first parameter of every instance method — Python passes it automatically when you call <code>instance.method()</code>.</li>
         <li><code>__init__</code> runs once, automatically, right after a new instance is created.</li>
         <li><code>super().__init__(...)</code> calls the parent class's constructor, useful when a subclass needs to extend rather than fully replace it.</li>
-        <li>Python supports multiple inheritance, but keep hierarchies shallow — deep inheritance trees get hard to reason about fast.</li>
+        <li>Instance attributes belong to one object; class attributes are shared across all instances of the class, which can be a subtle bug source if they're mutable.</li>
+        <li><code>@property</code> makes a method accessible like a plain attribute, useful for computed, read-only-looking values.</li>
+        <li><code>__repr__</code>, <code>__str__</code>, and <code>__eq__</code> are the dunder methods most worth overriding — they control debugging output, printing, and equality checks respectively.</li>
+        <li>Python supports multiple inheritance, resolved via the Method Resolution Order, but keep hierarchies shallow — deep inheritance trees get hard to reason about fast.</li>
+        <li>Favor composition (an object holding a reference to another) over deep inheritance when either would reasonably solve the design problem.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Shape base class with an area() method returning 0, then Circle and Rectangle subclasses that override it with the correct formula.</p>
+      <p>Create a Shape base class with an area() method returning 0, then Circle and Rectangle subclasses that override it with the correct formula. Then add a __repr__ method to each subclass so printing an instance shows something readable, and write a small script that sorts a list of mixed Circle/Rectangle instances by area using sorted(shapes, key=lambda s: s.area()).</p>
     </div>
   </article>
 

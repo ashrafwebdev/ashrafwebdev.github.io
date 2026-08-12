@@ -110,14 +110,44 @@
   </div>
 
   <article>
-    <p class="lead">Functions are defined with <code>def</code>. Parameters can have default values, so callers only need to supply the arguments that differ from the default — extremely common for optional configuration.</p>
-    <p>Python also supports keyword arguments, letting callers specify arguments by name rather than position, which makes call sites more readable when a function takes several parameters.</p>
+    <p class="lead">Functions are defined with <code>def</code>. Parameters can have default values, so callers only need to supply the arguments that differ from the default — extremely common for optional configuration, like a page-size parameter that most callers leave alone.</p>
+    <p>Python also supports keyword arguments, letting callers specify arguments by name rather than position, which makes call sites more readable when a function takes several parameters — compare <code>resize(img, 800, 600)</code> to <code>resize(img, width=800, height=600)</code>, and it's obvious which call is easier to review months later.</p>
+    <p><code>*args</code> collects any extra positional arguments into a tuple, and <code>**kwargs</code> collects any extra keyword arguments into a dict, which lets a function accept a variable, open-ended number of inputs — this is exactly how functions like <code>print()</code> can take any number of values to print.</p>
+    <p>A genuinely important gotcha: default argument values are evaluated exactly once, when the function is <b>defined</b>, not each time it's called. Using a mutable default like <code>def add_item(item, bucket=[]):</code> means every call that relies on the default shares the exact same list, and items silently pile up across unrelated calls — the fix is to default to <code>None</code> and create the mutable object inside the function body.</p>
+    <p>Since Python 3.8, you can force certain parameters to be keyword-only (after a bare <code>*</code> in the signature) or positional-only (before a bare <code>/</code>), which lets a library author lock down exactly how a function is meant to be called and keep the freedom to rename internal parameter names later without breaking callers.</p>
+    <p>Functions are first-class objects in Python: they can be assigned to variables, stored in a list, and passed as arguments to other functions, which is the foundation that decorators, callbacks, and the whole functional-programming style in Python (<code>map</code>, <code>filter</code>, <code>sorted(key=...)</code>) is built on.</p>
     <div class="code-block">
 <div class="cap">functions.py</div>      <pre><code>def greet(name, greeting="Hello"):
     return f"{greeting}, {name}!"
 
 print(greet("Amina"))
 print(greet("Yusuf", greeting="Welcome"))</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">args_kwargs.py</div>      <pre><code>def order_summary(customer, *items, **details):
+    print(f"Customer: {customer}")
+    print(f"Items: {items}")
+    print(f"Details: {details}")
+
+order_summary("Amina", "book", "pen", gift_wrap=True, express=False)
+# Items: ('book', 'pen')
+# Details: {'gift_wrap': True, 'express': False}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">mutable_default_bug.py</div>      <pre><code># BAD -- the empty list is created once, and reused on every call
+def add_item(item, bucket=[]):
+    bucket.append(item)
+    return bucket
+
+print(add_item("apple"))   # ['apple']
+print(add_item("banana"))  # ['apple', 'banana']  -- surprise!
+
+# GOOD -- default to None, create a fresh list inside the function
+def add_item_fixed(item, bucket=None):
+    if bucket is None:
+        bucket = []
+    bucket.append(item)
+    return bucket</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -126,11 +156,14 @@ print(greet("Yusuf", greeting="Welcome"))</code></pre>
         <li>Keyword arguments (<code>greeting="Welcome"</code>) can be passed in any order once positional arguments are supplied.</li>
         <li>A function without an explicit <code>return</code> returns <code>None</code>.</li>
         <li><code>*args</code> and <code>**kwargs</code> let a function accept a variable number of positional and keyword arguments.</li>
+        <li>Parameters after a bare <code>*</code> in the signature become keyword-only; parameters before a bare <code>/</code> become positional-only.</li>
+        <li>Functions are first-class values — they can be stored in variables and collections and passed to other functions, e.g. as the <code>key=</code> argument to <code>sorted()</code>.</li>
+        <li>The fix for the mutable-default bug is always the same pattern: default to <code>None</code>, then create the real mutable object inside the function body.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that formats a price with a default currency symbol parameter, then call it once with the default and once overriding it.</p>
+      <p>Write a function that formats a price with a default currency symbol parameter, then call it once with the default and once overriding it by keyword. Then write a second function demonstrating the mutable-default-argument bug on purpose with a list, call it twice, and fix it using the None-default pattern.</p>
     </div>
   </article>
 

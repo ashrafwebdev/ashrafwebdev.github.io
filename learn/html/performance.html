@@ -112,6 +112,10 @@
   <article>
     <p class="lead">The browser doesn't have to load everything on a page immediately, and HTML gives you direct control over that. <code>loading="lazy"</code> on an <code>&lt;img&gt;</code> defers loading images that are off-screen until the user scrolls near them — a one-attribute performance win.</p>
     <p>Resource hints go the other direction: <code>&lt;link rel="preload"&gt;</code> tells the browser to fetch something critical (a font, a hero image) as early as possible, and <code>rel="preconnect"</code> warms up a connection to another domain before you actually need it.</p>
+    <p>There's a full spectrum of resource hints beyond just those two, roughly ordered from cheapest to most aggressive: <code>dns-prefetch</code> only resolves a domain name in advance (the lightest possible hint), <code>preconnect</code> does that plus the full TCP and TLS handshake, <code>prefetch</code> downloads a resource likely needed for the <i>next</i> navigation at low priority, and <code>preload</code> downloads something needed on the <i>current</i> page at high priority. Reaching for the strongest hint everywhere is a common mistake — each one consumes real bandwidth and competes with everything else the browser is already trying to load.</p>
+    <p><code>loading="lazy"</code> should never be applied to the largest image visible without scrolling (commonly called the hero image or LCP element) — deferring it delays the single metric, Largest Contentful Paint, that most directly affects how fast a page <i>feels</i> to load. That same hero image is often a great candidate for <code>fetchpriority="high"</code> instead, which tells the browser to fetch it before other same-priority resources on the page.</p>
+    <p><code>&lt;script&gt;</code> tags have their own loading controls worth knowing alongside resource hints: a plain <code>&lt;script src="..."&gt;</code> blocks HTML parsing entirely until it downloads and runs, <code>defer</code> downloads in the background and runs after parsing finishes (in document order), and <code>async</code> downloads in the background and runs as soon as it's ready, which can be before or after parsing finishes and out of order relative to other scripts. Using <code>defer</code> on non-critical scripts is one of the simplest, most reliable performance wins available in plain HTML.</p>
+    <p>Iframes get the same lazy-loading treatment as images (<code>&lt;iframe loading="lazy"&gt;</code>), which matters more than it might seem — a single embedded video or map iframe can weigh far more than the entire rest of the page combined, so deferring off-screen ones is often a bigger win than lazy-loading individual images.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;!-- Defer offscreen images --&gt;
 &lt;img src="below-the-fold.jpg" alt="..." loading="lazy"&gt;
@@ -122,18 +126,42 @@
 &lt;!-- Warm up a third-party connection --&gt;
 &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">hero image priority and deferred scripts</div>      <pre><code>&lt;!-- The largest above-the-fold image: never lazy, boost priority instead --&gt;
+&lt;img src="hero.jpg" alt="Fresh pancakes on a plate" fetchpriority="high"&gt;
+
+&lt;!-- Lightest hint: just resolve the DNS ahead of time --&gt;
+&lt;link rel="dns-prefetch" href="https://analytics.example.com"&gt;
+
+&lt;!-- Non-critical script: download in background, run after parsing, in order --&gt;
+&lt;script src="/js/comments-widget.js" defer&gt;&lt;/script&gt;
+
+&lt;!-- Off-screen iframe: defer just like an image --&gt;
+&lt;iframe src="https://maps.example.com/embed" loading="lazy" title="Store location map"&gt;&lt;/iframe&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: lazy-loading the hero image</div>      <pre><code>&lt;!-- Wrong: this is the first thing visible on the page —
+     lazy-loading it delays what the user sees first --&gt;
+&lt;img src="hero.jpg" alt="Fresh pancakes on a plate" loading="lazy"&gt;
+
+&lt;!-- Right: load it eagerly (the default) and prioritize it --&gt;
+&lt;img src="hero.jpg" alt="Fresh pancakes on a plate" fetchpriority="high"&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>loading="lazy"</code> is a native browser feature — no JavaScript library required.</li>
-        <li>Never lazy-load the hero image visible on first paint — that delays what the user sees first.</li>
+        <li>Never lazy-load the hero image visible on first paint — that delays what the user sees first (and hurts Largest Contentful Paint).</li>
         <li><code>preload</code> is for things needed almost immediately; overusing it competes for bandwidth and backfires.</li>
-        <li><code>preconnect</code> is cheap insurance for any third-party domain you know you'll fetch from soon.</li>
+        <li><code>preconnect</code> is cheap insurance for any third-party domain you know you'll fetch from soon; <code>dns-prefetch</code> is an even lighter version.</li>
+        <li><code>fetchpriority="high"</code> can push your most important image ahead of same-priority resources.</li>
+        <li><code>defer</code> and <code>async</code> on scripts avoid blocking HTML parsing — prefer <code>defer</code> for most non-critical scripts.</li>
+        <li><code>&lt;iframe loading="lazy"&gt;</code> defers heavy embeds (maps, videos) the same way images do, often with a bigger payoff.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take a page with several images and add loading="lazy" to every image below the first screenful, then check the Network tab to confirm they load later.</p>
+      <p>Take a page with several images and add loading="lazy" to every image below the first screenful, then check the Network tab to confirm they load later. Add fetchpriority="high" to your hero image, switch any render-blocking script tags to defer, and compare the page's load waterfall in dev tools before and after.</p>
     </div>
   </article>
 

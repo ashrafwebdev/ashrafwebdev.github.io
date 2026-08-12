@@ -112,27 +112,54 @@
   <article>
     <p class="lead">A component library is only as useful as its documentation. At this level, the technical build (the components themselves) is often the easier half — the harder half is writing docs clear enough that another developer can use your component correctly without asking you a question.</p>
     <p>Tools like Storybook let you develop and document components in isolation, showing every variant (states, sizes, edge cases) alongside usage code snippets, so the documentation and the working demo are the same artifact and can't drift out of sync.</p>
+    <p>Good component documentation covers more than a single happy-path example. At minimum it should show: every meaningful variant (size, color, state), the full list of attributes/props with their types and default values, at least one accessibility note (does this need a label? does it manage focus?), and a clear statement of what the component explicitly does <i>not</i> handle, so a consumer doesn't have to read the source code to find out.</p>
+    <p>Isolating components in a tool like Storybook has a secondary benefit beyond documentation: it forces each component to actually work standalone, outside the context of any one page's CSS or global styles that might have been accidentally propping it up. A component that looks fine on the one page it was built for but breaks the moment it's dropped into Storybook in isolation usually has a hidden dependency on something outside itself that needs fixing.</p>
+    <p>Cataloging isn't just a list of finished components — a mature library also documents its design tokens (colors, spacing scale, type scale) as the shared vocabulary every component is built from, and states clearly which components are stable and production-ready versus experimental or deprecated, so consumers know what's safe to build on.</p>
+    <p>A changelog and a documented contribution process matter as much as the docs once more than one team depends on the library. Silent breaking changes — an attribute quietly renamed, a default color quietly shifted — erode trust fast and push consumer teams toward pinning old versions forever rather than upgrading, which defeats the whole point of having a shared library.</p>
     <div class="code-block">
 <div class="cap">A documented component's usage block</div>      <pre><code>&lt;!--
   &lt;app-badge&gt; — status indicator
   Attributes:
     variant: "success" | "warning" | "error" (default: "success")
+  Accessibility:
+    Renders with role="status" so screen readers announce updates.
+  Does NOT handle:
+    Dismissal / close button — wrap it yourself if you need one.
   Usage:
 --&gt;
 &lt;app-badge variant="warning"&gt;Pending review&lt;/app-badge&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">a minimal Storybook story</div>      <pre><code>// Button.stories.js
+export default {
+  title: 'Components/Button',
+  component: 'app-button',
+};
+
+export const Primary = {
+  args: { variant: 'primary', label: 'Save changes' },
+};
+
+export const Disabled = {
+  args: { variant: 'primary', label: 'Save changes', disabled: true },
+};</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Documentation that lives next to a live, interactive demo (like Storybook) stays accurate far longer than a separate wiki page.</li>
         <li>Document every prop/attribute, every variant, and at least one real usage example per component.</li>
+        <li>State explicitly what a component does NOT handle — it's as useful as documenting what it does.</li>
+        <li>Isolated development forces components to work standalone, exposing hidden dependencies on outside CSS.</li>
+        <li>Document shared design tokens (colors, spacing, type scale) as the vocabulary every component draws from.</li>
+        <li>Mark each component's maturity (stable, experimental, deprecated) so consumers know what's safe to build on.</li>
         <li>A changelog matters as much as the docs once other teams depend on your library.</li>
         <li>Design a versioning and deprecation policy before your first breaking change, not after.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Set up Storybook (or a simple HTML style-guide page) for the component library you started in the previous lesson, documenting every variant.</p>
+      <p>Set up Storybook (or a simple HTML style-guide page) for the component library you started in the previous lesson, documenting every variant. For each component, add a short 'does not handle' note and an accessibility note, then write a one-paragraph changelog entry and a deprecation notice for one attribute you're renaming.</p>
     </div>
   </article>
 

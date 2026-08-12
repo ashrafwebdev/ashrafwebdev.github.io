@@ -110,27 +110,56 @@
   </div>
 
   <article>
-    <p class="lead"><code>print()</code> writes to standard output, and accepts multiple arguments separated by commas, joined with a space by default. <code>input()</code> pauses execution and reads a line of text typed by the user, always returning it as a string.</p>
-    <p>f-strings (<code>f"..."</code>) are the modern, preferred way to embed variables and expressions directly inside a string, replacing older <code>%</code>-formatting and <code>.format()</code> styles.</p>
+    <p class="lead"><code>print()</code> writes to standard output, and accepts multiple arguments separated by commas, joined with a space by default. <code>input(prompt)</code> displays the prompt, pauses execution, and reads a single line of text typed by the user, always returning it as a string — even if the user typed digits.</p>
+    <p>f-strings (<code>f"..."</code>) are the modern, preferred way to embed variables and expressions directly inside a string, replacing older <code>%</code>-formatting and <code>.format()</code> styles. Anything inside the curly braces is a real Python expression, not just a variable name — you can call a method, index into a list, or do arithmetic right there.</p>
+    <p>f-strings also support a format-spec mini-language after a colon: <code>f"{price:.2f}"</code> formats to two decimal places, <code>f"{count:,}"</code> adds thousands separators, and <code>f"{value:>10}"</code> right-aligns within a 10-character field — genuinely useful for lining up tabular console output.</p>
+    <p>Because <code>input()</code> always returns a string, converting it before doing arithmetic is not optional: <code>int(input(...))</code> or <code>float(input(...))</code> is the normal pattern, and both raise a <code>ValueError</code> if the text isn't actually a valid number, which is exactly the kind of thing to wrap in a <code>try</code>/<code>except</code> in real programs.</p>
+    <p><code>print()</code> takes two often-overlooked keyword arguments: <code>sep</code> controls what goes between multiple printed values (default is a single space), and <code>end</code> controls what's printed after everything else (default is a newline) — setting <code>end=""</code> is the standard way to build up output on one line across multiple print calls.</p>
+    <p>For anything beyond quick console scripts, the built-in <code>logging</code> module is a better fit than scattering <code>print()</code> calls everywhere — it supports severity levels, timestamps, and can be redirected to a file, none of which plain <code>print()</code> gives you for free.</p>
     <div class="code-block">
 <div class="cap">io_basics.py</div>      <pre><code>name = input("What's your name? ")
 age_text = input("How old are you? ")
-age = int(age_text)  # input() always returns a string — convert explicitly
+age = int(age_text)  # input() always returns a string -- convert explicitly
 
 print(f"Hello, {name}! In 10 years you'll be {age + 10}.")</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">formatting.py</div>      <pre><code>price = 1234.5
+quantity = 3
+
+print(f"Total: ${price * quantity:,.2f}")   # Total: $3,703.50
+
+for i in range(3):
+    print(i, end=" -&gt; ")
+print("done")   # 0 -&gt; 1 -&gt; 2 -&gt; done</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">safe_input.py</div>      <pre><code>def read_int(prompt):
+    while True:
+        text = input(prompt)
+        try:
+            return int(text)
+        except ValueError:
+            print(f"'{text}' isn't a whole number, try again.")
+
+age = read_int("How old are you? ")
+print(f"You are {age} years old.")</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>input()</code> always returns a string — convert with <code>int()</code>/<code>float()</code> before doing math on it.</li>
-        <li>f-strings support expressions, not just variable names: <code>f"{price * 1.1:.2f}"</code> formats to two decimals.</li>
+        <li><code>input()</code> always returns a string — convert with <code>int()</code>/<code>float()</code> before doing math on it, and expect a ValueError on bad input.</li>
+        <li>f-strings support arbitrary expressions, not just variable names: <code>f"{price * 1.1:.2f}"</code> both computes and formats in one place.</li>
+        <li>The format-spec after the colon controls decimals (<code>.2f</code>), thousands separators (<code>,</code>), and alignment/width (<code>&gt;10</code>).</li>
         <li><code>print(a, b, sep=", ")</code> customizes the separator between multiple printed values.</li>
-        <li><code>print(..., end="")</code> suppresses the automatic trailing newline.</li>
+        <li><code>print(..., end="")</code> suppresses the automatic trailing newline, letting you build a line across several print calls.</li>
+        <li>Wrap numeric conversions from <code>input()</code> in <code>try</code>/<code>except ValueError</code> whenever the user might type something unexpected.</li>
+        <li>The <code>logging</code> module is the better tool once a script grows beyond quick, throwaway console output.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that asks the user for two numbers via input(), converts them to floats, and prints their sum, difference, and product.</p>
+      <p>Write a script that asks the user for two numbers via input(), converts them to floats, and prints their sum, difference, and product, each formatted to two decimal places using an f-string format spec. Then wrap the conversion step in a try/except so the script prints a friendly error instead of crashing if the user types something that isn't a number.</p>
     </div>
   </article>
 

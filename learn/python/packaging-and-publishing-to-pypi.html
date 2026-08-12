@@ -110,30 +110,59 @@
   </div>
 
   <article>
-    <p class="lead">Publishing a reusable piece of code as a package lets anyone install it with <code>pip install your-package</code>. Modern Python packaging centers on a <code>pyproject.toml</code> file describing metadata, dependencies, and build configuration.</p>
-    <p>The <code>build</code> tool creates distributable files (a wheel and a source distribution), and <code>twine</code> uploads them to PyPI — ideally to TestPyPI first, to verify everything works before publishing for real.</p>
+    <p class="lead">Publishing a reusable piece of code as a package lets anyone install it with <code>pip install your-package</code>. Modern Python packaging centers on a <code>pyproject.toml</code> file describing metadata (name, version, dependencies) and build configuration, replacing the older setup.py-only approach that used to be the only option.</p>
+    <p>A typical package layout puts the actual importable code inside a <code>src/your_package/</code> directory (the 'src layout'), which — somewhat counterintuitively — helps catch a common packaging mistake early: forgetting to actually include a file in the built package, since tests run against the installed package rather than accidentally importing the source tree directly.</p>
+    <p>The <code>build</code> tool creates distributable files — a <b>wheel</b> (a pre-built, ready-to-install binary-ish distribution) and a <b>source distribution</b> ('sdist', the raw source others can build themselves) — and <code>twine</code> uploads them to PyPI. Uploading to TestPyPI first is standard practice, so you can verify the install actually works before publishing for real.</p>
+    <p>Package names on PyPI are claimed on a first-come basis and can't be reused once taken, even by an abandoned project, so checking name availability early avoids having to rename a package (and update every reference to it) mid-project.</p>
+    <p>Semantic versioning (<code>major.minor.patch</code>) communicates the impact of each release to your users: a patch bump means a backward-compatible bug fix, a minor bump means backward-compatible new functionality, and a major bump means a breaking change — sticking to this convention lets users' dependency pins (like <code>your-package&gt;=1.2,&lt;2.0</code>) actually mean something reliable.</p>
+    <p>A README and clear docstrings matter as much as the code itself — an undocumented package rarely gets adopted, no matter how good the code inside it is, because a potential user's first (and often only) impression is whatever they see on the PyPI project page before they've read a single line of your source.</p>
     <div class="code-block">
 <div class="cap">pyproject.toml</div>      <pre><code>[project]
 name = "my-cool-package"
 version = "0.1.0"
+description = "A small utility library"
+readme = "README.md"
 dependencies = ["requests&gt;=2.28"]
 
 [build-system]
 requires = ["setuptools&gt;=61.0"]
 build-backend = "setuptools.build_meta"</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Terminal (build and upload)</div>      <pre><code>python -m pip install --upgrade build twine
+python -m build                     # creates dist/*.whl and dist/*.tar.gz
+
+python -m twine upload --repository testpypi dist/*   # test first
+pip install --index-url https://test.pypi.org/simple/ my-cool-package
+
+python -m twine upload dist/*        # the real thing, once verified</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">src layout</div>      <pre><code>my-cool-package/
+  pyproject.toml
+  README.md
+  src/
+    my_cool_package/
+      __init__.py
+      core.py
+  tests/
+    test_core.py</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>pyproject.toml</code> is the modern standard for package metadata, replacing the older setup.py-only approach.</li>
         <li>Test your package on TestPyPI before publishing to the real PyPI — package names on PyPI can't be reused once claimed.</li>
+        <li>The <code>build</code> tool produces both a wheel and a source distribution ('sdist') — twine is what actually uploads them.</li>
+        <li>A 'src layout' (code inside <code>src/your_package/</code>) helps catch packaging mistakes that a flat layout can silently hide.</li>
         <li>Semantic versioning (major.minor.patch) communicates the impact of each release to your users.</li>
         <li>A README and clear docstrings matter as much as the code itself — an undocumented package rarely gets adopted.</li>
+        <li>Check name availability on PyPI early — an already-taken name (even an abandoned one) forces a rename later.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Package a small utility function you've written with a pyproject.toml, build it locally with the build tool, and inspect the resulting wheel file.</p>
+      <p>Package a small utility function you've written with a pyproject.toml using the src layout, build it locally with the build tool, and inspect the contents of the resulting wheel file. Then upload it to TestPyPI, install it into a fresh virtual environment from there, and confirm you can import and call your function from the installed package.</p>
     </div>
   </article>
 

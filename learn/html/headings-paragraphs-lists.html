@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Headings (<code>&lt;h1&gt;</code> through <code>&lt;h6&gt;</code>) create the outline of a page, from most important (<code>h1</code>) to least (<code>h6</code>). Use exactly one <code>&lt;h1&gt;</code> per page for its main title, and don't skip levels just to get a smaller font — that's what CSS is for.</p>
-    <p>Paragraphs (<code>&lt;p&gt;</code>) hold blocks of text. Lists come in two flavors: <code>&lt;ul&gt;</code> for unordered (bulleted) lists and <code>&lt;ol&gt;</code> for ordered (numbered) lists — both contain one or more <code>&lt;li&gt;</code> (list item) elements.</p>
+    <p class="lead">Headings (<code>&lt;h1&gt;</code> through <code>&lt;h6&gt;</code>) create the outline of a page, from most important (<code>h1</code>) to least (<code>h6</code>). Use exactly one <code>&lt;h1&gt;</code> per page for its main title, and don't skip levels just to get a smaller font — that's what CSS is for. Screen reader users frequently navigate a page heading-by-heading, so a broken outline (jumping from <code>h2</code> straight to <code>h5</code>) is a genuine usability problem, not just a style nitpick.</p>
+    <p>Paragraphs (<code>&lt;p&gt;</code>) hold blocks of text. A common beginner mistake is pressing Enter inside a paragraph to force a line break — HTML collapses ordinary whitespace and newlines into a single space, so that Enter key does nothing visually. If you actually need a line break within running text (like in a mailing address), use <code>&lt;br&gt;</code>, but reach for it sparingly; most spacing should come from CSS margins, not manual breaks.</p>
+    <p>Lists come in two flavors: <code>&lt;ul&gt;</code> for unordered (bulleted) lists and <code>&lt;ol&gt;</code> for ordered (numbered) lists — both contain one or more <code>&lt;li&gt;</code> (list item) elements. Choosing between them isn't just visual: use <code>&lt;ol&gt;</code> whenever the sequence itself carries meaning, like steps in a recipe or race rankings, and <code>&lt;ul&gt;</code> when the items could be reordered without losing meaning, like a shopping list.</p>
+    <p>Lists can be nested — an <code>&lt;li&gt;</code> can contain its own full <code>&lt;ul&gt;</code> or <code>&lt;ol&gt;</code> for sub-items, which is how outlines, nested menus, and table-of-contents structures are built. There's also a third, less common list type: <code>&lt;dl&gt;</code> (description list), which pairs <code>&lt;dt&gt;</code> (term) with <code>&lt;dd&gt;</code> (description) — a good fit for glossaries or key-value data like a spec sheet.</p>
+    <p>The <code>&lt;ol&gt;</code> element accepts a <code>start</code> attribute if a numbered list shouldn't begin at 1, and a <code>reversed</code> boolean attribute to count downward — handy for countdowns or "top 10" style lists ordered from #10 down to #1.</p>
+    <p>Semantically, headings and lists are not interchangeable with visually similar-looking markup. A row of <code>&lt;div&gt;</code>s styled to look like a bulleted list is invisible to a screen reader as a list — it announces nothing about item count or position. Choosing the right tag for the right structure is what makes a page usable by tools other than a mouse and a pair of eyes.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;h1&gt;My Recipe Blog&lt;/h1&gt;
 &lt;h2&gt;Today's Recipe: Pancakes&lt;/h2&gt;
@@ -131,18 +135,54 @@
   &lt;li&gt;Cook on a griddle&lt;/li&gt;
 &lt;/ol&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">nested lists and a description list</div>      <pre><code>&lt;h3&gt;Ingredients by section&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;Dry
+    &lt;ul&gt;
+      &lt;li&gt;2 cups flour&lt;/li&gt;
+      &lt;li&gt;1 tsp baking powder&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Wet
+    &lt;ul&gt;
+      &lt;li&gt;2 eggs&lt;/li&gt;
+      &lt;li&gt;1.5 cups milk&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;dl&gt;
+  &lt;dt&gt;Prep time&lt;/dt&gt;
+  &lt;dd&gt;10 minutes&lt;/dd&gt;
+  &lt;dt&gt;Cook time&lt;/dt&gt;
+  &lt;dd&gt;15 minutes&lt;/dd&gt;
+&lt;/dl&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">ol start and reversed</div>      <pre><code>&lt;h3&gt;Top 3 Finishers&lt;/h3&gt;
+&lt;ol start="3" reversed&gt;
+  &lt;li&gt;Casey&lt;/li&gt;
+  &lt;li&gt;Priya&lt;/li&gt;
+  &lt;li&gt;Sam&lt;/li&gt;
+&lt;/ol&gt;
+&lt;!-- Renders as: 3. Casey, 2. Priya, 1. Sam --&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>One <code>&lt;h1&gt;</code> per page; use <code>h2</code>-<code>h6</code> to nest sub-sections logically.</li>
+        <li>One <code>&lt;h1&gt;</code> per page; use <code>h2</code>-<code>h6</code> to nest sub-sections logically, without skipping levels.</li>
         <li>Never pick a heading level for its default font size — that's a CSS decision.</li>
         <li><code>&lt;ul&gt;</code> = bullets, <code>&lt;ol&gt;</code> = numbers, <code>&lt;li&gt;</code> = each item in either.</li>
+        <li>Use <code>&lt;ol&gt;</code> when order carries meaning; use <code>&lt;ul&gt;</code> when it doesn't.</li>
         <li>Lists can be nested inside list items for sub-lists.</li>
+        <li><code>&lt;dl&gt;</code>/<code>&lt;dt&gt;</code>/<code>&lt;dd&gt;</code> is the right structure for term-description or key-value content.</li>
+        <li>Pressing Enter inside a paragraph doesn't create a line break in the rendered output — whitespace collapses.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a page for your favorite recipe: an h1 title, a short paragraph description, an unordered list of ingredients, and an ordered list of steps.</p>
+      <p>Build a page for your favorite recipe: an h1 title, a short paragraph description, an unordered list of ingredients (nested into dry/wet sub-lists), and an ordered list of steps. Add a description list summarizing prep time and cook time, and try the reversed attribute on a small top-3 list to see how the numbering changes.</p>
     </div>
   </article>
 

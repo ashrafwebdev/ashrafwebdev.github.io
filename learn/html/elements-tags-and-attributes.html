@@ -111,13 +111,36 @@
 
   <article>
     <p class="lead">Every HTML page is built out of <b>elements</b>. An element usually has an opening tag, some content, and a closing tag — <code>&lt;p&gt;Hello&lt;/p&gt;</code> is a paragraph element containing the text "Hello". The tag name (<code>p</code>, <code>a</code>, <code>img</code>, <code>div</code>...) tells the browser what kind of thing this is, not how it should look.</p>
-    <p>Tags can carry extra information called <b>attributes</b>, written inside the opening tag as <code>name="value"</code> pairs. An image needs a <code>src</code> attribute to know which file to load; a link needs an <code>href</code> to know where to go. Some elements, like <code>&lt;img&gt;</code> and <code>&lt;br&gt;</code>, never have closing tags or content — they're called void elements.</p>
-    <p>Getting comfortable reading and writing this element-attribute-content pattern is the single most important HTML skill. Everything else in HTML is just more elements and more attributes.</p>
+    <p>Tags can carry extra information called <b>attributes</b>, written inside the opening tag as <code>name="value"</code> pairs. An image needs a <code>src</code> attribute to know which file to load; a link needs an <code>href</code> to know where to go. Some elements, like <code>&lt;img&gt;</code> and <code>&lt;br&gt;</code>, never have closing tags or content — they're called void elements, and writing a slash before the closing angle bracket (<code>&lt;br /&gt;</code>) is optional in HTML5, purely a style choice left over from XHTML.</p>
+    <p>Not every attribute needs a value. <b>Boolean attributes</b> like <code>disabled</code>, <code>checked</code>, and <code>required</code> are "on" simply by being present in the tag at all — writing <code>disabled="false"</code> does <i>not</i> turn a control back on, because the attribute is still present. To turn a boolean attribute off you have to remove it entirely, which is a common source of confusion for beginners.</p>
+    <p>Beyond the attributes a specific tag defines, every HTML element accepts a set of <b>global attributes</b>: <code>id</code> (a unique identifier for that one element on the page), <code>class</code> (one or more space-separated hooks for CSS or JavaScript), <code>style</code> (inline CSS, best used sparingly), and <code>title</code> (a tooltip shown on hover). Custom <code>data-*</code> attributes let you attach your own extra information to an element — <code>data-user-id="42"</code> — which JavaScript can read back through <code>element.dataset.userId</code>.</p>
+    <p>Tag and attribute names are case-insensitive in HTML — <code>&lt;DIV&gt;</code> and <code>&lt;div&gt;</code> behave identically — but the near-universal convention is lowercase, and mixing cases makes markup harder to scan. Attribute values, by contrast, are almost always wrapped in double quotes; browsers tolerate single quotes or even unquoted values in simple cases, but quoting consistently avoids subtle bugs once a value contains a space.</p>
+    <p>Elements must be properly nested: if you open <code>&lt;b&gt;</code> inside <code>&lt;p&gt;</code>, you must close <code>&lt;/b&gt;</code> before you close <code>&lt;/p&gt;</code>, not after. Browsers are famously forgiving about broken markup — they'll silently guess what you meant and fix it while rendering — but relying on that behavior produces pages that look fine in one browser and break subtly in another. Getting comfortable reading and writing this element-attribute-content pattern correctly is the single most important HTML skill; everything else in HTML is just more elements and more attributes.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;p&gt;This is a paragraph.&lt;/p&gt;
 &lt;a href="https://example.com"&gt;This is a link&lt;/a&gt;
 &lt;img src="cat.jpg" alt="A sleeping cat"&gt;
 &lt;div class="card"&gt;A generic container with a class attribute&lt;/div&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">boolean and data-* attributes</div>      <pre><code>&lt;!-- Boolean attribute: present = on. No value needed. --&gt;
+&lt;input type="text" disabled&gt;
+&lt;input type="checkbox" checked&gt;
+
+&lt;!-- Custom data attribute: readable in JS as element.dataset.userId --&gt;
+&lt;li data-user-id="42" class="user-row"&gt;Ada Lovelace&lt;/li&gt;
+
+&lt;script&gt;
+  const row = document.querySelector('.user-row');
+  console.log(row.dataset.userId); // "42"
+&lt;/script&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: bad nesting</div>      <pre><code>&lt;!-- Wrong: &lt;b&gt; closes AFTER &lt;p&gt;, tags overlap instead of nesting --&gt;
+&lt;p&gt;This is &lt;b&gt;bold text&lt;/p&gt;&lt;/b&gt;
+
+&lt;!-- Right: close tags in the reverse order you opened them --&gt;
+&lt;p&gt;This is &lt;b&gt;bold text&lt;/b&gt;&lt;/p&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -125,12 +148,15 @@
         <li>An element = opening tag + content + closing tag (or a self-contained void tag like <code>&lt;img&gt;</code>).</li>
         <li>Attributes go inside the opening tag and configure the element (<code>href</code>, <code>src</code>, <code>class</code>, <code>id</code>...).</li>
         <li>Tag names describe meaning, not appearance — styling is CSS's job, not HTML's.</li>
+        <li>Boolean attributes (<code>disabled</code>, <code>checked</code>, <code>required</code>) are on by presence alone — remove them to turn them off.</li>
+        <li>Global attributes like <code>id</code>, <code>class</code>, and <code>data-*</code> work on every element, not just specific tags.</li>
         <li>Attribute values are almost always wrapped in double quotes.</li>
+        <li>Tags nest like parentheses: close the innermost one first, in the reverse order you opened them.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a single HTML file with one paragraph, one link to a site you like, and one image tag (it's fine if the image doesn't load — focus on the syntax).</p>
+      <p>Create a single HTML file with one paragraph, one link to a site you like, and one image tag (it's fine if the image doesn't load — focus on the syntax). Then add a checkbox input with the checked boolean attribute and a list item carrying a custom data-* attribute, and use your browser's dev tools console to read that data attribute back with JavaScript.</p>
     </div>
   </article>
 
