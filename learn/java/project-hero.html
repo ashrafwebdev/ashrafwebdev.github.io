@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order and Stock: a two-service Spring Boot system with monitoring built in — Java capstone project — Learn to Code</title>
+<meta name="description" content="Order and Stock: a two-service Spring Boot system with monitoring built in — the Hero-stage capstone project for Java, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/java/project-hero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#java">Java</a> / Hero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">04</span> Hero stage capstone</span>
+    <h1>Order and Stock: a two-service Spring Boot system with monitoring built in</h1>
+    <p class="lang-line"><b>Java</b> &middot; ties together everything in the Hero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">This is the capstone of the Java track, and it deliberately doesn't fit in one Spring Boot application. Order and Stock is a small two-service system &mdash; an Order Service and an Inventory Service, each with its own database, talking to each other over HTTP &mdash; built to prove you can do more than write code that works: you can design a system that keeps working when a piece of it fails, and you can see what it's actually doing once it's running.</p>
+    <p>Every Hero-stage topic earns its place here. JVM and garbage-collection tuning matters once you have two long-running services instead of a script that exits in a second. Microservice design patterns &mdash; circuit breakers, timeouts, sagas &mdash; matter the moment two services can fail independently of each other, which they will. Advanced design patterns matter because a two-service system has real duplication and real fragility to manage, not just an excuse to use patterns for their own sake. And the discipline of writing documentation a stranger could follow, the same discipline expected of a real open-source contribution, is what turns a personal project into something you could actually hand to someone else.</p>
+    <p>The honest goal for this project is that a stranger could clone it, read your write-up, run both services locally, and understand not just what they do but why they're built the way they are &mdash; including what happens when one of them falls over.</p>
+    <ul class="used-topics">
+      <li><a href="jvm-internals-garbage-collection-and-performance.html">JVM internals, garbage collection, and performance tuning</a></li>
+      <li><a href="designing-microservice-architectures.html">Designing microservice architectures</a></li>
+      <li><a href="advanced-design-patterns-at-scale.html">Advanced design patterns at scale</a></li>
+      <li><a href="contributing-to-a-major-java-open-source-project.html">Contributing to a major Java open-source project</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>Two independently runnable Spring Boot services (an Order Service and an Inventory Service), each with its own database and its own REST API, communicating with each other over HTTP rather than sharing a process or a database.</li>
+        <li>A resilience mechanism protecting at least one cross-service call &mdash; a circuit breaker (Resilience4j, or a hand-rolled state machine following the closed/open/half-open pattern) combined with a timeout, so a slow or unreachable Inventory Service degrades the Order Service instead of hanging or crashing it.</li>
+        <li>At least one saga-style compensating action: if an order is placed and a later step fails partway through (for example, stock was reserved but payment then fails), the system runs a compensating step that undoes the earlier one (releasing the reserved stock) rather than leaving the two services in an inconsistent state.</li>
+        <li>Spring Boot Actuator enabled on both services, exposing health and metrics endpoints, plus at least one custom application metric you added yourself (for example, a counter of orders successfully placed) &mdash; real monitoring you built, not just the untouched defaults.</li>
+        <li>At least two advanced design patterns used deliberately and identifiably in the codebase (for example, a Builder for constructing Order objects, a Strategy for pricing or shipping calculation, or a Decorator adding logging or retry behavior around a service call), each with a short comment explaining what problem it's actually solving there.</li>
+        <li>Evidence of at least one deliberate JVM or performance decision: a documented choice of garbage collector or heap flags for how the services are run, and a short before/after note describing a real hot path you found with a profiler (JFR or VisualVM) and what you changed to improve it.</li>
+        <li>A written, README-quality account inside the project documenting both services' APIs, how to run the whole system locally, and the architecture decisions above &mdash; written with the same care and context you'd put into a pull request description on a serious open-source project, clear enough that a stranger could run it without asking you questions.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Build the two services independently first, each fully working and independently testable against its own database, before making them call each other at all.</li>
+        <li>Wire the Order Service to call the Inventory Service over HTTP for one simple case (checking stock availability), and get that path solid end to end before adding any resilience around it.</li>
+        <li>Add the circuit breaker, the timeout, and the saga compensating action once the happy path genuinely works &mdash; none of that logic means anything until there's a real failure mode for it to protect against.</li>
+        <li>Add Actuator and your custom metric, then deliberately introduce a slow endpoint or a thread-pool bottleneck so you have something real to observe with a profiler before you tune anything.</li>
+        <li>Go back through both codebases, find two places where a design pattern would meaningfully reduce duplication or fragility, apply it there deliberately, and write the README-quality documentation last, once the architecture has actually settled.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add a third service (for example, a Notification service) purely to practice designing a service boundary from scratch, including deciding what it should and shouldn't be responsible for.</li>
+        <li>Put both services behind a simple API gateway that handles routing and one shared concern, like request logging, in a single place instead of duplicating it in each service.</li>
+        <li>Find one real, well-scoped issue in a Java open-source project you actually use, and apply what this project taught you about writing a clear, well-tested, well-documented change to open a real pull request.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="contributing-to-a-major-java-open-source-project.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Contributing to a major Java open-source project</span></a>
+    <span></span>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>
