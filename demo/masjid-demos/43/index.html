@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eastwood Masjid — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Eastwood Masjid — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lateef:wght@400;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#4A1526; --mid:#6B2137; --soft:#F3E6EA; --accent:#D9A441; --cream:#FBF4EC;
+    --ink:#241016; --inks:#6B5158; --line:#E7D8DC; --ond:#F6E9EC; --onds:#E3C6CE;
+    --font-disp:'Lateef',serif; --font-body:'Work Sans',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10; box-shadow:0 1px 0 rgba(0,0,0,0.08);}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:16px 0; flex-wrap:wrap; gap:10px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); color:var(--accent); font-size:18px;}
+  .brand .name{font-family:var(--font-disp); font-size:19px; font-weight:700;}
+  .brand .name small{display:block; font-family:var(--font-body); font-size:11px; font-weight:400; color:var(--onds); letter-spacing:0.04em;}
+  nav.links{display:flex; gap:20px; flex-wrap:wrap;}
+  nav.links a{font-size:13.5px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+
+
+  .hero{background:var(--cream); padding:76px 0 56px; border-bottom:1px solid var(--line);}
+  .hero-inner{max-width:60ch;}
+  .hero .arabic{font-family:var(--font-disp); font-size:20px; color:var(--mid); margin:0 0 10px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(30px,4.6vw,44px); margin:0 0 16px; font-weight:700; color:var(--deep); border-left:4px solid var(--accent); padding-left:18px;}
+  .hero p{color:var(--inks); font-size:15.5px; margin:0 0 26px; padding-left:22px;}
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap; padding-left:22px;}
+
+
+  .prayer-strip{display:flex; flex-wrap:wrap; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff;}
+  .prayer-cell{flex:1; min-width:110px; padding:16px 14px; text-align:center; border-right:1px solid var(--line);}
+  .prayer-cell:last-child{border-right:none;}
+  .prayer-cell .name{font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--inks); margin-bottom:6px;}
+  .prayer-cell .adhan{font-family:var(--font-disp); font-size:19px; color:var(--deep); font-weight:700;}
+  .prayer-cell .iqamah{font-size:11px; color:var(--inks); margin-top:3px;}
+  .prayer-cell.current{background:var(--deep);}
+  .prayer-cell.current .name, .prayer-cell.current .iqamah{color:var(--onds);}
+  .prayer-cell.current .adhan{color:var(--accent);}
+
+
+  .quote-wrap{max-width:900px; margin:0 auto;}
+  blockquote{font-family:var(--font-disp); font-size:24px; color:var(--deep); line-height:1.5; margin:0 0 18px; padding:0 0 0 24px; border-left:4px solid var(--accent);}
+  .quote-attr{font-size:13px; color:var(--inks); margin:0 0 34px 28px; text-transform:uppercase; letter-spacing:0.05em;}
+  .about-quote-grid{display:grid; grid-template-columns:1fr 1fr; gap:30px;}
+  .about-quote-grid p{color:var(--inks); font-size:15px; margin:0;}
+  @media (max-width:760px){.about-quote-grid{grid-template-columns:1fr;}}
+
+
+  .events-feat{display:grid; grid-template-columns:1.2fr 1fr; gap:20px;}
+  .feat-main{background:var(--deep); color:var(--ond); border-radius:10px; padding:30px 28px; display:flex; flex-direction:column; justify-content:flex-end; min-height:220px;}
+  .feat-main .date{color:var(--accent); font-size:12.5px; font-weight:700; letter-spacing:0.05em; margin-bottom:10px;}
+  .feat-main h3{font-family:var(--font-disp); font-size:22px; margin:0 0 10px;}
+  .feat-main p{margin:0; color:var(--onds); font-size:14px;}
+  .feat-side{display:flex; flex-direction:column; gap:16px;}
+  .feat-side .side-card{border:1px solid var(--line); background:#fff; border-radius:8px; padding:16px 18px;}
+  .feat-side .side-card .date{font-size:11.5px; color:var(--inks); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:5px;}
+  .feat-side .side-card h3{margin:0 0 4px; font-size:14.5px;}
+  .feat-side .side-card p{margin:0; font-size:13px; color:var(--inks);}
+  @media (max-width:760px){.events-feat{grid-template-columns:1fr;}}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-grid .info p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-grid .info b{color:var(--deep); display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:200px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); padding:40px 0 22px; font-size:13px;}
+  .foot-cols{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:30px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.14);}
+  .foot-cols h4{color:var(--ond); font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 12px;}
+  .foot-cols p, .foot-cols a{color:var(--onds); font-size:13px; text-decoration:none; display:block; margin-bottom:8px;}
+  .foot-cols a:hover{color:var(--accent);}
+  .foot-bottom{text-align:center; padding-top:18px; font-size:12px; color:var(--onds);}
+  .foot-bottom a{color:var(--accent); text-decoration:none;}
+  @media (max-width:760px){.foot-cols{grid-template-columns:1fr;}}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">ف</span>
+      <span class="name">Eastwood Masjid<small>Serving Eastwood since 1989</small></span>
+    </a>
+    <nav class="links">
+      <a href="#prayer-times">Prayer Times</a>
+      <a href="#about">About</a>
+      <a href="#events">Events</a>
+      <a href="#donate">Donate</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+    <h1>Welcome to Eastwood Masjid</h1>
+    <p>Five daily prayers, Friday Jummah, and a full calendar of classes and programs — Eastwood Masjid is Eastwood's home for faith and community.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+      <a class="btn outline-dark" href="#donate">Donate</a>
+    </div>
+  </div>
+</section>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-strip" id="prayerTable">
+      <div class="prayer-cell" data-prayer="Fajr" data-minutes="300"><div class="name">Fajr</div><div class="adhan">5:00 AM</div><div class="iqamah">iq. 5:25 AM</div></div>
+      <div class="prayer-cell" data-prayer="Dhuhr" data-minutes="755"><div class="name">Dhuhr</div><div class="adhan">12:35 PM</div><div class="iqamah">iq. 1:00 PM</div></div>
+      <div class="prayer-cell" data-prayer="Asr" data-minutes="975"><div class="name">Asr</div><div class="adhan">4:15 PM</div><div class="iqamah">iq. 4:30 PM</div></div>
+      <div class="prayer-cell" data-prayer="Maghrib" data-minutes="1150"><div class="name">Maghrib</div><div class="adhan">7:10 PM</div><div class="iqamah">iq. 7:30 PM</div></div>
+      <div class="prayer-cell" data-prayer="Isha" data-minutes="1260"><div class="name">Isha</div><div class="adhan">9:00 PM</div><div class="iqamah">iq. 9:15 PM</div></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:15 PM, prayer at 1:35 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section class="alt" id="about">
+  
+<div class="wrap quote-wrap">
+  <p class="eyebrow">About us</p>
+  <h2>Serving worshippers of every background.</h2>
+  <blockquote>&ldquo;Our doors are open to everyone — lifelong members, new Muslims, and neighbors who just want to understand who we are.&rdquo;</blockquote>
+  <p class="quote-attr">— Imam Qasim Hadid, Resident Imam</p>
+  <div class="about-quote-grid">
+    <p>Eastwood Masjid exists to serve Eastwood and the surrounding area with a clean, well-maintained space for prayer, learning, and community gathering.</p>
+    <p>The board and volunteers keep the doors open seven days a week, funded entirely by the community members who walk through them.</p>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events-feat">
+    <div class="feat-main"><div class="date">MON, AUG 5</div><h3>Community Food Drive</h3><p>Volunteers needed to pack and distribute grocery boxes to local families.</p></div>
+    <div class="feat-side">
+    <div class="side-card"><div class="date">TUE, SEP 14</div><h3>Youth Halaqa Night</h3><p>Weekly discussion circle for teens covering seerah, fiqh, and current topics.</p></div>
+    <div class="side-card"><div class="date">WED, OCT 23</div><h3>Weekend School Registration Opens</h3><p>New-term registration for children's Qur'an and Islamic studies classes.</p></div>
+    </div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>We rely entirely on the community we serve. Your support funds daily operations, outreach, and care for families in need.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  
+<div class="wrap contact-grid">
+  <div class="info">
+    <p class="eyebrow">Visit or reach out</p>
+    <h2>Contact &amp; location</h2>
+    <p><b>Address</b>814 Orchard Street, Eastwood</p>
+    <p><b>Phone</b>(555) 494-3226</p>
+    <p><b>Email</b>info@eastwood-masjid-example.org</p>
+    <p><b>Office hours</b>Mon–Fri, 10am–5pm</p>
+  </div>
+  <div class="map-box">Map placeholder — a real build embeds your actual location</div>
+</div>
+
+</section>
+
+
+<footer>
+  <div class="wrap">
+    <div class="foot-cols">
+      <div><h4>Eastwood Masjid</h4><p>Serving Eastwood since 1989 — five daily prayers, weekend school, and a home for the whole community.</p></div>
+      <div><h4>Quick links</h4><a href="#prayer-times">Prayer times</a><a href="#events">Events</a><a href="#donate">Donate</a></div>
+      <div><h4>Contact</h4><a href="#contact">814 Orchard Street, Eastwood</a><a href="#contact">(555) 494-3226</a></div>
+    </div>
+    <div class="foot-bottom">Eastwood Masjid — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.</div>
+  </div>
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-cell[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>

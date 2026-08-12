@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brookhaven Masjid — Sample Website</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Sample masjid website design for Brookhaven Masjid — prayer times, announcements, events and donations. A portfolio demo by Mohammed Ashraf.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+  :root{
+    --deep:#1F3A2E; --mid:#2E5744; --soft:#E9F0EA; --accent:#B8934A; --cream:#F6F5EE;
+    --ink:#1A241D; --inks:#5B6A5E; --line:#DBE3DA; --ond:#EDF3EA; --onds:#C9D8CC;
+    --font-disp:'Amiri',serif; --font-body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--cream); color:var(--ink); font-family:var(--font-body); line-height:1.6;}
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  img{max-width:100%; display:block;}
+
+  .demo-badge{background:var(--deep); color:var(--onds); text-align:center; font-size:13px; padding:9px 16px; font-family:var(--font-body);}
+  .demo-badge a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent); margin-left:6px;}
+  .demo-badge a:hover{opacity:0.85;}
+
+  section{padding:64px 0;}
+  .eyebrow{font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--mid); font-weight:700; margin:0 0 10px;}
+  h2{font-family:var(--font-disp); font-size:30px; margin:0 0 30px; color:var(--deep);}
+  section.alt{background:var(--soft);}
+
+  .btn{font-family:var(--font-body); font-weight:600; font-size:14px; text-decoration:none; padding:13px 26px; border-radius:4px; display:inline-block; border:1px solid transparent; cursor:pointer;}
+  .btn.gold{background:var(--accent); color:var(--deep);}
+  .btn.gold:hover{opacity:0.88;}
+  .btn.outline{border-color:var(--ond); color:var(--ond);}
+  .btn.outline:hover{background:rgba(255,255,255,0.1);}
+  .btn.outline-dark{border-color:var(--deep); color:var(--deep);}
+  .btn.outline-dark:hover{background:rgba(0,0,0,0.05);}
+
+  .jummah-note{margin-top:16px; font-size:14px; color:var(--inks);}
+
+
+  header.site{background:var(--deep); position:sticky; top:0; z-index:10; box-shadow:0 1px 0 rgba(0,0,0,0.08);}
+  .navrow{display:flex; justify-content:space-between; align-items:center; padding:16px 0; flex-wrap:wrap; gap:10px;}
+  .brand{display:flex; align-items:center; gap:10px; color:var(--ond); text-decoration:none;}
+  .brand .mark{width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; font-family:var(--font-disp); color:var(--accent); font-size:18px;}
+  .brand .name{font-family:var(--font-disp); font-size:19px; font-weight:700;}
+  .brand .name small{display:block; font-family:var(--font-body); font-size:11px; font-weight:400; color:var(--onds); letter-spacing:0.04em;}
+  nav.links{display:flex; gap:20px; flex-wrap:wrap;}
+  nav.links a{font-size:13.5px; text-decoration:none; color:var(--onds); font-weight:500;}
+  nav.links a:hover{color:var(--accent);}
+
+
+  .hero{position:relative; overflow:hidden; background:radial-gradient(circle at 15% 20%, rgba(255,255,255,0.14), transparent 40%), radial-gradient(circle at 85% 80%, rgba(255,255,255,0.12), transparent 45%), linear-gradient(160deg, var(--deep), var(--mid) 70%); color:var(--ond); padding:90px 0 100px; text-align:center;}
+  .hero::before{content:""; position:absolute; inset:0; opacity:0.08; pointer-events:none; background-image:linear-gradient(45deg, transparent 48%, var(--accent) 49%, var(--accent) 51%, transparent 52%), linear-gradient(-45deg, transparent 48%, var(--accent) 49%, var(--accent) 51%, transparent 52%); background-size:46px 46px;}
+  .hero-inner{position:relative;}
+  .hero .arabic{font-family:var(--font-disp); font-size:26px; color:var(--accent); margin:0 0 14px;}
+  .hero h1{font-family:var(--font-disp); font-size:clamp(34px,5.5vw,54px); margin:0 0 16px; font-weight:700;}
+  .hero p{max-width:52ch; margin:0 auto 30px; color:var(--onds); font-size:16.5px;}
+  .hero-ctas{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;}
+
+
+  .prayer-pills{display:flex; gap:12px; flex-wrap:wrap;}
+  .prayer-pill{flex:1; min-width:120px; border:1px solid var(--line); border-radius:30px; background:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .prayer-pill .name{font-weight:700; color:var(--deep); font-size:13.5px;}
+  .prayer-pill .times{font-size:12.5px; color:var(--inks); text-align:right;}
+  .prayer-pill.current{background:var(--accent); border-color:var(--accent);}
+  .prayer-pill.current .name, .prayer-pill.current .times{color:var(--deep);}
+
+
+  .timeline{border-left:2px solid var(--line); margin-left:6px; padding-left:26px; display:flex; flex-direction:column; gap:26px;}
+  .timeline .about-lead{color:var(--inks); font-size:15px; margin:0 0 30px; max-width:70ch;}
+  .tl-item{position:relative;}
+  .tl-item::before{content:""; position:absolute; left:-32px; top:4px; width:11px; height:11px; border-radius:50%; background:var(--accent); border:2px solid var(--deep);}
+  .tl-item .yr{font-family:var(--font-disp); color:var(--deep); font-weight:700; font-size:16px; margin-bottom:4px;}
+  .tl-item p{margin:0; color:var(--inks); font-size:14.5px;}
+
+
+  .events-ticker{display:flex; flex-direction:column;}
+  .ticker-item{display:flex; gap:20px; padding:18px 0; border-bottom:1px solid var(--line);}
+  .ticker-item:first-child{border-top:1px solid var(--line);}
+  .ticker-item .idx{font-family:var(--font-disp); font-size:22px; color:var(--accent); font-weight:700; min-width:34px;}
+  .ticker-item .date{font-size:11.5px; color:var(--inks); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;}
+  .ticker-item h3{margin:0 0 4px; font-size:15.5px;}
+  .ticker-item p{margin:0; font-size:13.5px; color:var(--inks);}
+
+  .donate-banner{background:linear-gradient(120deg, var(--deep), var(--mid)); color:var(--ond); border-radius:10px; padding:44px 40px; text-align:center;}
+  .donate-banner h2{color:var(--ond); margin-bottom:14px;}
+  .donate-banner p{max-width:50ch; margin:0 auto 24px; color:var(--onds); font-size:15px;}
+
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+  .contact-grid .info p{font-size:14.5px; color:var(--inks); margin:0 0 10px;}
+  .contact-grid .info b{color:var(--deep); display:block; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .map-box{border:1px solid var(--line); border-radius:8px; background:repeating-linear-gradient(135deg, var(--soft), var(--soft) 10px, var(--cream) 10px, var(--cream) 20px); min-height:200px; display:flex; align-items:center; justify-content:center; color:var(--inks); font-size:13px;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr;}}
+
+
+  footer{background:var(--deep); color:var(--onds); padding:40px 0 22px; font-size:13px;}
+  .foot-cols{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:30px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.14);}
+  .foot-cols h4{color:var(--ond); font-size:13px; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 12px;}
+  .foot-cols p, .foot-cols a{color:var(--onds); font-size:13px; text-decoration:none; display:block; margin-bottom:8px;}
+  .foot-cols a:hover{color:var(--accent);}
+  .foot-bottom{text-align:center; padding-top:18px; font-size:12px; color:var(--onds);}
+  .foot-bottom a{color:var(--accent); text-decoration:none;}
+  @media (max-width:760px){.foot-cols{grid-template-columns:1fr;}}
+
+</style>
+</head>
+<body>
+
+<div class="demo-badge">This is a sample portfolio build, not a real masjid. Want a site like this? <a href="../../../index.html#contact">Get in touch →</a></div>
+
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="brand" href="#top">
+      <span class="mark">ن</span>
+      <span class="name">Brookhaven Masjid<small>Serving Brookhaven since 1976</small></span>
+    </a>
+    <nav class="links">
+      <a href="#prayer-times">Prayer Times</a>
+      <a href="#about">About</a>
+      <a href="#events">Events</a>
+      <a href="#donate">Donate</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+
+<section class="hero" id="top">
+  <div class="wrap hero-inner">
+    <p class="arabic">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+    <h1>Welcome to Brookhaven Masjid</h1>
+    <p>Serving Brookhaven with daily congregational prayer, a busy weekend school, and a community that welcomes every visitor.</p>
+    <div class="hero-ctas">
+      <a class="btn gold" href="#prayer-times">Today's prayer times</a>
+      <a class="btn outline" href="#donate">Donate</a>
+    </div>
+  </div>
+</section>
+
+
+<section id="prayer-times">
+  <div class="wrap">
+    <p class="eyebrow">Today</p>
+    <h2>Prayer &amp; Jummah times</h2>
+    
+<div class="prayer-pills" id="prayerTable">
+      <div class="prayer-pill" data-prayer="Fajr" data-minutes="320"><span class="name">Fajr</span><span class="times">5:20 AM <br>iqamah 5:35 AM</span></div>
+      <div class="prayer-pill" data-prayer="Dhuhr" data-minutes="735"><span class="name">Dhuhr</span><span class="times">12:15 PM <br>iqamah 12:45 PM</span></div>
+      <div class="prayer-pill" data-prayer="Asr" data-minutes="990"><span class="name">Asr</span><span class="times">4:30 PM <br>iqamah 5:00 PM</span></div>
+      <div class="prayer-pill" data-prayer="Maghrib" data-minutes="1130"><span class="name">Maghrib</span><span class="times">6:50 PM <br>iqamah 7:05 PM</span></div>
+      <div class="prayer-pill" data-prayer="Isha" data-minutes="1245"><span class="name">Isha</span><span class="times">8:45 PM <br>iqamah 9:15 PM</span></div>
+</div>
+<p class="jummah-note">Jummah khutbah begins at 1:20 PM, prayer at 1:45 PM. Times shown are illustrative — a real build pulls from your masjid's actual schedule and updates automatically.</p>
+
+  </div>
+</section>
+
+<section id="about">
+  
+<div class="wrap">
+  <p class="eyebrow">Our history</p>
+  <h2>A community-run masjid, open to all.</h2>
+  <p class="about-lead">Since opening, Brookhaven Masjid has grown from a small prayer room into a full community hub — five daily prayers, weekend school, and regular programs for every age group.</p>
+  <div class="timeline">
+    <div class="tl-item"><div class="yr">1976</div><p>Brookhaven Masjid opens its doors, holding its first Jummah prayer for a small group of local families.</p></div>
+    <div class="tl-item"><div class="yr">1984</div><p>Weekend Islamic school launches, and the community outgrows the original prayer hall.</p></div>
+    <div class="tl-item"><div class="yr">1991</div><p>A renovation adds a dedicated sisters' section, classrooms, and a larger parking area.</p></div>
+    <div class="tl-item"><div class="yr">Today</div><p>Beyond daily prayers, we run marriage counseling, new-Muslim support, and a food pantry that serves dozens of local families each month.</p></div>
+  </div>
+</div>
+
+</section>
+
+<section id="events">
+  
+<div class="wrap">
+  <p class="eyebrow">What's on</p>
+  <h2>Announcements &amp; upcoming events</h2>
+  <div class="events-ticker">
+    <div class="ticker-item"><div class="idx">01</div><div><div class="date">THU, AUG 20</div><h3>Islamic Finance Workshop</h3><p>A practical session on halal budgeting, saving, and avoiding riba-based debt.</p></div></div>
+    <div class="ticker-item"><div class="idx">02</div><div><div class="date">FRI, SEP 3</div><h3>Qur'an Memorization Circle</h3><p>Weekly hifz support group for students working through their memorization goals.</p></div></div>
+    <div class="ticker-item"><div class="idx">03</div><div><div class="date">SAT, OCT 12</div><h3>Blood Donation Drive</h3><p>Partnering with the local blood bank to host a community donation day on-site.</p></div></div>
+  </div>
+</div>
+
+</section>
+
+<section class="alt" id="donate">
+  <div class="wrap">
+    <div class="donate-banner">
+      <h2>Support the masjid</h2>
+      <p>Your donations cover utilities, maintenance, teacher stipends, and community programs — every contribution keeps the doors open.</p>
+      <a class="btn gold" href="#contact">Ways to give →</a>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="contact">
+  
+<div class="wrap contact-grid">
+  <div class="info">
+    <p class="eyebrow">Visit or reach out</p>
+    <h2>Contact &amp; location</h2>
+    <p><b>Address</b>865 Mill Street, Brookhaven</p>
+    <p><b>Phone</b>(555) 515-3385</p>
+    <p><b>Email</b>info@brookhaven-masjid-example.org</p>
+    <p><b>Office hours</b>Mon–Fri, 10am–5pm</p>
+  </div>
+  <div class="map-box">Map placeholder — a real build embeds your actual location</div>
+</div>
+
+</section>
+
+
+<footer>
+  <div class="wrap">
+    <div class="foot-cols">
+      <div><h4>Brookhaven Masjid</h4><p>Serving Brookhaven since 1976 — five daily prayers, weekend school, and a home for the whole community.</p></div>
+      <div><h4>Quick links</h4><a href="#prayer-times">Prayer times</a><a href="#events">Events</a><a href="#donate">Donate</a></div>
+      <div><h4>Contact</h4><a href="#contact">865 Mill Street, Brookhaven</a><a href="#contact">(555) 515-3385</a></div>
+    </div>
+    <div class="foot-bottom">Brookhaven Masjid — sample site design. Built by <a href="../../../index.html">Mohammed Ashraf</a>.</div>
+  </div>
+</footer>
+
+
+<script>
+  (function(){
+    var now = new Date();
+    var minutesNow = now.getHours() * 60 + now.getMinutes();
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#prayerTable .prayer-pill[data-minutes]'));
+    var current = null;
+    rows.forEach(function(row){
+      var m = parseInt(row.getAttribute('data-minutes'), 10);
+      if (minutesNow >= m) current = row;
+    });
+    if (!current && rows.length) current = rows[rows.length - 1];
+    if (current) current.classList.add('current');
+  })();
+</script>
+
+</body>
+</html>
