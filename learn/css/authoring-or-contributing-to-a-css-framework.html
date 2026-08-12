@@ -110,21 +110,44 @@
   </div>
 
   <article>
-    <p class="lead">Writing a framework used by thousands of developers you'll never meet is a different discipline than writing CSS for your own product — every decision needs to work across browsers, screen readers, right-to-left languages, and use cases you can't predict.</p>
-    <p>A practical entry point is contributing to an existing open-source framework (Tailwind, Open Props, Bootstrap) rather than starting from zero — fixing a browser-compatibility bug or improving a utility class teaches you the real-world constraints framework authors juggle.</p>
+    <p class="lead">Writing a framework used by thousands of developers you'll never meet is a different discipline than writing CSS for your own product — every decision needs to work across browsers and their quirks, screen readers, right-to-left languages, print stylesheets, and use cases you can't predict or test for yourself ahead of time.</p>
+    <p>A practical entry point is contributing to an existing open-source framework (Tailwind, Open Props, Bootstrap) rather than starting one from zero — fixing a browser-compatibility bug, improving a utility class, or writing a missing test teaches you the real-world constraints framework authors juggle far faster than designing an API in isolation.</p>
+    <p>Framework CSS has to account for browser support matrices explicitly: a feature you'd happily ship on your own product today (say, <code>:has()</code> or subgrid) might need a documented fallback, a feature flag, or simply a stated minimum supported browser version in a framework meant for a wide, unknown audience.</p>
+    <p>Logical properties (<code>margin-inline-start</code> instead of <code>margin-left</code>, <code>padding-block</code> instead of <code>padding-top</code>/<code>bottom</code>) are essential in framework code specifically because a framework can't assume every consumer's site is left-to-right — logical properties automatically flip direction based on the document's <code>writing-mode</code> and <code>direction</code>, while physical properties silently break in right-to-left languages.</p>
+    <p>Reading a mature framework's source (Tailwind's core, Open Props' token files, Bootstrap's Sass source) is one of the fastest ways to absorb advanced CSS patterns, because the code has already been stress-tested against thousands of real-world edge cases you'd otherwise only discover slowly, one bug report at a time.</p>
+    <p>A framework's changelog, RFC discussions, and rejected pull requests are as instructive as its shipped code — they show you how experienced authors weigh trade-offs (bundle size vs. flexibility, a new utility vs. composing existing ones) before committing to a change that thousands of downstream projects will then depend on.</p>
+    <div class="code-block">
+<div class="cap">styles.css (physical vs. logical properties)</div>      <pre><code>/* Breaks in right-to-left languages: 'start' is always the right edge in RTL */
+.card { margin-left: 16px; padding-top: 8px; }
 
+/* Framework-safe: flips automatically based on writing direction */
+.card { margin-inline-start: 16px; padding-block-start: 8px; }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">A minimal utility-class generator, the kind you'd contribute to</div>      <pre><code>const spacingScale = { 1: '4px', 2: '8px', 3: '16px', 4: '24px' };
+
+let css = '';
+for (const [key, value] of Object.entries(spacingScale)) {
+  css += `.p-${key} { padding: ${value}; }\n`;
+  css += `.m-${key} { margin: ${value}; }\n`;
+}
+// Real frameworks also emit responsive + RTL-aware variants of every utility.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Framework CSS has to account for browser support matrices, RTL languages, and accessibility in ways single-project CSS often doesn't.</li>
+        <li>Logical properties (<code>margin-inline-start</code>) are essential in framework code because you can't assume every consumer's site is left-to-right.</li>
         <li>Reading a mature framework's source (Tailwind's core, Open Props' tokens) is one of the fastest ways to absorb advanced CSS patterns.</li>
         <li>Open-source frameworks almost always have 'good first issue' labels — a natural, low-risk starting point.</li>
         <li>A framework's changelog and RFC discussions show you how experienced authors weigh trade-offs before shipping a change.</li>
+        <li>A feature safe to ship on your own product today may still need a documented fallback or minimum-version note in a framework meant for a wide audience.</li>
+        <li>Utility generators and token systems in real frameworks typically emit responsive and RTL-aware variants of every single utility, not just one flat set.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick an open-source CSS framework you've used, find an open issue labeled 'good first issue' or 'bug', and submit a fix or a detailed report.</p>
+      <p>Pick an open-source CSS framework you've used, find an open issue labeled 'good first issue' or 'bug', and submit a fix or a detailed report. As part of it, check whether the affected code uses physical or logical properties, and note in your report whether an RTL-language user would be affected differently.</p>
     </div>
   </article>
 

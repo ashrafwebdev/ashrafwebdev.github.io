@@ -110,12 +110,17 @@
   </div>
 
   <article>
-    <p class="lead"><code>prefers-color-scheme</code> is a media feature that reflects the user's OS-level theme preference (light or dark), letting you ship a dark theme without any JavaScript or a manual toggle.</p>
-    <p>The cleanest implementation redefines your custom properties inside the media query rather than duplicating every rule — since the rest of your CSS already reads colors through <code>var()</code>, updating the variables updates the whole site.</p>
+    <p class="lead"><code>prefers-color-scheme</code> is a media feature that reflects the user's OS-level theme preference (light or dark), letting you ship a dark theme without any JavaScript or a manual toggle — the browser simply applies whichever media query block matches the operating system's current setting.</p>
+    <p>The cleanest implementation redefines your custom properties inside the media query rather than duplicating every single rule — since the rest of your CSS already reads colors through <code>var()</code>, updating just the variable definitions updates the whole site's appearance in one place.</p>
+    <p>A manual toggle (light/dark/system, rather than only following the OS) needs a small amount of JavaScript to set a class or <code>data-theme</code> attribute on the root element, whose selector then takes precedence over the media query's result — the media query becomes the default the JS can override, not the only mechanism.</p>
+    <p>Test contrast ratios separately in both themes — a color pair that comfortably passes WCAG AA in light mode can fail in dark mode, since darker backgrounds change how the same foreground color reads, and vice versa. Don't assume inverting lightness alone preserves contrast.</p>
+    <p>Images, icons, and especially logos sometimes need their own dark-mode treatment beyond just background/text colors — a dark logo mark that reads fine on white can disappear entirely on a near-black background, which is usually solved with either a second image asset or an SVG whose fill color is itself driven by a custom property.</p>
+    <p>The <code>color-scheme</code> CSS property (and matching <code>&lt;meta name="color-scheme"&gt;</code> tag) tells the browser which themes your page supports, which lets it automatically darken built-in UI like form controls, scrollbars, and the default page background before your own CSS even paints — skipping it is a common reason a dark-themed page still shows a flash of white scrollbar or a light-styled dropdown.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>:root {
   --bg: #ffffff;
   --text: #1A231F;
+  color-scheme: light dark; /* lets the browser theme its own built-in UI too */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -127,6 +132,17 @@
 
 body { background: var(--bg); color: var(--text); }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (manual override on top of the media query default)</div>      <pre><code>:root { --bg: #ffffff; --text: #1A231F; }
+
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14181A; --text: #E9EDEA; }
+}
+
+/* JS sets data-theme on &lt;html&gt; when the user picks an explicit choice */
+html[data-theme="dark"]  { --bg: #14181A; --text: #E9EDEA; }
+html[data-theme="light"] { --bg: #ffffff; --text: #1A231F; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -134,11 +150,14 @@ body { background: var(--bg); color: var(--text); }</code></pre>
         <li>A manual toggle (light/dark/system) needs a small amount of JavaScript to set a class or data-attribute that overrides the media query's result.</li>
         <li>Test contrast ratios separately in both themes — a color pair that passes WCAG in light mode may fail in dark mode.</li>
         <li>Images and icons sometimes need their own dark-mode treatment (e.g. an inverted logo) beyond just background/text colors.</li>
+        <li>The <code>color-scheme</code> property lets the browser theme its own built-in UI (scrollbars, form controls) to match, avoiding a jarring flash of light-styled native elements.</li>
+        <li>A <code>data-theme</code> attribute set by JavaScript should take precedence in the CSS over the plain media query, so an explicit user choice always wins over the OS default.</li>
+        <li>Dark mode is not simply 'invert every color' — deliberate, separately chosen dark values usually look and read better than an automatic inversion.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a dark theme to a page you've built using only prefers-color-scheme and custom property overrides — no JavaScript.</p>
+      <p>Add a dark theme to a page you've built using only prefers-color-scheme and custom property overrides, with no JavaScript. Then add color-scheme: light dark to :root and compare how native form controls or scrollbars render before and after, in both OS theme settings.</p>
     </div>
   </article>
 

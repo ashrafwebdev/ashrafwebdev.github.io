@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Media queries respond to the viewport size — but a component often needs to respond to the size of its own container instead, regardless of where that container sits on the page. Container queries solve exactly this, finally, natively.</p>
-    <p>To use them, mark an element as a query container with <code>container-type</code>, then write <code>@container</code> rules that respond to that specific container's width — not the whole browser window.</p>
+    <p class="lead">Media queries respond to the viewport size — but a component often needs to respond to the size of its own container instead, regardless of where that container sits on the page (a sidebar, a wide main column, a narrow modal). Container queries solve exactly this, finally, natively, without the JavaScript-measured-width workarounds developers relied on for years.</p>
+    <p>To use them, mark an element as a query container with <code>container-type</code> (commonly <code>inline-size</code>, which tracks just the container's width), optionally name it with <code>container-name</code>, then write <code>@container</code> rules that respond to that specific named container's size — not the whole browser window.</p>
+    <p>An element must have <code>container-type</code> set on some ancestor before its descendants can be targeted with a matching <code>@container</code> rule — querying a container that was never declared simply never matches, which is a common source of 'my container query does nothing' confusion.</p>
+    <p>Container queries and media queries aren't mutually exclusive — real layouts often use both together: a media query might decide how many columns a page-level grid has, while a container query inside each grid cell decides how that individual card's internal layout adapts to the width it actually ended up with.</p>
+    <p>Alongside container <b>queries</b>, container <b>units</b> (<code>cqw</code>, <code>cqh</code>, <code>cqi</code>, <code>cqb</code>) size relative to the query container rather than the viewport, which is useful for fluid type or spacing that should scale with the component's own box rather than the whole page.</p>
+    <p>This is what 'intrinsic' or 'component-driven' responsive design refers to: components that carry their own responsive behavior and adapt correctly no matter where they're dropped into a layout, instead of a page's CSS having to know every context a component might end up in.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.sidebar { container-type: inline-size; container-name: sidebar; }
 
@@ -119,18 +123,38 @@
   .card { display: flex; gap: 16px; }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (container units for fluid internal spacing)</div>      <pre><code>.panel { container-type: inline-size; }
+
+.panel .title {
+  font-size: clamp(1rem, 5cqi, 1.5rem); /* scales with the panel's own width */
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: querying an undeclared container</div>      <pre><code>/* This never matches — no ancestor declared container-type */
+.card { display: block; }
+@container (min-width: 400px) {
+  .card { display: flex; }
+}
+
+/* Fix: declare a container on an ancestor first */
+.card-slot { container-type: inline-size; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Container queries respond to a container's size, not the viewport — ideal for components reused in different layout contexts.</li>
-        <li>An element must have <code>container-type</code> set before its descendants can be targeted with <code>@container</code>.</li>
-        <li>Container queries and media queries aren't mutually exclusive — real layouts often use both together.</li>
-        <li>This is what 'intrinsic' or 'component-driven' responsive design refers to: components that adapt to their own space.</li>
+        <li>An element must have <code>container-type</code> set on an ancestor before its descendants can be targeted with <code>@container</code>.</li>
+        <li>Container queries and media queries aren't mutually exclusive — real layouts often use both together, at different levels of the page.</li>
+        <li>Container units (<code>cqw</code>, <code>cqi</code>, etc.) size relative to the query container instead of the viewport.</li>
+        <li>This is what 'intrinsic' or 'component-driven' responsive design refers to: components that adapt to their own space, not the whole page.</li>
+        <li>Naming containers with <code>container-name</code> lets a component target a specific ancestor container when multiple are nested.</li>
+        <li>A container query with no matching declared container simply never fires — it fails silently rather than throwing an error.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take a card component and make it switch from stacked to side-by-side layout based on its container's width, not the viewport, using a container query.</p>
+      <p>Take a card component and make it switch from stacked to side-by-side layout based on its container's width, not the viewport, using a container query. Then place the same card inside both a narrow sidebar and a wide main column on the same page, and confirm each one adapts independently based on its own container.</p>
     </div>
   </article>
 

@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead"><code>@keyframes</code> defines a named animation sequence with multiple steps (not just a start and end like <code>transition</code>), which you then apply to an element with the <code>animation</code> shorthand.</p>
-    <p>Not all properties animate equally cheaply. <code>transform</code> and <code>opacity</code> can often run on the GPU compositor without triggering layout or paint, making them dramatically smoother than animating <code>width</code>, <code>top</code>, or <code>margin</code>.</p>
+    <p class="lead"><code>@keyframes</code> defines a named animation sequence with any number of steps (not just a start and end like <code>transition</code>), specified as percentages of the animation's total duration, which you then apply to an element with the <code>animation</code> shorthand.</p>
+    <p>The <code>animation</code> shorthand packs several sub-properties together: name, duration, timing-function, delay, iteration-count, direction, fill-mode, and play-state. <code>animation-iteration-count: infinite</code> loops forever; <code>animation-fill-mode: forwards</code> keeps the styles from the final keyframe applied after the animation completes, instead of snapping back to the element's original styles.</p>
+    <p>Not all properties animate equally cheaply. <code>transform</code> and <code>opacity</code> can often run entirely on the GPU compositor without triggering layout or paint on the main thread, making them dramatically smoother than animating <code>width</code>, <code>top</code>, or <code>margin</code>, which force the browser to recompute layout on every single frame of the animation.</p>
+    <p>Multiple <code>transform</code> functions (<code>translate</code>, <code>scale</code>, <code>rotate</code>) can be combined in one declaration, and their order matters — <code>transform: translateX(20px) rotate(45deg)</code> rotates around the already-translated position, while <code>rotate(45deg) translateX(20px)</code> translates along the newly rotated axis, producing a visibly different result.</p>
+    <p><code>animation-play-state: paused</code> lets you freeze an animation via CSS alone (often toggled by a class from JavaScript on hover or click), which is a lighter-weight alternative to tearing the animation down and restarting it.</p>
+    <p>Chrome DevTools' Performance panel (and the 'Rendering' tab's paint-flashing / layout-shift overlays) show exactly which animated properties are triggering expensive layout or paint work, which is how you verify an animation is actually running smoothly rather than guessing from how it looks on your own fast development machine.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>@keyframes pulse {
   0%   { transform: scale(1); opacity: 1; }
@@ -121,18 +125,45 @@
 
 .notification-dot { animation: pulse 1.5s ease-in-out infinite; }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (fill-mode and play-state)</div>      <pre><code>@keyframes slide-in {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.toast {
+  animation: slide-in 0.4s ease-out forwards; /* stays at 'to' state after finishing */
+}
+.toast.paused { animation-play-state: paused; } /* freeze via a toggled class */</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: animating layout properties</div>      <pre><code>/* Janky: top/left trigger layout recalculation every frame */
+@keyframes bad-move {
+  from { top: 0; left: 0; }
+  to   { top: 100px; left: 50px; }
+}
+
+/* Smooth: transform runs on the compositor, no layout recalculation */
+@keyframes good-move {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(50px, 100px); }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>@keyframes name { 0% {...} 100% {...} }</code> defines the sequence; <code>animation: name duration timing iteration;</code> applies it.</li>
         <li>Prefer animating <code>transform</code> and <code>opacity</code> for smooth, GPU-accelerated performance.</li>
-        <li><code>animation-fill-mode: forwards</code> keeps the final keyframe's styles after the animation ends.</li>
+        <li><code>animation-fill-mode: forwards</code> keeps the final keyframe's styles after the animation ends, instead of reverting.</li>
+        <li>The order of chained transform functions changes the result — <code>translate</code> then <code>rotate</code> differs from <code>rotate</code> then <code>translate</code>.</li>
+        <li><code>animation-play-state: paused</code> freezes an animation via CSS alone, without restarting it from the beginning.</li>
         <li>Chrome DevTools' Performance panel shows exactly which animated properties are triggering expensive layout/paint.</li>
+        <li><code>animation-iteration-count: infinite</code> loops forever; a finite number stops after that many repeats.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a subtle pulsing notification dot with @keyframes, using only transform and opacity so it stays smooth.</p>
+      <p>Build a subtle pulsing notification dot with @keyframes, using only transform and opacity so it stays smooth. Then build a second animation using top/left instead, record both in DevTools' Performance panel while scrolling, and compare the layout/paint cost between the two.</p>
     </div>
   </article>
 

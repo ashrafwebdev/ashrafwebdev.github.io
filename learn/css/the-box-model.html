@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Every element is a rectangular box made of four layers, from the inside out: content, padding (space inside the border), border, and margin (space outside the border, between elements). Understanding this stack explains almost every spacing mystery in CSS.</p>
-    <p>By default, <code>width</code>/<code>height</code> apply only to the content box — padding and border are added on top, making the element visually bigger than the width you set. <code>box-sizing: border-box</code> changes this so width includes padding and border, which is why most modern stylesheets set it globally.</p>
+    <p class="lead">Every element is a rectangular box made of four layers, from the inside out: content, padding (space inside the border), border, and margin (space outside the border, between elements). Understanding this stack explains almost every spacing mystery in CSS, from 'why is my box bigger than I set it' to 'why is there a gap I didn't ask for'.</p>
+    <p>By default (<code>box-sizing: content-box</code>), <code>width</code>/<code>height</code> apply only to the content box — padding and border are added on top, making the element visually bigger than the width you set. <code>box-sizing: border-box</code> changes this so width includes padding and border, which is why almost every modern stylesheet sets it globally on day one.</p>
+    <p>Margins between two vertically-stacked block elements can <b>collapse</b> into a single gap equal to the larger of the two margins, not their sum — a top margin of 20px followed by a bottom margin of 30px on the element above produces a 30px gap, not 50px. This only happens for adjacent block-level elements in normal flow; it does not happen inside flex or grid containers, or when there's padding, a border, or content separating the margins.</p>
+    <p>Padding and border always take up visible space and are never negative. Margin, by contrast, can be negative, which is sometimes used deliberately to pull an element closer to (or overlapping) its neighbors — a technique worth understanding but best used sparingly, since it fights the natural flow.</p>
+    <p>Percentage values for padding and margin — including <code>padding-top</code>/<code>padding-bottom</code> — are calculated relative to the <b>width</b> of the containing block, not its height. This surprises people who expect a percentage-based vertical padding to scale with the element's own height.</p>
+    <p><code>outline</code> is often confused with border but behaves differently: it doesn't take up layout space at all (it draws on top of the box, outside or overlapping the border), which makes it the correct property to use for focus indicators, since it never shifts surrounding layout when it appears.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>* { box-sizing: border-box; }
 
@@ -122,18 +126,43 @@
   margin: 16px;
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (margin collapsing)</div>      <pre><code>.section-a { margin-bottom: 30px; }
+.section-b { margin-top: 20px; }
+/* Gap between them is 30px (the larger), not 50px, because they're
+   adjacent block elements in normal flow with nothing between them. */
+
+.section-a, .section-b {
+  display: flow-root; /* one common fix when you truly need both margins to add up */
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: forgetting border-box</div>      <pre><code>/* Without box-sizing: border-box, this card is actually
+   300 + 40 (padding) + 2 (border) = 342px wide, not 300px */
+.card {
+  width: 300px;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+/* Fix: opt in explicitly, or better, set it globally once */
+.card { box-sizing: border-box; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Order from inside out: content, padding, border, margin.</li>
-        <li><code>box-sizing: border-box</code> makes width/height predictable — set it once, globally, on day one.</li>
-        <li>Margins between two block elements can 'collapse' into a single gap equal to the larger margin, not the sum.</li>
-        <li>Browser DevTools' box-model diagram is the fastest way to debug unexpected spacing.</li>
+        <li><code>box-sizing: border-box</code> makes width/height predictable — set it once, globally, on day one of any project.</li>
+        <li>Margins between two adjacent block elements in normal flow can 'collapse' into a single gap equal to the larger margin, not the sum.</li>
+        <li>Percentage padding/margin (even top/bottom) is calculated relative to the containing block's <b>width</b>, not its height.</li>
+        <li>Padding and border are never negative; margin can be, which is occasionally used to intentionally overlap elements.</li>
+        <li><code>outline</code> doesn't consume layout space the way <code>border</code> does, making it the right choice for focus rings.</li>
+        <li>Browser DevTools' box-model diagram is the fastest way to visually debug unexpected spacing.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a card with padding, a border, and a margin, then toggle box-sizing between content-box and border-box in DevTools to see the size change.</p>
+      <p>Build a card with padding, a border, and a margin, then toggle box-sizing between content-box and border-box in DevTools to see the rendered size change. Then stack two such cards vertically with top/bottom margins and confirm in DevTools whether the gap between them equals the sum or the larger of the two margins.</p>
     </div>
   </article>
 

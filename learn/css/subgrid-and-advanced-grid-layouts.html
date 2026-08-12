@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">Normally, a nested grid can't align its tracks with its parent grid's tracks — each grid manages its own columns/rows independently. <code>subgrid</code> lets a nested grid inherit its parent's track sizing directly, which is exactly what you need for things like aligned card rows where each card's internal grid should line up across siblings.</p>
-    <p>Combined with named grid lines and <code>grid-template-areas</code>, Grid becomes powerful enough to express entire page layouts — header, sidebar, main, footer — in a single, readable declaration.</p>
+    <p class="lead">Normally, a nested grid can't align its tracks with its parent grid's tracks — each grid manages its own columns/rows independently, even if it happens to live inside a grid cell. <code>subgrid</code> lets a nested grid inherit its parent's track sizing directly, which is exactly what you need for things like aligned card rows where each card's internal title/body/footer should line up across every sibling, not just within itself.</p>
+    <p>To use it, set <code>grid-template-columns: subgrid</code> (or <code>rows</code>) on the nested grid instead of defining its own track sizes — it then shares the exact same column boundaries as the number of parent tracks it spans, so content in different child grids lines up pixel-for-pixel without any manual width matching.</p>
+    <p>Combined with named grid lines (<code>[content-start]</code>, <code>[content-end]</code>) and <code>grid-template-areas</code>, Grid becomes powerful enough to express entire page layouts — header, sidebar, main, footer — in a single, readable declaration that reads almost like a diagram of the page.</p>
+    <p><code>minmax()</code> combined with <code>repeat()</code> inside a track definition lets a single line express both a hard minimum and a flexible maximum per track, which is the backbone of responsive grids that never let a column shrink below a usable width.</p>
+    <p>Grid supports explicit placement (naming exact line numbers or areas) and implicit placement (letting auto-placement flow items into unnamed tracks) at the same time within one grid — <code>grid-auto-flow: dense</code> in particular back-fills gaps left by irregularly-sized items, which is useful for masonry-like galleries with mixed item sizes.</p>
+    <p>Subgrid support is what finally made 'align these cards' internal content across a row' solvable without JavaScript measurement hacks — before it, developers either accepted misaligned internal content or resorted to measuring the tallest element with JS and forcing everything else to match.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.page {
   display: grid;
@@ -125,18 +129,46 @@
 .sidebar { grid-area: sidebar; }
 .main { grid-area: main; }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (subgrid aligning cards' internal rows)</div>      <pre><code>.card-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid; /* inherits the row tracks the card spans */
+}
+/* Now every card's title, body, and footer row line up across the whole row,
+   even if one card's title wraps to two lines and another's doesn't. */</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (dense auto-flow for a mixed masonry-like gallery)</div>      <pre><code>.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-flow: dense; /* back-fills gaps left by wide/tall items */
+  gap: 12px;
+}
+.gallery .wide { grid-column: span 2; }
+.gallery .tall { grid-row: span 2; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>grid-template-columns: subgrid;</code> on a nested grid inherits the parent's column tracks exactly.</li>
         <li><code>grid-template-areas</code> lets you sketch a layout visually in the CSS itself, which reads almost like ASCII art.</li>
         <li>Named lines (<code>[content-start]</code>) make complex grids far more self-documenting than raw track numbers.</li>
-        <li>Subgrid support is what finally made 'align these cards' internal content across a row' solvable without JavaScript.</li>
+        <li><code>minmax()</code> inside <code>repeat()</code> gives a track both a hard minimum and a flexible maximum in one declaration.</li>
+        <li><code>grid-auto-flow: dense</code> back-fills layout gaps left by irregularly-sized items, useful for masonry-like galleries.</li>
+        <li>Subgrid is what finally made 'align these cards' internal content across a row' solvable without JavaScript measurement hacks.</li>
+        <li>A nested grid without <code>subgrid</code> manages its own tracks independently, even when it lives inside a parent grid's cell.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a page layout (header/sidebar/main/footer) using grid-template-areas, then use subgrid to align a row of cards' internal title/body/footer across all cards.</p>
+      <p>Build a page layout (header/sidebar/main/footer) using grid-template-areas, then use subgrid to align a row of cards' internal title/body/footer across all cards. Deliberately give one card a longer title that wraps to two lines, and confirm the subgrid keeps every card's body and footer aligned despite that difference.</p>
     </div>
   </article>
 

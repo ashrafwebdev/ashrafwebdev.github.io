@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">CSS Grid handles rows and columns simultaneously, making it the right tool for full page layouts, image galleries, and card grids — anywhere Flexbox's one-dimensional model starts to feel like a workaround.</p>
-    <p><code>grid-template-columns</code> defines the column tracks. The <code>fr</code> unit (fraction) distributes remaining space proportionally, and <code>repeat()</code> avoids writing the same value over and over.</p>
+    <p class="lead">CSS Grid handles rows and columns simultaneously, making it the right tool for full page layouts, image galleries, and card grids — anywhere Flexbox's one-dimensional model starts to feel like a workaround involving nested flex containers just to get alignment across both axes.</p>
+    <p><code>grid-template-columns</code> defines the column tracks. The <code>fr</code> unit (a fraction of remaining space) distributes leftover room proportionally, and <code>repeat()</code> avoids writing the same track definition over and over — <code>repeat(3, 1fr)</code> is identical to writing <code>1fr 1fr 1fr</code>.</p>
+    <p><code>repeat(auto-fit, minmax(200px, 1fr))</code> builds a genuinely responsive grid without a single media query: the browser fits as many 200px-minimum columns as will comfortably fill the row, stretching them to share any leftover space. Swapping <code>auto-fit</code> for <code>auto-fill</code> keeps empty tracks reserved (useful when you want consistent column widths even with few items) rather than letting existing items stretch to fill the row.</p>
+    <p>Placing a child across multiple tracks uses <code>grid-column</code>/<code>grid-row</code> with either explicit line numbers (<code>grid-column: 1 / 3</code>) or the <code>span</code> keyword (<code>grid-column: span 2</code>), which is usually more resilient to adding or removing tracks later since it doesn't hardcode absolute line positions.</p>
+    <p><code>grid-template-areas</code> lets you name regions of the grid and assign children to them by name via <code>grid-area</code>, which reads almost like a diagram of the layout directly in the CSS — genuinely useful for readability on non-trivial page structures like header/sidebar/main/footer.</p>
+    <p>Grid and Flexbox aren't rivals — a real page very often nests both: Grid defines the big page-level regions, and Flexbox arranges the content inside individual cells (like a card's header, body, and footer row).</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.gallery {
   display: grid;
@@ -123,18 +127,44 @@
   .gallery { grid-template-columns: 1fr; }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (responsive grid with zero media queries)</div>      <pre><code>.gallery-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.gallery-auto .featured {
+  grid-column: span 2; /* spans two tracks, resilient to column count changing */
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (named areas for a page layout)</div>      <pre><code>.page {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-areas:
+    "sidebar header"
+    "sidebar main";
+}
+.sidebar { grid-area: sidebar; }
+.header  { grid-area: header; }
+.main    { grid-area: main; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>display: grid</code> plus <code>grid-template-columns</code>/<code>rows</code> defines the tracks.</li>
         <li><code>repeat(auto-fit, minmax(200px, 1fr))</code> builds a responsive grid with zero media queries.</li>
-        <li><code>grid-column</code>/<code>grid-row</code> on a child lets it span multiple tracks.</li>
+        <li><code>auto-fit</code> lets existing tracks stretch into empty space; <code>auto-fill</code> preserves empty tracks — pick based on whether you want items to stretch with few of them.</li>
+        <li><code>grid-column</code>/<code>grid-row</code> on a child lets it span multiple tracks, using either line numbers or the more resilient <code>span</code> keyword.</li>
+        <li><code>grid-template-areas</code> reads like a diagram of the layout directly in the CSS, which is a big readability win for non-trivial pages.</li>
         <li>Grid and Flexbox aren't rivals — a Grid layout very often contains Flexbox-arranged content inside its cells.</li>
+        <li>The <code>fr</code> unit distributes leftover space proportionally after fixed-size tracks are accounted for.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a 3-column responsive image gallery with CSS Grid that collapses to 1 column under 600px using a media query.</p>
+      <p>Build a 3-column responsive image gallery with CSS Grid that collapses to 1 column under 600px using a media query. Then rebuild the same gallery using repeat(auto-fit, minmax(...)) instead of the media query, and compare how each behaves as you resize the browser continuously rather than at a single breakpoint.</p>
     </div>
   </article>
 

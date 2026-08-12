@@ -110,8 +110,12 @@
   </div>
 
   <article>
-    <p class="lead">As a codebase grows, an unorganized pile of class names becomes unmaintainable — architecture methodologies exist to keep CSS predictable at scale. BEM (Block__Element--Modifier) names classes to describe structure explicitly, e.g. <code>card__title--large</code>.</p>
-    <p>Utility-first CSS (popularized by Tailwind) flips the approach: instead of custom component classes, you compose small single-purpose utility classes directly in markup. CSS Modules take a third path, scoping class names to a single file automatically so collisions become impossible by construction.</p>
+    <p class="lead">As a codebase grows, an unorganized pile of class names becomes unmaintainable — nobody can tell which classes are safe to delete, which selector actually controls a given visual detail, or whether a change to one component will silently break another. Architecture methodologies exist to keep CSS predictable at scale, and they mostly differ in what problem they optimize for.</p>
+    <p>BEM (Block__Element--Modifier) names classes to describe structure explicitly: a <b>block</b> is a standalone component (<code>card</code>), an <b>element</b> is a part of that block (<code>card__title</code>), and a <b>modifier</b> is a variant (<code>card--featured</code>). The payoff is that the class name alone tells you the DOM relationship, without needing to cross-reference the CSS file or the markup to understand it.</p>
+    <p>Utility-first CSS (popularized by Tailwind) flips the approach entirely: instead of authoring custom component classes, you compose many small, single-purpose utility classes directly in markup (<code>px-4 py-2 bg-teal-700 rounded</code>). This trades semantic class names for near-zero unused CSS (a build step strips anything not actually used in the markup) and very fast iteration, since you rarely leave the HTML file to make a visual change.</p>
+    <p>CSS Modules take a third path: each stylesheet is scoped to the single file that imports it, and the build tool rewrites class names to be automatically unique (e.g. <code>Card_title__a3f9c</code>), which makes accidental global collisions impossible by construction rather than by convention. You still write ordinary CSS — the tooling, not a naming discipline, is what enforces the isolation.</p>
+    <p>Styled-components and other CSS-in-JS libraries solve a similar isolation problem from a different angle, generating scoped class names at runtime (or build time) and letting styles live alongside the JavaScript component that uses them — at the cost of adding a JS dependency to something that used to be pure CSS, and (for the runtime variants) a small performance cost per render.</p>
+    <p>None of these approaches is objectively 'correct' — each is a genuine trade-off between semantic markup, bundle size, tooling complexity, and how directly styling maps to components. What actually matters in a real codebase is picking one per project and applying it consistently; mixing BEM, ad-hoc utility classes, and inline styles in the same project is the real source of unmaintainable CSS, more than any single methodology's inherent weaknesses.</p>
     <div class="code-block">
 <div class="cap">BEM vs. utility-first, same button</div>      <pre><code>&lt;!-- BEM --&gt;
 &lt;button class="btn btn--primary btn--large"&gt;Save&lt;/button&gt;
@@ -119,18 +123,37 @@
 &lt;!-- Utility-first --&gt;
 &lt;button class="px-4 py-2 bg-teal-700 text-white rounded font-semibold"&gt;Save&lt;/button&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Card.module.css (CSS Modules)</div>      <pre><code>/* Card.module.css */
+.title { font-weight: 600; font-size: 18px; }
+.featured { border-top: 3px solid #1F4E44; }
+
+/* Card.jsx */
+// import styles from './Card.module.css';
+// &lt;h2 className={styles.title}&gt;...&lt;/h2&gt;
+// compiles to something like &lt;h2 class="Card_title__a3f9c"&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">BEM naming for the same card, with a modifier variant</div>      <pre><code>.card { padding: 20px; border-radius: 8px; }
+.card__title { font-weight: 600; font-size: 18px; }
+.card__body { color: #485650; }
+.card--featured { border-top: 3px solid #1F4E44; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>BEM's biggest win is that class names alone tell you the DOM relationship — no cross-referencing needed.</li>
+        <li>BEM's biggest win is that class names alone tell you the DOM relationship — no cross-referencing the CSS or markup needed.</li>
         <li>Utility-first trades semantic class names for near-zero unused CSS and fast iteration directly in markup.</li>
-        <li>CSS Modules generate unique class names at build time, eliminating global-namespace collisions entirely.</li>
+        <li>CSS Modules generate unique class names at build time, eliminating global-namespace collisions by construction, not convention.</li>
+        <li>CSS-in-JS libraries scope styles at runtime or build time and colocate them with components, at the cost of a JS dependency and sometimes a runtime performance cost.</li>
         <li>None of these is objectively 'correct' — pick one per project and apply it consistently; inconsistency is the real enemy.</li>
+        <li>BEM modifiers (<code>--featured</code>) express variants without needing a separate, disconnected class name.</li>
+        <li>Utility-first shifts most iteration into the markup itself, which can make diffs noisier but keeps styling colocated with usage.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Rebuild the same small card component twice: once using BEM naming, once using utility classes, and compare how each reads in the markup.</p>
+      <p>Rebuild the same small card component three times: once using BEM naming, once using utility classes, and once using CSS Modules-style scoped class names. Compare how each reads in the markup, and note which one you'd choose for a solo project versus a large team codebase, and why.</p>
     </div>
   </article>
 
