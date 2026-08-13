@@ -127,7 +127,7 @@
     <p>For plain object shapes, interfaces and type aliases are largely interchangeable in everyday use; interfaces are extendable with <code>extends</code> and mergeable across multiple declarations with the same name (useful for library authors augmenting a third-party type), while type aliases can express things interfaces fundamentally can't, like a union of several distinct shapes.</p>
     <p>Declaration merging is a genuinely unique interface feature: writing <code>interface User { id: number }</code> twice in the same scope combines both declarations into one interface with all the properties from both. This is intentional and widely used for augmenting types from external libraries (adding a custom property to <code>Window</code>, for example), but it also means an accidentally duplicated interface name silently merges instead of producing the redeclaration error you might expect from a type alias.</p>
     <p>Optional properties, marked with <code>?</code> after the name, and readonly properties, marked with the <code>readonly</code> modifier before the name, both work identically whether you're using an interface or an object-shaped type alias — these modifiers are a property of the object type itself, not of the interface/type distinction.</p>
-    <p>Extending an interface with <code>extends</code> composes cleanly and produces genuinely useful error messages when a conflict arises (say, two base interfaces disagreeing on a property's type); the equivalent operation for type aliases is an intersection with <code>&amp;</code>, which works but tends to produce messier resulting types and less readable errors when properties conflict, since intersections quietly collapse a conflicting property to <code>never</code> rather than flagging the conflict up front.</p>
+    <p>Extending an interface with <code>extends</code> composes cleanly and produces genuinely useful error messages when a conflict arises (say, two base interfaces disagreeing on a property's type). Type aliases have a rough equivalent for combining two shapes into one, but the syntax and a specific gotcha around conflicting properties are worth saving for the dedicated lesson on union and intersection types coming up shortly — for now, <code>extends</code> is the tool to reach for when one object shape builds on another.</p>
     <p>Most teams settle on a convention rather than agonizing over interface versus type alias for every declaration — a common one is interfaces for object shapes that might be extended or implemented by a class, and type aliases for everything else (unions, tuples, mapped types, function signatures). Consistency within a codebase matters far more than which specific convention is chosen.</p>
     <div class="code-block">
 <div class="cap">shapes.ts</div>      <pre><code>interface User {
@@ -136,7 +136,7 @@
   email?: string; // optional property
 }
 
-type Status = "active" | "inactive" | "banned"; // a type alias for a union
+type UserId = number; // a type alias can name any type, not just an object shape
 
 function greet(user: User): string {
   return `Hello, ${user.name}`;
@@ -160,17 +160,13 @@ interface Window {
 // window.myAppVersion is now valid, merged with the built-in Window interface</code></pre>
     </div>
     <div class="code-block">
-<div class="cap">readonly-and-intersection-gotcha.ts</div>      <pre><code>interface Point {
+<div class="cap">readonly-properties.ts</div>      <pre><code>interface Point {
   readonly x: number;
   readonly y: number;
 }
 
 const origin: Point = { x: 0, y: 0 };
-// origin.x = 5; // Error: cannot assign to 'x' because it's read-only
-
-type A = { value: string };
-type B = { value: number };
-type Conflict = A &amp; B; // 'value' becomes type 'never' — impossible to satisfy</code></pre>
+// origin.x = 5; // Error: cannot assign to 'x' because it's read-only</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -180,7 +176,7 @@ type Conflict = A &amp; B; // 'value' becomes type 'never' — impossible to sat
         <li>Interfaces can be extended (<code>interface Admin extends User</code>) and merged across declarations; type aliases support neither.</li>
         <li>Type aliases are required for unions, tuples, and function-type shorthand — interfaces can't express these directly.</li>
         <li>Declaration merging is intentional and useful for augmenting third-party types, but can silently combine an accidental duplicate interface name.</li>
-        <li>Intersections of conflicting property types (one requiring string, another number) collapse quietly to <code>never</code> rather than producing an upfront error.</li>
+        <li>Combining two shapes into one is also possible with type aliases (their own dedicated lesson, coming up soon) — for now, <code>extends</code> is the predictable way to build one interface on top of another.</li>
         <li>Most teams pick one convention (interface for objects, type for everything else) and apply it consistently rather than deciding case by case.</li>
       </ul>
     </div>
