@@ -143,11 +143,11 @@ using (var reader = new StreamReader(path))
 }</code></pre>
     </div>
     <div class="code-block">
-<div class="cap">PathsAndAsync.cs</div>      <pre><code>string folder = Path.Combine("data", "exports");
+<div class="cap">PathsAndDirectories.cs</div>      <pre><code>string folder = Path.Combine("data", "exports");
 Directory.CreateDirectory(folder); // no-op if it already exists
 
 string filePath = Path.Combine(folder, "report.txt");
-await File.WriteAllTextAsync(filePath, "quarterly totals\n");
+File.WriteAllText(filePath, "quarterly totals\n");
 
 foreach (var file in Directory.EnumerateFiles(folder, "*.txt"))
 {
