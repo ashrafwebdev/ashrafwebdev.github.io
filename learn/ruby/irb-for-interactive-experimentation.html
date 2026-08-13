@@ -126,7 +126,7 @@
     <p class="lead">irb (Interactive Ruby) is a REPL that comes bundled with every Ruby install — type an expression, see the result immediately, without writing or running a file. It's the fastest way to check how a method behaves or test a small idea before committing it to real code.</p>
     <p>Modern irb (Ruby 3.x) includes multi-line editing, syntax highlighting, and a built-in autocomplete that shows available methods as you type, which makes it noticeably friendlier than the bare-bones REPL Ruby shipped with in older versions. It also keeps a history across sessions, so pressing the up arrow can recall commands from a previous irb session, not just the current one.</p>
     <p>irb evaluates each line as a full Ruby expression and echoes its return value prefixed with <code>=&gt;</code>, which is genuinely useful for building intuition about return values — many Ruby methods have return values that are surprising until you've actually seen them printed, like the fact that <code>puts</code> itself always returns <code>nil</code>.</p>
-    <p>Beyond one-off checks, irb is a real part of the Ruby learning workflow: loading an existing file's code into a session with <code>irb -r ./myfile.rb</code> lets you poke at your own classes and methods interactively, calling them with different arguments and inspecting intermediate state, without adding temporary <code>puts</code> statements to the file itself.</p>
+    <p>Beyond one-off checks, irb is a real part of the Ruby learning workflow: loading an existing file's code into a session with <code>irb -r ./myfile.rb</code> lets you poke at your own methods interactively, calling them with different arguments and inspecting return values, without adding temporary <code>puts</code> statements to the file itself. (The next stage introduces classes -- once you've written one, this same trick works just as well for instantiating it and calling its methods interactively.)</p>
     <p><code>pry</code> is a popular, more feature-rich alternative REPL that many Ruby developers install as their default, offering better introspection (like <code>show-method</code> to view a method's source, or <code>cd</code> to step into an object's context) and, critically, a <code>binding.pry</code> call you can drop directly into running code to pause execution and inspect the exact state at that point — genuinely one of the most useful Ruby debugging techniques there is.</p>
     <p>Because irb evaluates arbitrary Ruby, it doubles as a lightweight calculator, a place to sanity-check a regular expression against sample strings, or a scratchpad for sketching out an algorithm's logic in small pieces before writing the final version in a file — all without the overhead of setting up a project or a test file.</p>
     <div class="code-block">
@@ -138,12 +138,12 @@ irb(main):002&gt; "hello".reverse
     </div>
     <div class="code-block">
 <div class="cap">Terminal -- loading your own file</div>      <pre><code>$ irb -r ./calculator.rb
-irb(main):001&gt; calc = Calculator.new
-=&gt; #&lt;Calculator:0x00007f9a&gt;
-irb(main):002&gt; calc.add(2, 3)
+irb(main):001&gt; add(2, 3)
 =&gt; 5
-irb(main):003&gt; calc.history
-=&gt; [[2, 3, 5]]</code></pre>
+irb(main):002&gt; add(10, -4)
+=&gt; 6
+irb(main):003&gt; history
+=&gt; [[2, 3, 5], [10, -4, 6]]</code></pre>
     </div>
     <div class="code-block">
 <div class="cap">Terminal -- pry's binding.pry in context</div>      <pre><code># somewhere in your code:
@@ -170,7 +170,7 @@ end
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Open irb and experiment with five different Array methods you haven't used before (like rotate, sample, or each_slice), reading each result. Then write a tiny class in a file, load it into irb with the -r flag, and instantiate it interactively, calling at least two of its methods with different arguments to observe how the return values change.</p>
+      <p>Open irb and experiment with five different Array methods you haven't used before (like rotate, sample, or each_slice), reading each result. Then write a couple of small methods in a file, load it into irb with the -r flag, and call them interactively with different arguments to observe how the return values change.</p>
     </div>
     <a class="capstone-banner" href="project-zero.html">
       <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>

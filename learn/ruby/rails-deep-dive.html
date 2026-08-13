@@ -163,7 +163,7 @@ book.reviewers  # every User who reviewed this book, via Review</code></pre>
     <div class="code-block">
 <div class="cap">after_commit vs after_save</div>      <pre><code>class Book &lt; ApplicationRecord
   after_save   { Rails.logger.info("saved -- may still roll back!") }
-  after_commit { NotifyLibraryJob.perform_later(id) }  # only fires if it really persists
+  after_commit { NotifyLibraryJob.perform_later(id) }  # perform_later enqueues a background job (its own lesson later) -- only fires if the save really committed
 end</code></pre>
     </div>
     <div class="key-points">

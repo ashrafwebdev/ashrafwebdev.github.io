@@ -126,7 +126,7 @@
     <p class="lead">Rust's <code>if</code>, <code>loop</code>, <code>while</code>, and <code>for</code> work much like other C-family languages, with one key difference: <code>if</code> is an <b>expression</b>, so <code>let x = if cond { 1 } else { 2 };</code> is valid and idiomatic Rust.</p>
     <p>Functions are declared with <code>fn</code>, and the last expression in a block (without a trailing semicolon) is implicitly returned &mdash; writing <code>return</code> explicitly is only needed for early returns. Unlike local variables, function parameters and return types must always be written out explicitly; Rust never infers them across a function signature.</p>
     <p><code>match</code> is Rust's powerful pattern-matching control-flow construct, and the compiler enforces <b>exhaustiveness</b>: every possible case must be handled, or the code simply won't compile, catching a whole class of "forgot a case" bugs.</p>
-    <p><code>loop</code> is itself an expression that can produce a value: <code>break value;</code> exits the loop and yields <code>value</code> as the result of the whole loop expression, which is handy for retry-until-success logic. <code>while let</code> and <code>if let</code> are shorthand for matching a single pattern (commonly <code>Some(x)</code>) without writing a full <code>match</code> just to handle one case and ignore the rest.</p>
+    <p><code>loop</code> is itself an expression that can produce a value: <code>break value;</code> exits the loop and yields <code>value</code> as the result of the whole loop expression, which is handy for retry-until-success logic. <code>while let</code> and <code>if let</code> are shorthand for matching a single pattern without writing a full <code>match</code> just to handle one case and ignore the rest &mdash; a later lesson's <code>Some(x)</code>/<code>None</code> pattern is the most common example, but <code>if let</code> works with any pattern, including a plain tuple.</p>
     <p>Nested loops can be given labels, written <code>'outer: loop { ... }</code>, so that <code>break 'outer;</code> or <code>continue 'outer;</code> can target a specific enclosing loop instead of only the innermost one &mdash; essential once loops nest two or three levels deep.</p>
     <p>A common beginner mistake is an accidental trailing semicolon: adding <code>;</code> after what was meant to be a function's final returned expression silently turns it into a statement that evaluates to <code>()</code>, which then fails to type-check against the function's declared return type. The compiler's error message in this case is one of the more famous "gotcha" errors for newcomers to Rust.</p>
     <div class="code-block">
@@ -146,12 +146,14 @@ fn main() {
 }</code></pre>
     </div>
     <div class="code-block">
-<div class="cap">loop_and_labels.rs</div>      <pre><code>fn find_pair(grid: &amp;[Vec&lt;i32&gt;], target: i32) -&gt; Option&lt;(usize, usize)&gt; {
-    let mut found = None;
+<div class="cap">loop_and_labels.rs</div>      <pre><code>// (r, c) coordinates are found once `found` is true; a later
+// lesson's Option type is a cleaner way to express "maybe found"
+fn find_pair(grid: &amp;[[i32; 3]; 2], target: i32) -&gt; (bool, usize, usize) {
+    let mut found = (false, 0, 0);
     'outer: for (r, row) in grid.iter().enumerate() {
         for (c, &amp;value) in row.iter().enumerate() {
             if value == target {
-                found = Some((r, c));
+                found = (true, r, c);
                 break 'outer;
             }
         }
@@ -160,10 +162,12 @@ fn main() {
 }
 
 fn main() {
-    let grid = vec![vec![1, 2, 3], vec![4, 5, 6]];
-    match find_pair(&amp;grid, 5) {
-        Some((r, c)) =&gt; println!("found at ({}, {})", r, c),
-        None =&gt; println!("not found"),
+    let grid = [[1, 2, 3], [4, 5, 6]];
+    let (was_found, r, c) = find_pair(&amp;grid, 5);
+    if let (true, r, c) = (was_found, r, c) {
+        println!("found at ({}, {})", r, c);
+    } else {
+        println!("not found");
     }
 
     // loop as an expression that yields a value
@@ -202,7 +206,7 @@ fn double_fixed(n: i32) -&gt; i32 {
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function using a labeled loop to search a 2D grid (a Vec of Vecs) for a target value, breaking out of both loops immediately once found and returning the coordinates as an Option of a tuple. Then write a for loop over a vector of Options that uses if let to print only the values that are Some, skipping the None entries.</p>
+      <p>Write a function using a labeled loop to search a 2D grid (a fixed-size array of arrays) for a target value, breaking out of both loops immediately once found and returning whether it was found together with its coordinates as a tuple. Then use if let to match only the case where that tuple's first element is true and print the coordinates, and separately write a loop expression that increments a counter until it reaches a target value, using break with a value to return and print the final result.</p>
     </div>
     
   </article>
