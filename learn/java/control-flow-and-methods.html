@@ -141,7 +141,7 @@
     }
 
     public static void main(String[] args) {
-        for (int score : new int[]{95, 82, 40}) {
+        for (int score = 60; score &lt;= 100; score += 20) {
             System.out.println(score + " -&gt; " + letterFor(score));
         }
     }
@@ -175,7 +175,7 @@
         <li>Arrow-form <code>switch</code> expressions return a value directly and do not fall through to the next case.</li>
         <li><code>static</code> methods belong to the class; instance methods belong to an object and can use an implicit this.</li>
         <li>Method overloading is resolved at compile time based on the number and static types of the arguments.</li>
-        <li>Enhanced <code>for</code> loops (<code>for (int x : array)</code>) simplify iterating collections and arrays.</li>
+        <li>A traditional <code>for</code> loop can count through any numeric range; a shorter for-each form for iterating arrays and collections directly is introduced once those topics arrive.</li>
         <li>Labeled <code>break</code> and <code>continue</code> let you control an outer loop from inside a nested one.</li>
         <li>Pattern-matching switch cases can test and bind a runtime type in a single case label, avoiding manual instanceof-and-cast boilerplate.</li>
         <li>Java has no goto; recursion, methods, and lambdas are the idiomatic replacements for that kind of jump.</li>
@@ -183,7 +183,7 @@
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a static method categorize(int temperature) that uses a switch expression to return "cold", "mild", or "hot", then call it in a loop over an array of sample temperatures. Add an overloaded categorize(double temperature, String unit) that first converts Fahrenheit to Celsius when unit is "F", and use a labeled loop to skip printing any reading below freezing.</p>
+      <p>Write a static method categorize(int temperature) that uses a switch expression to return "cold", "mild", or "hot", then call it in a for loop that counts through a range of sample temperatures (for example, 0 to 100 in steps of 10). Add an overloaded categorize(double temperature, String unit) that first converts Fahrenheit to Celsius when unit is "F", and use a labeled loop to skip printing any reading below freezing.</p>
     </div>
     
   </article>
