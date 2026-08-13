@@ -124,7 +124,7 @@
 
   <article>
     <p class="lead">PHP functions are defined with <code>function name(params) { }</code>. Modern PHP supports optional type hints on parameters and return values, which catch mistakes early without giving up PHP's flexibility. Parameters can also have default values, letting callers omit arguments for the common case: <code>function greet($name = "friend")</code>.</p>
-    <p>PHP was built from the ground up for handling HTML forms — submitted form data arrives automatically in PHP's superglobal arrays (<code>$_GET</code>, <code>$_POST</code>), ready to read without any extra parsing step. A typical form-handling function accepts that raw array data, validates it, and returns either a clean value or an error to show the user.</p>
+    <p>PHP was built from the ground up for handling HTML forms. When a form is submitted, PHP automatically collects the fields into a plain array for you — the next lesson covers exactly how that works, through arrays called <code>$_GET</code> and <code>$_POST</code>. For now, treat "the submitted form data" as just an ordinary associative array: a typical form-handling function accepts that array, validates it, and returns either a clean value or an error to show the user.</p>
     <p>Functions can accept a variable number of arguments using the variadic operator, <code>function sum(...$numbers)</code>, which collects any number of trailing arguments into a single array inside the function body. The same <code>...</code> spread syntax can expand an array back out into individual arguments when calling a function.</p>
     <p>By default, arguments are passed by value — a copy is made, so modifying a parameter inside a function does not affect the caller's variable. Prefixing a parameter with an ampersand (<code>function increment(&$value)</code>) passes it by reference instead, letting the function mutate the caller's original variable directly; this is used sparingly since it can make code harder to reason about.</p>
     <p>Anonymous functions (closures) let you define a function inline and assign it to a variable or pass it directly as an argument: <code>$double = function ($x) { return $x * 2; };</code>. Closures don't automatically see variables from the enclosing scope — you must explicitly import them with <code>use (&$total)</code> (with an ampersand if you need to modify the outer variable).</p>
@@ -148,7 +148,10 @@ function validateAge(array $formData): int|string {
     return (int) $age;
 }
 
-$result = validateAge($_POST);
+// In a real app $formData usually comes from PHP's $_POST superglobal —
+// covered in the next lesson. Here we simulate a submission directly.
+$submitted = ['age' =&gt; '27'];
+$result = validateAge($submitted);
 if (is_string($result)) {
     echo "Error: $result";
 } else {
@@ -189,7 +192,7 @@ echo $total;
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a typed PHP function that calculates a total with tax, given a price and a tax rate, and echo the result. Then write a second function that validates a submitted form field (like an email or age) from an array such as $_POST, returning either a cleaned value or an error string, and call it with both valid and invalid sample data to show both paths.</p>
+      <p>Write a typed PHP function that calculates a total with tax, given a price and a tax rate, and echo the result. Then write a second function that validates a submitted form field (like an email or age) from a plain associative array standing in for form data (arrays like $_POST are covered in the next lesson), returning either a cleaned value or an error string, and call it with both valid and invalid sample data to show both paths.</p>
     </div>
     
   </article>
