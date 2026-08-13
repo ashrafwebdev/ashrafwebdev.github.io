@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Positioning: relative, absolute, fixed, sticky</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="responsive-design-and-media-queries.html">Responsive design and media queries</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>position</code> changes how an element is placed. <code>static</code> (the default) follows normal flow. <code>relative</code> also follows normal flow but can be nudged with <code>top</code>/<code>left</code>/etc. while leaving a gap where it 'would have been'.</p>
-    <p><code>absolute</code> removes the element from flow entirely and positions it relative to its nearest positioned ancestor (any ancestor that isn't <code>static</code>). <code>fixed</code> positions relative to the browser viewport, staying put on scroll. <code>sticky</code> acts relative until a scroll threshold, then sticks like fixed.</p>
+    <p class="lead"><code>position</code> changes how an element is placed. <code>static</code> (the default) follows normal document flow and ignores <code>top</code>/<code>left</code>/<code>right</code>/<code>bottom</code> entirely. <code>relative</code> also follows normal flow but can be nudged with those offset properties, while still leaving a gap in the layout where it 'would have been' had it not moved.</p>
+    <p><code>absolute</code> removes the element from flow entirely (its original space collapses) and positions it relative to its nearest <b>positioned ancestor</b> — any ancestor whose <code>position</code> isn't <code>static</code>. If no ancestor is positioned, it falls back to positioning relative to the initial containing block, which is roughly the whole page, which is almost never what you actually want.</p>
+    <p><code>fixed</code> positions relative to the browser viewport and stays put on scroll — except when an ancestor has a <code>transform</code>, <code>filter</code>, or <code>will-change</code> set, any of which create a new containing block and make the <code>fixed</code> element position relative to that ancestor instead of the viewport, a genuinely surprising gotcha worth remembering.</p>
+    <p><code>sticky</code> behaves like <code>relative</code> until the element crosses a scroll threshold you specify (<code>top: 0</code>, for example), at which point it 'sticks' in place like <code>fixed</code> — but only within the bounds of its containing block; once that container scrolls fully past, the sticky element scrolls away with it.</p>
+    <p><code>sticky</code> needs at least one of <code>top</code>/<code>right</code>/<code>bottom</code>/<code>left</code> explicitly set to do anything at all — without one, it behaves exactly like <code>relative</code> and never sticks. It also silently fails to stick if any ancestor has <code>overflow</code> set to anything other than <code>visible</code>, which is a common source of 'sticky just isn't working' bug reports.</p>
+    <p>The <code>z-index</code> property only has an effect on positioned elements (anything other than <code>static</code>), and it only compares elements within the same <b>stacking context</b> — a concept created not just by positioning, but also by properties like <code>opacity</code> below 1, <code>transform</code>, and <code>will-change</code>, which is why a high <code>z-index</code> sometimes still loses to a lower one nested inside a different stacking context.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.card { position: relative; }
 .card .badge {
@@ -121,19 +138,43 @@
 
 .site-header { position: sticky; top: 0; } /* stays visible on scroll */</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (fixed inside a transformed ancestor gotcha)</div>      <pre><code>.modal-wrapper {
+  transform: translateZ(0); /* creates a new containing block! */
+}
+.modal-wrapper .close-btn {
+  position: fixed;   /* now relative to .modal-wrapper, NOT the viewport */
+  top: 16px; right: 16px;
+}
+/* Fix: avoid transform on ancestors of anything meant to be truly viewport-fixed,
+   or move the fixed element outside that ancestor in the DOM. */</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: sticky inside overflow:hidden</div>      <pre><code>.scroll-area {
+  overflow-x: auto; /* any non-visible overflow on an ancestor breaks sticky below */
+}
+.scroll-area .col-header {
+  position: sticky;
+  top: 0; /* silently does nothing here */
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>absolute</code> positions relative to the nearest ancestor that isn't <code>static</code> — set that ancestor to <code>relative</code> deliberately.</li>
-        <li><code>fixed</code> is relative to the viewport and ignores scrolling entirely.</li>
+        <li><code>fixed</code> is relative to the viewport, unless an ancestor has <code>transform</code>/<code>filter</code>/<code>will-change</code> set, which creates a new containing block instead.</li>
         <li><code>sticky</code> needs at least one of <code>top</code>/<code>bottom</code>/<code>left</code>/<code>right</code> set to actually do anything.</li>
-        <li>Overusing <code>absolute</code> for layout (instead of Flexbox/Grid) usually creates fragile, hard-to-maintain positioning.</li>
+        <li><code>sticky</code> silently fails if any ancestor has <code>overflow</code> set to anything other than <code>visible</code> — a frequent source of confusion.</li>
+        <li><code>z-index</code> only affects positioned elements and only compares within the same stacking context.</li>
+        <li>Stacking contexts are created by more than just positioning: <code>opacity &lt; 1</code>, <code>transform</code>, and <code>will-change</code> all create one too.</li>
+        <li>Overusing <code>absolute</code> for general layout (instead of Flexbox/Grid) usually creates fragile, hard-to-maintain positioning.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a card with a small 'NEW' badge absolutely positioned in its top-right corner, then make a page header sticky to the top of the viewport.</p>
+      <p>Build a card with a small 'NEW' badge absolutely positioned in its top-right corner, then make a page header sticky to the top of the viewport. Afterward, deliberately put the sticky header inside a container with overflow: auto and observe it stop sticking, then fix it by removing or relocating the overflow.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

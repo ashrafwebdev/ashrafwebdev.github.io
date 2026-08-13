@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with the built-in testing package</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="concurrency-patterns.html">Concurrency patterns: worker pools, select statements</a></p>
   </div>
 
   <article>
-    <p class="lead">Go's standard library includes a testing framework with no extra dependency required: a test file is named <code>*_test.go</code>, and each test function takes a <code>*testing.T</code> parameter and is named <code>TestXxx</code>.</p>
-    <p>Failures are reported with <code>t.Error</code>/<code>t.Errorf</code> (continue running) or <code>t.Fatal</code>/<code>t.Fatalf</code> (stop the current test immediately). <b>Table-driven tests</b> &mdash; a slice of input/expected-output cases looped over with a single test body &mdash; are the idiomatic way to cover many cases concisely.</p>
-    <p><code>go test ./...</code> runs all tests in a module, and <code>go test -cover</code> reports test coverage, both routinely wired into CI pipelines for Go projects.</p>
+    <p class="lead">Go's standard library includes a testing framework with no extra dependency required: a test file is named <code>*_test.go</code>, lives alongside the code it tests in the same package, and each test function takes a <code>*testing.T</code> parameter and is named <code>TestXxx</code> where Xxx starts with a capital letter.</p>
+    <p>Failures are reported with <code>t.Error</code>/<code>t.Errorf</code> (record a failure and continue running the rest of the test) or <code>t.Fatal</code>/<code>t.Fatalf</code> (record a failure and stop the current test function immediately, useful when a later assertion would panic or be meaningless after an earlier one failed). <b>Table-driven tests</b> &mdash; a slice of input/expected-output cases looped over with a single test body &mdash; are the idiomatic way to cover many cases concisely, and each case is usually run as its own named subtest.</p>
+    <p><code>t.Run("case name", func(t *testing.T) { ... })</code> creates a named <b>subtest</b>, which can be run in isolation with <code>go test -run TestAdd/negative</code> and reports failures with the subtest's own name, making it immediately clear which specific table-driven case failed rather than just which test function did.</p>
+    <p><code>t.Parallel()</code>, called at the start of a test or subtest, marks it as safe to run concurrently with other parallel tests, which can significantly speed up a large test suite &mdash; but only for tests with no shared mutable state, since parallel tests genuinely run at the same time.</p>
+    <p>Beyond plain tests, Go supports <b>benchmarks</b> (<code>func BenchmarkXxx(b *testing.B)</code>, run via <code>go test -bench=.</code>) and <b>fuzz tests</b> (<code>func FuzzXxx(f *testing.F)</code>, run via <code>go test -fuzz=FuzzXxx</code>, added in Go 1.18) which automatically generate randomized inputs to search for edge cases and crashes that hand-written table-driven cases might never think to try.</p>
+    <p><code>go test ./...</code> runs all tests in a module, and <code>go test -cover</code> reports test coverage as a percentage, with <code>go test -coverprofile=cover.out</code> followed by <code>go tool cover -html=cover.out</code> producing a line-by-line HTML coverage view &mdash; both routinely wired into CI pipelines for Go projects, often with a minimum coverage threshold enforced.</p>
     <div class="code-block">
 <div class="cap">calculator_test.go</div>      <pre><code>package calculator
 
@@ -135,19 +151,71 @@ func TestAdd(t *testing.T) {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">subtests_test.go</div>      <pre><code>package calculator
+
+import "testing"
+
+func TestDivide(t *testing.T) {
+	cases := map[string]struct {
+		a, b   int
+		want   int
+		wantErr bool
+	}{
+		"positive":   {a: 10, b: 2, want: 5},
+		"by zero":    {a: 10, b: 0, wantErr: true},
+	}
+
+	for name, c := range cases {
+		c := c
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			got, err := Divide(c.a, c.b)
+			if c.wantErr {
+				if err == nil {
+					t.Fatal("expected an error, got nil")
+				}
+				return
+			}
+			if got != c.want {
+				t.Errorf("got %d, want %d", got, c.want)
+			}
+		})
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">fuzz_test.go</div>      <pre><code>package calculator
+
+import "testing"
+
+func FuzzReverse(f *testing.F) {
+	f.Add("hello") // seed corpus
+	f.Fuzz(func(t *testing.T, s string) {
+		reversed := Reverse(s)
+		if Reverse(reversed) != s {
+			t.Errorf("double reverse of %q produced %q", s, Reverse(reversed))
+		}
+	})
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Test functions live in <code>*_test.go</code> files, named <code>TestXxx</code>, taking <code>*testing.T</code>.</li>
-        <li><code>t.Error</code> reports a failure and continues; <code>t.Fatal</code> stops the test immediately.</li>
-        <li>Table-driven tests loop a single test body over a slice of input/expected-output cases.</li>
-        <li><code>go test -cover</code> reports how much of the code the test suite actually exercises.</li>
+        <li><code>t.Error</code>/<code>t.Errorf</code> reports a failure and continues; <code>t.Fatal</code>/<code>t.Fatalf</code> stops the test immediately.</li>
+        <li>Table-driven tests loop a single test body over a slice or map of input/expected-output cases.</li>
+        <li><code>t.Run("name", func(t *testing.T) {...})</code> creates a named subtest, runnable in isolation and clearly reported on failure.</li>
+        <li><code>t.Parallel()</code> lets independent tests run concurrently for a faster suite, but only when they share no mutable state.</li>
+        <li>Benchmarks (<code>BenchmarkXxx</code>) and fuzz tests (<code>FuzzXxx</code>) go beyond fixed-case tests to measure performance and search for edge cases automatically.</li>
+        <li><code>go test -cover</code> reports how much of the code the test suite actually exercises; <code>go tool cover -html</code> visualizes it line by line.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a table-driven test for a function IsPalindrome(s string) bool covering a palindrome, a non-palindrome, and an empty string.</p>
+      <p>Write a table-driven test for a function IsPalindrome(s string) bool covering a palindrome, a non-palindrome, and an empty string, using t.Run to name each case as its own subtest. Then add a FuzzIsPalindrome fuzz test that seeds a couple of known strings and asserts the function never panics on random input, and run go test -cover to check your coverage.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

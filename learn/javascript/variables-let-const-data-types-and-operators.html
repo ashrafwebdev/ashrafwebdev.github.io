@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Variables (let/const), data types, and operators</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">JavaScript has two modern ways to declare a variable: <code>let</code> for a value that can change, and <code>const</code> for one that can't be reassigned. Avoid the older <code>var</code> — it has confusing scoping rules that <code>let</code>/<code>const</code> were introduced specifically to fix.</p>
-    <p>Core data types are numbers, strings, booleans, <code>null</code>, <code>undefined</code>, objects, and arrays. Operators combine them: arithmetic (<code>+ - * /</code>), comparison (<code>===</code>, always prefer this over the looser <code>==</code>), and logical (<code>&amp;&amp; || !</code>).</p>
+    <p class="lead">JavaScript has three ways to declare a variable, but you should really only reach for two of them. <code>let</code> declares a variable that can be reassigned later; <code>const</code> declares one that can't be reassigned after its initial value is set. The older <code>var</code> is best avoided in new code — it scopes to the entire enclosing function rather than the block it's written in, which leads to variables leaking out of if-blocks and for-loops in ways that surprise almost everyone at least once.</p>
+    <p>Both <code>let</code> and <code>const</code> are block-scoped, meaning a variable declared inside a pair of curly braces (an if-block, a loop body, a function) simply does not exist outside of them. They also live in something called the temporal dead zone: the variable name is reserved from the top of its block, but accessing it before the declaration line throws a ReferenceError instead of silently returning <code>undefined</code> the way <code>var</code> would. This is a deliberate safety feature, not a bug.</p>
+    <p>JavaScript's primitive data types are number, string, boolean, <code>null</code>, <code>undefined</code>, and the less common bigint and symbol. Everything else — plain objects, arrays, functions, dates — is a reference type. The distinction matters constantly: primitives are compared and copied by value, while objects and arrays are compared and copied by reference, so two separately-created objects with identical contents are never <code>===</code> equal to each other.</p>
+    <p>Numbers in JavaScript are always 64-bit floating point, even when they look like integers, and that has real consequences. Adding 0.1 and 0.2 does not produce exactly 0.3 because of how binary floating point represents decimal fractions — it produces 0.30000000000000004. For money or anything requiring exact decimal precision, work in integer cents or use a dedicated decimal library rather than raw floats.</p>
+    <p>Operators fall into a few families worth knowing well: arithmetic (<code>+ - * / % **</code>), comparison (always prefer the strict <code>===</code> and <code>!==</code> over the loose <code>==</code> and <code>!=</code>, which perform surprising type coercion), logical (<code>&amp;&amp; || !</code>), and two newer additions that solve real pain points — the nullish coalescing operator <code>??</code>, which falls back to a default only when the left side is <code>null</code> or <code>undefined</code> (not for other falsy values like 0 or an empty string), and optional chaining <code>?.</code>, which short-circuits to <code>undefined</code> instead of throwing when you access a property on something that might not exist.</p>
+    <p>A frequent source of confusion is that <code>typeof null</code> returns <code>"object"</code>, which is a decades-old bug baked permanently into the language for backward compatibility, not a design choice you should imitate. To reliably check for <code>null</code>, compare directly against <code>null</code> rather than trusting <code>typeof</code>.</p>
     <div class="code-block">
 <div class="cap">basics.js</div>      <pre><code>const name = "Amina";
 let age = 27;
@@ -120,19 +137,52 @@ age = 28; // let can be reassigned
 const isAdult = age &gt;= 18;
 console.log(typeof name, typeof age, typeof isAdult);</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">coercion-and-defaults.js</div>      <pre><code>// Loose equality performs surprising coercion — avoid it
+console.log(0 == "0");     // true  (string coerced to number)
+console.log(0 === "0");    // false (strict: different types)
+console.log(null == undefined);  // true
+console.log(null === undefined); // false
+
+// Nullish coalescing vs plain OR: watch falsy values like 0
+function getVolume(input) {
+  const fallback = 50;
+  return input ?? fallback; // only null/undefined trigger the fallback
+}
+console.log(getVolume(0));         // 0, not 50
+console.log(getVolume(undefined)); // 50
+
+// Optional chaining avoids manual null checks
+const user = { profile: null };
+console.log(user.profile?.bio ?? "No bio yet");</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">temporal-dead-zone.js</div>      <pre><code>console.log(typeof neverDeclared); // "undefined", no error
+
+console.log(city); // ReferenceError: Cannot access 'city' before initialization
+let city = "Nairobi";
+
+// var, by contrast, would just print undefined here instead of throwing —
+// which quietly hides bugs that let/const surface immediately.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Default to <code>const</code>; use <code>let</code> only when you know the value needs to change.</li>
-        <li>Avoid <code>var</code> — its function-level (not block-level) scoping causes subtle bugs.</li>
-        <li>Always use <code>===</code> and <code>!==</code>, not <code>==</code>/<code>!=</code>, to avoid surprising type coercion.</li>
-        <li><code>typeof</code> is handy for quick debugging of what type a value actually is.</li>
+        <li>Default to <code>const</code>; use <code>let</code> only when you know the value needs to change; avoid <code>var</code> entirely in new code.</li>
+        <li><code>let</code>/<code>const</code> are block-scoped; <code>var</code> is function-scoped, which is the root of most of its bugs.</li>
+        <li>The temporal dead zone means accessing a <code>let</code>/<code>const</code> variable before its declaration line throws, rather than silently giving <code>undefined</code>.</li>
+        <li>Always use <code>===</code> and <code>!==</code>, not <code>==</code>/<code>!=</code>, to avoid type coercion surprises.</li>
+        <li>Numbers are floating point — never compare decimal results for exact equality; round or compare within a small tolerance instead.</li>
+        <li><code>??</code> only falls back on <code>null</code>/<code>undefined</code>, unlike <code>||</code>, which also falls back on 0, an empty string, and false.</li>
+        <li>Objects and arrays are compared by reference, not by their contents, so two separately-built objects that look identical are never <code>===</code> equal.</li>
+        <li><code>typeof</code> is handy for quick debugging, but remember its one famous quirk: <code>typeof null</code> is <code>"object"</code>.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Declare variables for your name, age, and favorite language using const/let appropriately, then log a sentence combining them using template literals.</p>
+      <p>Declare variables for your name, age, and favorite language using const/let appropriately, then log a sentence that combines them (plain string concatenation with <code>+</code> works fine here — a more convenient way to build strings from variables is covered in a later lesson). Then write a small function that takes a possibly-missing volume setting and returns it unchanged unless it is null or undefined, demonstrating why ?? is a better choice than || for that case.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

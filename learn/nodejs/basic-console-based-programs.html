@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Basic console-based programs</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="reading-writing-files-with-the-fs-module.html">Reading/writing files with the fs module</a></p>
   </div>
 
   <article>
-    <p class="lead">Beyond one-off scripts, Node can build interactive command-line tools. The built-in <code>readline</code> module reads user input from the terminal line by line, similar to Python's <code>input()</code> but callback/event-based.</p>
-    <p><code>process.argv</code> gives access to command-line arguments passed when the script was invoked, letting a script behave differently based on flags or inputs — the foundation of any real CLI tool.</p>
+    <p class="lead">Beyond one-off scripts, Node can build interactive command-line tools. The built-in <code>readline</code> module reads user input from the terminal line by line, similar to Python's <code>input()</code> but callback/event-based in its original form, with a Promise-friendly wrapper available via <code>readline/promises</code>.</p>
+    <p><code>process.argv</code> gives access to command-line arguments passed when the script was invoked, letting a script behave differently based on flags or inputs — the foundation of any real CLI tool, from a simple script to something like the <code>npm</code> command itself.</p>
+    <p>For anything beyond a couple of positional arguments, hand-parsing <code>process.argv</code> gets unwieldy fast — distinguishing <code>--flag value</code> from <code>--flag=value</code> from a bare boolean flag, handling <code>-h</code>/<code>--help</code>, and giving useful error messages all add up. This is exactly what argument-parsing libraries like <code>commander</code> or <code>yargs</code> exist to handle.</p>
+    <p><code>process.exit(code)</code> ends the script immediately with a given exit code — <code>0</code> for success, non-zero for failure — which matters because shell scripts and CI pipelines check that exit code to decide whether a command succeeded. Calling <code>process.exit()</code> abruptly can also cut off any pending asynchronous work (like a file write that hasn't finished), so it's best reserved for genuine, deliberate early termination.</p>
+    <p>Reading piped input (<code>echo "data" | node script.js</code>) is a different pattern from interactive <code>readline</code> prompting: you read from <code>process.stdin</code> as a stream, listening for <code>data</code> and <code>end</code> events, which lets a script work both interactively and as part of a Unix-style pipeline.</p>
+    <p>Color and formatting in terminal output (via ANSI escape codes, or a library like <code>chalk</code> or <code>picocolors</code>) makes CLI tools meaningfully more usable — highlighting errors in red or success in green — but should always degrade gracefully when output isn't a real terminal (e.g. when piped to a file), which most such libraries detect automatically.</p>
     <div class="code-block">
 <div class="cap">cli.js</div>      <pre><code>const readline = require("readline/promises");
 const { stdin, stdout } = process;
@@ -126,6 +143,38 @@ async function main() {
 
 main();</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">args.js (manual flag parsing)</div>      <pre><code>// node args.js --name Amina --verbose
+const args = process.argv.slice(2);
+const options = { verbose: false };
+
+for (let i = 0; i &lt; args.length; i++) {
+  if (args[i] === "--name") options.name = args[++i];
+  if (args[i] === "--verbose") options.verbose = true;
+}
+
+if (!options.name) {
+  console.error("Usage: node args.js --name &lt;name&gt; [--verbose]");
+  process.exit(1);
+}
+
+console.log(`Hello, ${options.name}!`);
+if (options.verbose) console.log("Verbose mode on");</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">read-stdin.js (piped input)</div>      <pre><code>let input = "";
+
+process.stdin.on("data", (chunk) =&gt; {
+  input += chunk;
+});
+
+process.stdin.on("end", () =&gt; {
+  const lines = input.trim().split("\n");
+  console.log(`Received ${lines.length} line(s)`);
+});
+
+// Usage: echo -e "a\nb\nc" | node read-stdin.js</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -133,12 +182,21 @@ main();</code></pre>
         <li><code>process.argv</code> is an array; the actual arguments start at index 2 (indexes 0 and 1 are the node binary and script path).</li>
         <li><code>process.exit(code)</code> ends the script immediately with a given exit code — 0 for success, non-zero for failure.</li>
         <li>Libraries like <code>commander</code> or <code>yargs</code> handle argument parsing for anything beyond the simplest CLI tool.</li>
+        <li>A script can also read piped input via the <code>process.stdin</code> stream's <code>data</code>/<code>end</code> events, not just interactive readline prompts.</li>
+        <li>Calling <code>process.exit()</code> too early can cut off pending async work — reserve it for deliberate, final termination.</li>
+        <li>Non-zero exit codes are how shell scripts and CI pipelines detect that your command failed — don't skip setting them on error paths.</li>
+        <li>Terminal color libraries (chalk, picocolors) typically detect non-terminal output automatically and disable color codes when piped to a file.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a CLI script that asks the user for two numbers via readline and prints their sum.</p>
+      <p>Write a CLI script that asks the user for two numbers via readline and prints their sum. Then add support for passing the numbers directly as command-line flags (e.g. node calc.js --a 5 --b 3) so the script works both interactively and non-interactively, exiting with a non-zero code and a usage message if the flags are malformed.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">wordcount — a file-reading CLI tool</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

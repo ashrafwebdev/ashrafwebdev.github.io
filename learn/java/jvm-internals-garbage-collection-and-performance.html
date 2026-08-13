@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,32 +119,68 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>JVM internals, garbage collection, and performance tuning</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="testing-with-junit.html">Testing with JUnit</a></p>
   </div>
 
   <article>
-    <p class="lead">The <b>JVM</b> manages memory in distinct regions: the <b>heap</b> (where objects live), the <b>stack</b> (per-thread, holding local variables and method call frames), and <b>metaspace</b> (class metadata). Understanding this layout explains why some errors are <code>StackOverflowError</code> (deep or infinite recursion) versus <code>OutOfMemoryError</code> (heap exhaustion).</p>
-    <p><b>Garbage collection</b> automatically reclaims heap memory occupied by objects that are no longer reachable. Modern collectors like G1 and ZGC divide the heap into regions and collect young, short-lived objects far more often than old, long-lived ones, based on the empirical observation that most objects die young.</p>
-    <p>Performance tuning typically starts with measurement, not guessing: tools like JFR (Java Flight Recorder) and VisualVM profile CPU and memory usage, and flags like <code>-Xmx</code> and <code>-XX:+UseG1GC</code> let you tune heap size and collector choice once you know where the actual bottleneck is.</p>
+    <p class="lead">The <b>JVM</b> manages memory in distinct regions: the <b>heap</b> (where objects live, shared across all threads), the <b>stack</b> (per-thread, holding local variables and method call frames), and <b>metaspace</b> (class metadata, replacing the old fixed-size "PermGen" region since Java 8). Understanding this layout explains why some errors are <code>StackOverflowError</code> (deep or infinite recursion exhausting a single thread's stack) versus <code>OutOfMemoryError</code> (heap or metaspace exhaustion, which is a much more serious, application-wide problem).</p>
+    <p><b>Garbage collection</b> automatically reclaims heap memory occupied by objects that are no longer reachable from any live reference, so Java developers don't manually free memory the way C/C++ developers do. This trades a small amount of runtime overhead and occasional pause time for the elimination of a huge class of bugs &mdash; use-after-free and double-free errors simply cannot happen in ordinary Java code.</p>
+    <p>Most collectors use a <b>generational</b> strategy, splitting the heap into a young generation (for newly created, usually short-lived objects) and an old generation (for objects that have survived multiple collections). This is based on the empirical observation that most objects die young, so collecting the young generation frequently and cheaply, while collecting the old generation rarely, gives much better overall throughput than treating the whole heap uniformly.</p>
+    <p>The default collector since Java 9, <b>G1 (Garbage First)</b>, divides the heap into many equally-sized regions and prioritizes collecting the regions with the most garbage first, aiming for predictable, bounded pause times rather than the absolute shortest possible pause. <b>ZGC</b> and <b>Shenandoah</b> are newer low-latency collectors that keep pause times in the single-digit milliseconds even on very large heaps, at the cost of somewhat higher CPU overhead, which matters for latency-sensitive applications where a multi-hundred-millisecond GC pause would be unacceptable.</p>
+    <p>Performance tuning typically starts with measurement, not guessing: tools like JFR (Java Flight Recorder, built into the JVM with very low overhead) and VisualVM profile CPU and memory usage over time, revealing where time is actually spent rather than where you assume it's spent. Flags like <code>-Xmx</code> (max heap size), <code>-Xms</code> (initial heap size), and <code>-XX:+UseG1GC</code> let you tune heap size and collector choice once you know where the actual bottleneck is.</p>
+    <p>A common performance mistake is over-allocating short-lived objects in a hot loop (for example, building Strings with <code>+</code> inside a loop instead of a <code>StringBuilder</code>), which creates unnecessary GC pressure; the fix is usually algorithmic (allocate less, reuse buffers) rather than reaching for GC tuning flags first, since no amount of collector tuning fixes a program that's fundamentally allocating too much.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code># Run with a max heap of 512MB using the G1 collector
 $ java -Xmx512m -XX:+UseG1GC -jar app.jar
 
 # Capture a short profiling recording
-$ java -XX:StartFlightRecording=duration=60s,filename=out.jfr -jar app.jar</code></pre>
+$ java -XX:StartFlightRecording=duration=60s,filename=out.jfr -jar app.jar
+
+# Print detailed GC activity to stdout (useful for a quick first look)
+$ java -Xlog:gc*:stdout:time,level,tags -jar app.jar</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">AllocationPressure.java</div>      <pre><code>public class AllocationPressure {
+    public static void main(String[] args) {
+        long start = System.nanoTime();
+
+        // Bad: creates a new String object on every iteration
+        String result = "";
+        for (int i = 0; i &lt; 50_000; i++) {
+            result += i; // O(n^2) copying, heavy GC pressure
+        }
+
+        long slowMs = (System.nanoTime() - start) / 1_000_000;
+
+        start = System.nanoTime();
+        // Good: one mutable buffer, far fewer allocations
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i &lt; 50_000; i++) {
+            sb.append(i);
+        }
+        long fastMs = (System.nanoTime() - start) / 1_000_000;
+
+        System.out.println("String concat: " + slowMs + "ms, StringBuilder: " + fastMs + "ms");
+    }
+}</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>The JVM heap holds objects; the stack holds per-thread call frames and local variables.</li>
-        <li>Garbage collectors focus effort on young, short-lived objects, since most objects never survive long.</li>
-        <li><code>StackOverflowError</code> and <code>OutOfMemoryError</code> point to different memory regions being exhausted.</li>
+        <li>The JVM heap holds objects; the stack holds per-thread call frames and local variables; metaspace holds class metadata.</li>
+        <li>StackOverflowError and OutOfMemoryError point to different memory regions being exhausted.</li>
+        <li>Garbage collectors focus effort on young, short-lived objects, since most objects never survive long (generational GC).</li>
+        <li>G1 is the modern default collector, prioritizing bounded pause times; ZGC/Shenandoah target very low, consistent latency on large heaps.</li>
         <li>Tune based on profiler data (JFR, VisualVM), not intuition, before changing heap or GC flags.</li>
+        <li>-Xmx/-Xms control heap size; -XX:+UseG1GC and similar flags select the collector.</li>
+        <li>Excessive short-lived allocation (like string concatenation in a loop) creates GC pressure; fix the allocation pattern before reaching for GC tuning flags.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Research the difference between the G1 and ZGC garbage collectors and write two or three sentences on when you would pick one over the other.</p>
+      <p>Research the difference between the G1 and ZGC garbage collectors and write two or three sentences on when you would pick one over the other. Then write a small program that builds a large string two ways &mdash; with + concatenation in a loop and with StringBuilder &mdash; time both approaches, and explain in a comment why the StringBuilder version generates far less garbage for the collector to clean up.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

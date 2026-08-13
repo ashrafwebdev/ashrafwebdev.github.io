@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,15 +119,51 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Publishing and maintaining an npm package</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="designing-scalable-resilient-service-architectur.html">Designing scalable, resilient service architectures</a></p>
   </div>
 
   <article>
-    <p class="lead">Publishing to npm is as simple as <code>npm publish</code> once <code>package.json</code> has a unique name and version — but maintaining a package well requires ongoing care: semantic versioning, a changelog, and not breaking consumers without warning.</p>
-    <p>Once other projects depend on your package, a breaking change requires a major version bump (semver), clear migration documentation, and ideally a deprecation period rather than an abrupt removal.</p>
+    <p class="lead">Publishing to npm is as simple as <code>npm publish</code> once <code>package.json</code> has a unique name and version — but maintaining a package well requires ongoing care: semantic versioning, a changelog, and not breaking consumers without warning, since real projects will depend on your exact behavior, intentional or not.</p>
+    <p>Semantic versioning (major.minor.patch) is a contract with your users: a patch release should only contain bug fixes, a minor release adds backward-compatible functionality, and a major release can contain breaking changes — respecting that distinction is what lets consumers safely use version ranges like <code>^1.2.3</code> without manually reviewing every release.</p>
+    <p>The <code>files</code> field in <code>package.json</code> (or a <code>.npmignore</code> file) controls what actually ships in the published package, keeping it lean — without it, npm publishes essentially everything in the directory not excluded by <code>.gitignore</code>, which often means accidentally shipping test files, source maps, or internal scripts nobody consuming the package needs.</p>
+    <p>The <code>main</code> field (and increasingly the more expressive <code>exports</code> field) tells Node and bundlers which file to load when someone does <code>require("your-package")</code> or <code>import ... from "your-package"</code> — the <code>exports</code> field can also explicitly restrict which internal files are importable at all, preventing consumers from reaching into implementation details you might want to change freely later.</p>
+    <p>Automated tests and a CI pipeline that runs before publish prevent shipping a broken release to everyone depending on you — a broken patch release that reaches thousands of downstream projects overnight is a real, recurring failure mode in the npm ecosystem, and a CI gate is the standard defense against it.</p>
+    <p>A clear README with install instructions and a basic usage example is often the difference between a package getting adopted or ignored, and enabling two-factor authentication on your npm account (required for publishing popular packages, and a very good idea regardless) protects against a compromised account being used to publish malicious versions of your package to everyone who depends on it.</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>npm login
 npm version patch   # bumps the version and creates a git tag
-npm publish</code></pre>
+npm publish
+npm publish --dry-run   # preview exactly what would be published, without doing it</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">package.json (files and exports fields)</div>      <pre><code>{
+  "name": "my-utils",
+  "version": "1.2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist", "README.md"],
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">.github/workflows/publish.yml (CI gate before publish)</div>      <pre><code>name: Publish
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", registry-url: "https://registry.npmjs.org" }
+      - run: npm ci
+      - run: npm test          # publish is blocked if tests fail
+      - run: npm publish
+        env: { NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}" }</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -124,12 +172,16 @@ npm publish</code></pre>
         <li>A <code>.npmignore</code> (or the <code>files</code> field in package.json) controls what actually ships in the published package, keeping it lean.</li>
         <li>Automated tests and a CI pipeline before publish prevent shipping a broken release to everyone depending on you.</li>
         <li>A clear README with install instructions and a basic usage example is often the difference between a package getting adopted or ignored.</li>
+        <li>The <code>exports</code> field can restrict which internal files consumers can import, protecting implementation details from becoming an accidental public API.</li>
+        <li><code>npm publish --dry-run</code> lets you preview exactly what would ship before actually publishing it.</li>
+        <li>Two-factor authentication on your npm account protects against a compromised account publishing malicious versions to everyone who depends on your package.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Package a small utility function, set up package.json correctly (name, version, main entry point), and publish it to npm (or simulate the process locally with npm pack).</p>
+      <p>Package a small utility function, set up package.json correctly (name, version, main entry point, and a files field), and publish it to npm (or simulate the process locally with npm pack and inspect the resulting tarball's contents). Then bump the version with npm version minor after adding a backward-compatible feature, and write a short CHANGELOG entry describing what changed.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

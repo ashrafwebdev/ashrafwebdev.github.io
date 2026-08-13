@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,72 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Cross-platform development with .NET MAUI</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="designing-large-scale-net-architectures.html">Designing large-scale .NET architectures</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>.NET MAUI</b> (Multi-platform App UI) lets you build a single C# and XAML codebase that compiles to native apps on Windows, macOS, iOS, and Android, evolving from the earlier Xamarin.Forms framework.</p>
-    <p>UI is described declaratively in XAML, with C# code-behind files handling logic, and data binding connects UI elements directly to properties on a view model, so the UI updates automatically when the underlying data changes.</p>
-    <p>Platform-specific behavior, when needed, is handled through dependency injection and conditional compilation, letting the bulk of the application logic remain fully shared while only small platform-specific pieces differ.</p>
+    <p class="lead"><b>.NET MAUI</b> (Multi-platform App UI) lets you build a single C# and XAML codebase that compiles to native apps on Windows, macOS, iOS, and Android, evolving from the earlier Xamarin.Forms framework and unifying what used to be several separate platform-specific project types into one shared project with platform-specific folders only where truly needed.</p>
+    <p>UI is described declaratively in XAML, with C# code-behind files handling logic, and data binding connects UI elements directly to properties on a view model, so the UI updates automatically when the underlying data changes &mdash; this is the MVVM (Model-View-ViewModel) pattern, and it's the dominant way MAUI (and WPF before it) applications are structured, keeping UI markup separate from testable application logic.</p>
+    <p>For a bound property to notify the UI of changes, the view model class implements <code>INotifyPropertyChanged</code> and raises its <code>PropertyChanged</code> event whenever a bound property's value changes; the <code>CommunityToolkit.Mvvm</code> source generator package removes most of this boilerplate by generating the notification code from a simple attribute on a field.</p>
+    <p>Commands (<code>ICommand</code>, typically via <code>RelayCommand</code> from the community toolkit) bind a button's action to a method on the view model rather than an event handler in code-behind, keeping the view model unit-testable without needing any actual UI to exist &mdash; you can invoke and assert on a command directly in a test.</p>
+    <p>Platform-specific behavior, when needed, is handled through dependency injection (registering a platform-specific implementation of a shared interface) and conditional compilation (<code>#if ANDROID</code>, <code>#if IOS</code>), letting the bulk of the application logic remain fully shared while only small platform-specific pieces differ, such as accessing a native camera API or platform-specific file storage location.</p>
+    <p>Because MAUI ultimately compiles to real native controls on each platform rather than rendering everything itself, performance and look-and-feel are close to a fully native app, but subtle platform differences in behavior (safe-area insets, keyboard handling, back-button behavior on Android) still need real testing on each target platform rather than assuming write-once-run-anywhere covers every edge case.</p>
     <div class="code-block">
 <div class="cap">MainPage.xaml</div>      <pre><code>&lt;VerticalStackLayout Padding="20"&gt;
     &lt;Label Text="{Binding Greeting}" FontSize="24" /&gt;
     &lt;Button Text="Say Hello" Command="{Binding SayHelloCommand}" /&gt;
 &lt;/VerticalStackLayout&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">MainViewModel.cs</div>      <pre><code>public partial class MainViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private string greeting = "Press the button";
+
+    [RelayCommand]
+    private void SayHello()
+    {
+        Greeting = "Hello from the view model!";
+    }
+}
+
+// [ObservableProperty] and [RelayCommand] (CommunityToolkit.Mvvm)
+// generate the INotifyPropertyChanged and ICommand boilerplate for you.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">CounterPage.xaml</div>      <pre><code>&lt;VerticalStackLayout Padding="20" Spacing="10"&gt;
+    &lt;Label Text="{Binding Count}" FontSize="32" HorizontalOptions="Center" /&gt;
+    &lt;Button Text="Increment" Command="{Binding IncrementCommand}" /&gt;
+&lt;/VerticalStackLayout&gt;
+
+&lt;!-- CounterViewModel.cs --&gt;
+&lt;!--
+public partial class CounterViewModel : ObservableObject
+{
+    [ObservableProperty] private int count;
+
+    [RelayCommand]
+    private void Increment() =&gt; Count++;
+}
+--&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>.NET MAUI compiles one C#/XAML codebase to native Windows, macOS, iOS, and Android apps.</li>
-        <li>XAML describes UI declaratively, paired with C# code-behind for logic.</li>
-        <li>Data binding keeps the UI in sync with a view model automatically.</li>
-        <li>Platform-specific code is isolated so the majority of the app stays fully shared.</li>
+        <li>XAML describes UI declaratively, paired with C# code-behind for logic, structured around the MVVM pattern.</li>
+        <li>Data binding keeps the UI in sync with a view model automatically via INotifyPropertyChanged.</li>
+        <li>The CommunityToolkit.Mvvm package generates INotifyPropertyChanged and ICommand boilerplate from simple attributes.</li>
+        <li>Commands bind UI actions to testable view model methods, avoiding logic buried in code-behind event handlers.</li>
+        <li>Platform-specific code is isolated via DI and conditional compilation so the majority of the app stays fully shared.</li>
+        <li>MAUI renders real native controls, so it looks and performs close to native, but platform quirks still need real device testing.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch a simple MAUI page (in words or XAML) for a counter app with a label showing the count and a button that increments it via a bound command.</p>
+      <p>Sketch a simple MAUI page (in words or XAML) for a counter app with a label showing the count and a button that increments it via a bound command. Then write the corresponding view model using ObservableProperty and RelayCommand attributes, and describe in a sentence how you would unit test the Increment command without running any actual UI.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

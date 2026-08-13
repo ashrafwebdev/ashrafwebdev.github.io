@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Primary keys and basic table design</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="insert-update-delete-basics.html">INSERT, UPDATE, DELETE basics</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>primary key</b> uniquely identifies each row in a table, is automatically indexed for fast lookups, and enforces uniqueness and non-null constraints by definition. A single auto-incrementing integer or UUID column is the most common choice for new tables.</p>
-    <p>Each column is declared with a specific data type &mdash; <code>INTEGER</code>, <code>VARCHAR(n)</code>, <code>TEXT</code>, <code>BOOLEAN</code>, <code>DATE</code>/<code>TIMESTAMP</code> &mdash; and choosing types that match the actual data (a fixed-length code versus free text, a date versus a string) keeps storage efficient and prevents invalid data from ever being stored.</p>
-    <p>Constraints like <code>NOT NULL</code>, <code>UNIQUE</code>, and <code>CHECK</code> enforce data integrity rules directly in the database schema, which is more reliable than relying solely on application code to validate every write.</p>
+    <p class="lead">A <b>primary key</b> uniquely identifies each row in a table, is automatically indexed for fast lookups, and enforces uniqueness and non-null constraints by definition. A single auto-incrementing integer (or an equivalent identity/serial type) or a UUID column is the most common choice for new tables.</p>
+    <p>Auto-incrementing integers are compact, sort naturally by insertion order, and index efficiently, but they leak information about row count and creation order and don't work well across multiple independent write nodes. UUIDs avoid both problems and are easy to generate outside the database, but they're larger, don't sort meaningfully, and can fragment a B-tree index more than sequential integers do &mdash; the choice is a genuine tradeoff, not a default with one obviously correct answer.</p>
+    <p>A <b>composite primary key</b>, made of two or more columns together, is common on join tables that model a many-to-many relationship, such as a table pairing product IDs with tag IDs where no single column is unique on its own but the pair always is.</p>
+    <p>Each column is declared with a specific data type &mdash; <code>INTEGER</code>, <code>VARCHAR(n)</code>, <code>TEXT</code>, <code>BOOLEAN</code>, <code>DATE</code>/<code>TIMESTAMP</code>, <code>NUMERIC</code> for exact decimal values like money &mdash; and choosing types that match the actual data (a fixed-length code versus free text, an exact decimal versus a floating-point approximation, a date versus a string) keeps storage efficient and prevents invalid data from ever being stored.</p>
+    <p>Constraints like <code>NOT NULL</code>, <code>UNIQUE</code>, and <code>CHECK</code> enforce data integrity rules directly in the database schema, which is more reliable than relying solely on application code to validate every write, since the constraint holds no matter which script, migration, or admin tool touches the table.</p>
+    <p>A sensible default value, set with <code>DEFAULT</code>, reduces the number of columns every INSERT statement has to specify explicitly and guarantees a consistent starting value &mdash; a <code>created_at</code> timestamp defaulting to <code>now()</code>, or a <code>status</code> column defaulting to <code>'pending'</code>, are typical examples.</p>
     <div class="code-block">
 <div class="cap">schema.sql</div>      <pre><code>CREATE TABLE products (
     id SERIAL PRIMARY KEY,
@@ -122,19 +138,33 @@
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">composite_key.sql</div>      <pre><code>-- product_id and tag_id would normally also reference other tables;
+-- that REFERENCES syntax is covered in a later foreign keys lesson
+CREATE TABLE product_tags (
+    product_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    added_at TIMESTAMP NOT NULL DEFAULT now(),
+    PRIMARY KEY (product_id, tag_id)
+);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A primary key uniquely identifies each row and is automatically indexed.</li>
+        <li>Auto-incrementing integers and UUIDs are the two most common key choices, each with real tradeoffs.</li>
+        <li>A composite primary key spans two or more columns, common on many-to-many join tables.</li>
         <li>Column types should match the actual data to keep storage efficient and reject invalid values.</li>
-        <li>NOT NULL, UNIQUE, and CHECK constraints enforce data integrity at the database level.</li>
-        <li>Auto-incrementing integers or UUIDs are the most common primary key choices for new tables.</li>
+        <li>NOT NULL, UNIQUE, and CHECK constraints enforce data integrity at the database level, not just in app code.</li>
+        <li>DEFAULT values reduce boilerplate in INSERT statements and guarantee a consistent starting value.</li>
+        <li>NUMERIC (not floating point) is the correct type for exact values like currency.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Design a CREATE TABLE statement for a customers table with an auto-incrementing primary key, a required unique email, and a required name.</p>
+      <p>Design a CREATE TABLE statement for a customers table with an auto-incrementing primary key, a required unique email, and a required name. Then design a second table, order_items, that uses a composite primary key of order_id and product_id to represent a many-to-many relationship between orders and products.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

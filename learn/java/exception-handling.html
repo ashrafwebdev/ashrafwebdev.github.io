@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Exception handling</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="the-collections-framework-list-map-set.html">The Collections framework (List, Map, Set)</a></p>
   </div>
 
   <article>
-    <p class="lead">Java uses <code>try</code>/<code>catch</code>/<code>finally</code> blocks to handle errors without letting them crash the program. Code that might fail goes in <code>try</code>; code that responds to a specific failure goes in a matching <code>catch</code>; code in <code>finally</code> always runs, whether or not an exception occurred, making it ideal for cleanup.</p>
-    <p>Java distinguishes <b>checked exceptions</b> (subclasses of <code>Exception</code> other than <code>RuntimeException</code>, which the compiler forces you to catch or declare with <code>throws</code>) from <b>unchecked exceptions</b> (subclasses of <code>RuntimeException</code>, which are optional to catch, like <code>NullPointerException</code>).</p>
-    <p>Since Java 7, <b>try-with-resources</b> automatically closes any resource implementing <code>AutoCloseable</code> (such as file streams) at the end of the block, even if an exception is thrown, eliminating a whole class of resource-leak bugs.</p>
+    <p class="lead">Java uses <code>try</code>/<code>catch</code>/<code>finally</code> blocks to handle errors without letting them crash the program. Code that might fail goes in <code>try</code>; code that responds to a specific failure goes in a matching <code>catch</code>; code in <code>finally</code> always runs, whether or not an exception occurred (even if the try block returns), making it ideal for cleanup, though try-with-resources has mostly replaced manual <code>finally</code>-based cleanup for resources.</p>
+    <p>Java distinguishes <b>checked exceptions</b> (subclasses of <code>Exception</code> other than <code>RuntimeException</code>, which the compiler forces you to catch or declare with <code>throws</code>, like <code>IOException</code>) from <b>unchecked exceptions</b> (subclasses of <code>RuntimeException</code>, which are optional to catch, like <code>NullPointerException</code> or <code>IllegalArgumentException</code>). Checked exceptions are meant for recoverable conditions the caller should plan for; unchecked exceptions usually signal programmer bugs.</p>
+    <p>You can define your own exception types by extending <code>Exception</code> (checked) or <code>RuntimeException</code> (unchecked), which is useful when a generic exception type doesn't communicate enough domain meaning; a custom <code>InsufficientFundsException</code> is far more informative to a caller than a bare <code>IllegalStateException</code>.</p>
+    <p>Catch blocks can be ordered from most specific to most general, and Java lets you catch several unrelated exception types in one block with the pipe syntax, <code>catch (IOException | SQLException e)</code>, avoiding duplicated handling code when the response is identical for multiple exception types.</p>
+    <p>Since Java 7, <b>try-with-resources</b> automatically closes any resource implementing <code>AutoCloseable</code> (file streams, database connections, and the like) at the end of the block, even if an exception is thrown, eliminating a whole class of resource-leak bugs that used to require careful nested try/finally blocks.</p>
+    <p>A common anti-pattern is catching <code>Exception</code> (or worse, <code>Throwable</code>) broadly and silently swallowing it with an empty catch block; this hides real bugs and makes debugging painful. Catch the most specific exception type you can meaningfully handle, and if you must catch broadly, at least log the exception rather than discarding it.</p>
     <div class="code-block">
 <div class="cap">SafeDivide.java</div>      <pre><code>public class SafeDivide {
     static int divide(int a, int b) {
@@ -132,19 +148,52 @@
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">InsufficientFundsException.java</div>      <pre><code>class InsufficientFundsException extends Exception { // checked: caller must handle it
+    InsufficientFundsException(String message) { super(message); }
+}
+
+class Account {
+    private double balance;
+    Account(double balance) { this.balance = balance; }
+
+    void withdraw(double amount) throws InsufficientFundsException {
+        if (amount &gt; balance) {
+            throw new InsufficientFundsException(
+                "Requested " + amount + " but balance is only " + balance);
+        }
+        balance -= amount;
+    }
+}
+
+public class BankDemo {
+    public static void main(String[] args) {
+        Account acc = new Account(100.0);
+        try {
+            acc.withdraw(250.0);
+        } catch (InsufficientFundsException e) {
+            System.out.println("Withdrawal failed: " + e.getMessage());
+        }
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>finally</code> always executes, making it the right place for cleanup logic.</li>
-        <li>Checked exceptions must be caught or declared; unchecked exceptions are optional to catch.</li>
-        <li>Try-with-resources closes <code>AutoCloseable</code> resources automatically.</li>
+        <li><code>finally</code> always executes, making it the right place for cleanup logic that must never be skipped.</li>
+        <li>Checked exceptions must be caught or declared with throws; unchecked (RuntimeException) exceptions are optional to catch.</li>
+        <li>Custom exception classes give domain-specific meaning that generic exception types can't communicate on their own.</li>
+        <li>Multi-catch with the pipe syntax handles several exception types identically without duplicating code.</li>
+        <li>Try-with-resources closes AutoCloseable resources automatically, even when an exception is thrown.</li>
+        <li>Never silently swallow exceptions with an empty catch block; at minimum, log what was caught.</li>
         <li>Catch the most specific exception type you can meaningfully handle, rather than a broad catch-all.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a method that parses a String into an int using Integer.parseInt, catches NumberFormatException, and returns a default value of -1 when parsing fails; test it with valid and invalid input.</p>
+      <p>Write a method that parses a String into an int using Integer.parseInt, catches NumberFormatException, and returns a default value of -1 when parsing fails; test it with valid and invalid input. Then define a custom checked ValidationException, throw it from a method that rejects negative numbers, and write a caller that handles both exceptions with a single multi-catch block where the response is the same for both.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Syntax and variables</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
     <p class="lead">A Rust program's entry point is <code>fn main()</code>. Variables are declared with <code>let</code> and are <b>immutable by default</b> &mdash; <code>let x = 5;</code> cannot be reassigned unless you explicitly opt in with <code>let mut x = 5;</code>, a deliberate design choice that makes accidental mutation a compile error rather than a runtime surprise.</p>
-    <p>Rust is statically typed with strong type inference: <code>let age = 30;</code> infers <code>i32</code> without you writing it, but you can always be explicit with <code>let age: u32 = 30;</code> when it matters, such as choosing an unsigned type for a value that should never be negative.</p>
-    <p>Rust has no null; a variable is always guaranteed to hold a valid value of its declared type by the time it's used, and the compiler enforces this at every step, which eliminates an entire category of bugs common in other languages.</p>
+    <p>Rust is statically typed with strong type inference: <code>let age = 30;</code> infers <code>i32</code> without you writing it, but you can always be explicit with <code>let age: u32 = 30;</code> when it matters. The numeric types form a small family: signed integers <code>i8</code> through <code>i128</code>, unsigned <code>u8</code> through <code>u128</code>, pointer-sized <code>isize</code>/<code>usize</code> (used for indexing and lengths), and floats <code>f32</code>/<code>f64</code> (with <code>f64</code> as the default, matching double precision).</p>
+    <p><b>Shadowing</b> is different from mutation: writing <code>let x = ...;</code> a second time in the same scope creates a brand-new binding that happens to reuse the name, and unlike <code>mut</code> it is allowed to change the type entirely &mdash; parsing a string into a number and reusing the same variable name is a common, idiomatic use of shadowing. That parse can fail, so the example below calls <code>.expect("message")</code> to say "panic with this message if it didn't work" &mdash; a preview of the full Result-based error handling a later lesson covers in depth.</p>
+    <p><b>Constants</b>, declared with <code>const NAME: Type = value;</code>, always require an explicit type annotation and must be computable at compile time; by convention their names are SCREAMING_SNAKE_CASE. Unlike an immutable <code>let</code> binding, a <code>const</code> has no fixed memory address &mdash; the compiler is free to inline its value everywhere it's used.</p>
+    <p>Rust has no null; a variable is always guaranteed to hold a valid value of its declared type by the time it's used. This pairs with the fact that a block <code>{ ... }</code> is itself an expression: its value is whatever its final line evaluates to, as long as that line has no trailing semicolon &mdash; add a semicolon and the block instead evaluates to the empty unit value <code>()</code>.</p>
+    <p>Output typically goes through the <code>println!</code>/<code>print!</code>/<code>format!</code> macros (note the <code>!</code>, marking them as macros rather than ordinary functions). The <code>{}</code> placeholder uses a type's <code>Display</code> formatting, while <code>{:?}</code> uses <code>Debug</code> formatting (available automatically on types annotated <code>#[derive(Debug)]</code>) and <code>{:#?}</code> pretty-prints that same debug output across multiple indented lines.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>fn main() {
     let name = "Sumaya";
@@ -123,19 +139,52 @@
     println!("{} is {} years old, score: {}", name, age, score);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">shadow_and_const.rs</div>      <pre><code>const MAX_ATTEMPTS: u32 = 3;
+
+fn main() {
+    let input = "42";
+    // shadowing: `input` starts as &amp;str, ends up as i32
+    let input: i32 = input.parse().expect("not a number");
+    let input = input * 2;
+
+    println!("doubled: {}", input);
+    println!("max attempts allowed: {}", MAX_ATTEMPTS);
+
+    let point = (3, 4);
+    println!("{:?}", point); // Debug formatting on a tuple
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">mistakes.rs</div>      <pre><code>fn main() {
+    let count = 5;
+    // count = 6; // ERROR: cannot assign twice to immutable variable `count`
+
+    let a: i32 = 10;
+    let b: u32 = 5;
+    // let sum = a + b; // ERROR: mismatched types, i32 vs u32
+    let sum = a + b as i32; // explicit cast required
+    println!("{}", sum);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Variables are immutable by default; add <code>mut</code> to allow reassignment.</li>
-        <li>Type inference fills in types automatically, but explicit annotations are always allowed.</li>
+        <li>Type inference fills in types automatically, but explicit annotations are always allowed and sometimes required.</li>
+        <li>Integer defaults to <code>i32</code> and float defaults to <code>f64</code>; sized variants like <code>u8</code>, <code>i64</code>, and <code>usize</code> exist for specific needs.</li>
+        <li>Shadowing (repeating <code>let</code> with the same name) creates a new binding and can change the type, unlike <code>mut</code>.</li>
+        <li><code>const</code> requires an explicit type and a compile-time-computable value, and has no fixed memory address.</li>
         <li>Rust has no null value &mdash; every variable holds a genuinely valid value of its type.</li>
-        <li><code>println!</code> is a macro (note the <code>!</code>), not an ordinary function.</li>
+        <li>A block is itself an expression; a trailing semicolon turns it into a statement evaluating to <code>()</code>.</li>
+        <li><code>println!</code> is a macro, and <code>{}</code>, <code>{:?}</code>, and <code>{:#?}</code> select different formatting styles.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Rust program with an immutable name variable and a mutable counter variable that gets incremented three times, printing the counter after each increment.</p>
+      <p>Write a Rust program with an immutable name variable and a mutable counter variable that gets incremented three times, printing the counter after each increment. Then add a const for a maximum limit, and demonstrate shadowing by parsing a string into a number and reusing the same variable name, printing the final value with the debug formatter.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

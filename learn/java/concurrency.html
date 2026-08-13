@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Concurrency: threads and the executor framework</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="streams-and-lambda-expressions.html">Streams and lambda expressions</a></p>
   </div>
 
   <article>
-    <p class="lead">Java has built-in support for concurrency: a <code>Thread</code> represents an independent path of execution, created either by extending <code>Thread</code> or, more commonly, by passing a <code>Runnable</code> to a new <code>Thread</code> and calling <code>start()</code>.</p>
-    <p>Creating raw threads by hand does not scale well, so the <b>executor framework</b> (<code>java.util.concurrent</code>) provides thread pools via <code>Executors.newFixedThreadPool(n)</code>, letting you submit many tasks that get run across a bounded, reusable set of worker threads.</p>
-    <p>Shared mutable state accessed from multiple threads needs coordination to avoid race conditions; tools like the <code>synchronized</code> keyword, <code>java.util.concurrent.atomic</code> classes, and concurrent collections such as <code>ConcurrentHashMap</code> exist specifically to make that coordination safe.</p>
+    <p class="lead">Java has built-in support for concurrency: a <code>Thread</code> represents an independent path of execution, created either by extending <code>Thread</code> or, more commonly, by passing a <code>Runnable</code> (or <code>Callable</code>, if you need a return value) to a new <code>Thread</code> and calling <code>start()</code>. Calling <code>run()</code> directly instead of <code>start()</code> is a classic beginner mistake: it just executes the code synchronously on the current thread, with no new thread created at all.</p>
+    <p>Creating raw threads by hand does not scale well &mdash; each OS thread carries real memory and scheduling overhead &mdash; so the <b>executor framework</b> (<code>java.util.concurrent</code>) provides thread pools via <code>Executors.newFixedThreadPool(n)</code>, letting you submit many tasks that get run across a bounded, reusable set of worker threads instead of spawning a new thread per task.</p>
+    <p><code>ExecutorService.submit</code> returns a <code>Future</code>, which represents a result that will become available later; calling <code>future.get()</code> blocks the calling thread until the task completes and returns its result (or rethrows its exception, wrapped in an <code>ExecutionException</code>). <code>CompletableFuture</code> extends this idea to let you chain asynchronous steps together without blocking at every stage.</p>
+    <p>Shared mutable state accessed from multiple threads needs coordination to avoid <b>race conditions</b>, where the final result depends unpredictably on thread timing. The <code>synchronized</code> keyword ensures only one thread at a time can execute a block of code or method, using the object's intrinsic lock, but it can also introduce contention (threads waiting) or, if locks are acquired in inconsistent order across methods, <b>deadlock</b>.</p>
+    <p><code>java.util.concurrent.atomic</code> classes like <code>AtomicInteger</code> provide lock-free, thread-safe operations on a single variable (such as incrementing a shared counter) that are typically faster than a full <code>synchronized</code> block for that narrow case, because they rely on low-level compare-and-swap CPU instructions instead of locking.</p>
+    <p>Thread-safe collections like <code>ConcurrentHashMap</code> allow safe concurrent reads and writes without external synchronization and generally scale far better under contention than manually wrapping a plain <code>HashMap</code> with <code>synchronized</code>, because they use fine-grained internal locking (or lock-free algorithms) rather than one lock guarding the entire structure.</p>
     <div class="code-block">
 <div class="cap">PoolDemo.java</div>      <pre><code>import java.util.concurrent.*;
 
@@ -133,19 +149,50 @@ public class PoolDemo {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">SafeCounter.java</div>      <pre><code>import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class SafeCounter {
+    private static final AtomicInteger safeCount = new AtomicInteger(0);
+    private static int uncoordinatedCount = 0; // NOT thread-safe, for comparison
+
+    public static void main(String[] args) throws InterruptedException {
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        int increments = 10_000;
+
+        for (int i = 0; i &lt; increments; i++) {
+            pool.submit(() -&gt; {
+                safeCount.incrementAndGet();       // atomic, always correct
+                uncoordinatedCount++;               // race condition, likely wrong total
+            });
+        }
+
+        pool.shutdown();
+        pool.awaitTermination(10, TimeUnit.SECONDS);
+
+        System.out.println("Atomic result: " + safeCount.get() + " (expected " + increments + ")");
+        System.out.println("Unsynchronized result: " + uncoordinatedCount + " (often less than expected)");
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>A <code>Thread</code> runs a <code>Runnable</code>'s code independently of the main program flow.</li>
+        <li>A Thread runs a Runnable's code independently of the main program flow; call start(), never run() directly, to actually spawn a new thread.</li>
         <li>The executor framework manages a pool of reusable threads instead of creating one thread per task.</li>
+        <li>Future represents a result available later; get() blocks until the task finishes or throws an ExecutionException.</li>
         <li>Shared mutable state across threads requires synchronization to avoid race conditions.</li>
-        <li><code>ConcurrentHashMap</code> and the <code>atomic</code> package offer thread-safe alternatives to plain collections and counters.</li>
+        <li>synchronized guarantees mutual exclusion but can introduce contention or, with inconsistent lock ordering, deadlock.</li>
+        <li>Atomic classes like AtomicInteger offer lock-free thread-safe updates for single variables, often faster than synchronized for that case.</li>
+        <li>ConcurrentHashMap and similar concurrent collections scale better under contention than manually synchronizing a plain HashMap.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a program that submits 10 tasks to a fixed thread pool of size 4, where each task prints its task number and the current thread's name, then shuts the pool down cleanly.</p>
+      <p>Write a program that submits 10 tasks to a fixed thread pool of size 4, where each task prints its task number and the current thread's name, then shuts the pool down cleanly. Then write a second version that has many tasks increment both a plain int field and an AtomicInteger concurrently, print both final totals, and explain in a comment why they usually differ.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

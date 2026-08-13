@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>File I/O</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="gems-and-bundler.html">Gems and Bundler</a></p>
   </div>
 
   <article>
-    <p class="lead">Ruby's <code>File</code> class reads and writes files. <code>File.open</code> with a block automatically closes the file afterward, even if an error occurs — the idiomatic pattern, similar in spirit to Python's <code>with</code>.</p>
-    <p>For simple cases, <code>File.read</code> and <code>File.write</code> handle the whole open/read-or-write/close cycle in a single call, when you don't need fine-grained control.</p>
+    <p class="lead">Ruby's <code>File</code> class reads and writes files. <code>File.open</code> with a block automatically closes the file afterward, even if an error occurs partway through — the idiomatic pattern, similar in spirit to Python's <code>with</code> statement, and much safer than manually calling <code>.open</code> and <code>.close</code> yourself, since a raised exception between them would otherwise leak an open file handle.</p>
+    <p>For simple cases, <code>File.read</code> and <code>File.write</code> handle the whole open/read-or-write/close cycle in a single call, when you don't need fine-grained control over how the file is processed. <code>File.readlines</code> similarly reads a file directly into an array of lines in one step, which is convenient for smaller files but loads the entire file into memory at once.</p>
+    <p>For genuinely large files, reading line-by-line with <code>File.foreach</code> or <code>File.open(path).each_line</code> avoids loading the whole file into memory, processing it lazily one line at a time instead — a meaningful difference when working with logs or datasets too large to comfortably hold in RAM all at once.</p>
+    <p>The second argument to <code>File.open</code> controls the file mode: <code>"r"</code> for reading (the default), <code>"w"</code> for writing (which truncates and overwrites any existing content), <code>"a"</code> for appending to the end without erasing what's already there, and <code>"r+"</code>/<code>"w+"</code> for combined read-and-write access. Choosing <code>"w"</code> when you meant <code>"a"</code> is a classic, data-destroying mistake worth double-checking.</p>
+    <p>Ruby's <code>Dir</code> class complements <code>File</code> for working with the filesystem itself — listing a directory's contents with <code>Dir.glob</code> or <code>Dir.children</code>, checking whether a path exists and what kind of entry it is, and creating or removing directories. <code>File.exist?(path)</code> is the standard guard to check for a file's presence before attempting to read it, avoiding an <code>Errno::ENOENT</code> exception.</p>
+    <p>Beyond plain text, Ruby's standard library includes <code>CSV</code> for structured tabular files and <code>JSON</code> for JSON documents, both of which parse directly into familiar Ruby arrays and hashes — for most everyday scripting tasks these are a better fit than hand-rolling your own parsing logic on top of raw <code>File</code> reads.</p>
     <div class="code-block">
 <div class="cap">files.rb</div>      <pre><code>File.write("note.txt", "Hello, file system!")
 
@@ -119,19 +136,52 @@ File.open("note.txt") do |file|
   puts file.read
 end  # file is automatically closed here</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">lines_and_modes.rb</div>      <pre><code>File.open("log.txt", "w") do |file|
+  %w[first second third].each { |line| file.puts(line) }
+end
+
+File.open("log.txt", "a") do |file|
+  file.puts("fourth")  # appended, not overwritten
+end
+
+File.foreach("log.txt").with_index(1) do |line, num|
+  puts "#{num}: #{line.chomp}"
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">csv_and_json.rb</div>      <pre><code>require "csv"
+require "json"
+
+CSV.open("people.csv", "w") do |csv|
+  csv &lt;&lt; ["name", "age"]
+  csv &lt;&lt; ["Amina", 27]
+end
+
+rows = CSV.read("people.csv", headers: true)
+puts rows.first["name"]              # "Amina"
+
+File.write("data.json", { name: "Amina" }.to_json)
+parsed = JSON.parse(File.read("data.json"))
+puts parsed["name"]                  # "Amina"</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>File.open(path) do |file| ... end</code> guarantees the file is closed even if the block raises an error.</li>
-        <li><code>File.read</code>/<code>File.write</code> are shorthand for simple, one-shot reads and writes.</li>
-        <li><code>File.readlines</code> reads a file directly into an array of lines, useful for line-by-line processing.</li>
-        <li>Use <code>File.exist?(path)</code> to check for a file's presence before attempting to read it.</li>
+        <li><code>File.read</code>/<code>File.write</code> are shorthand for simple, one-shot reads and writes; <code>File.readlines</code> loads a whole file into an array of lines.</li>
+        <li><code>File.foreach</code> processes a file line-by-line without loading it entirely into memory, important for large files.</li>
+        <li>The file mode argument matters: <code>"w"</code> truncates existing content, while <code>"a"</code> appends -- mixing these up is a classic data-loss mistake.</li>
+        <li>Use <code>File.exist?(path)</code> to check for a file's presence before attempting to read it, avoiding an unhandled exception.</li>
+        <li><code>Dir.glob</code> and related <code>Dir</code> methods handle listing and pattern-matching filesystem entries.</li>
+        <li>The standard library's <code>CSV</code> and <code>JSON</code> modules are usually a better fit than hand-parsing structured files with raw <code>File</code> reads.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that writes several lines to a file, then reads it back and prints each line with its line number.</p>
+      <p>Write a script that writes several lines to a file, then reads it back and prints each line with its line number. Then extend it to append three more lines without erasing the original content, and finally write the same data out as both a CSV file and a JSON file, confirming both can be read back correctly.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

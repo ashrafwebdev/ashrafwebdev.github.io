@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,43 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Contributing to Node core or a major framework</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="publishing-and-maintaining-an-npm-package.html">Publishing and maintaining an npm package</a></p>
   </div>
 
   <article>
-    <p class="lead">Node.js itself is developed in the open on GitHub, with a formal contribution process (including a Collaborator Guide) — everything from documentation improvements to actual C++/JavaScript core changes is welcomed and needed.</p>
-    <p>For most developers, contributing to a major framework you already use (Express, Fastify, NestJS) is the more approachable entry point — smaller, more focused codebases with maintainers actively looking for help on specific labeled issues.</p>
+    <p class="lead">Node.js itself is developed in the open on GitHub, with a formal contribution process (including a Collaborator Guide) — everything from documentation improvements to actual C++/JavaScript core changes is welcomed and needed, and the project explicitly labels beginner-friendly issues to make that first step less intimidating.</p>
+    <p>For most developers, contributing to a major framework you already use (Express, Fastify, NestJS) is the more approachable entry point — smaller, more focused codebases than Node core itself, with maintainers actively looking for help on specific labeled issues like <code>good first issue</code> or <code>help wanted</code>.</p>
+    <p>Documentation contributions are just as valuable as code, and a much lower-friction way to start: fixing an unclear explanation, adding a missing example, or correcting an outdated instruction in a README is a genuinely useful contribution that doesn't require deep familiarity with the project's internals first.</p>
+    <p>A minimal, reliable bug reproduction is often the single most useful thing you can hand a maintainer — a small, self-contained script that reliably triggers the bug (ideally with as few dependencies and as little unrelated code as possible) is far more actionable than a description of symptoms, and writing one is itself a genuinely useful contribution even without a fix attached.</p>
+    <p>The typical contribution workflow is consistent across most open-source JavaScript projects: fork the repository, create a focused branch for your change, make the smallest reasonable change that addresses the issue, add or update tests covering it, and open a pull request that clearly explains what changed and why — a PR that mixes an unrelated refactor into a bug fix is much harder for a maintainer to review and more likely to stall.</p>
+    <p>Reading a framework's core source code — even without contributing anything back — is one of the fastest ways to level up your own Node architecture skills, since it exposes you to real patterns (error handling, middleware design, API surface decisions) that a well-maintained, widely-used project has already worked through under real-world pressure.</p>
+    <div class="code-block">
+<div class="cap">Terminal (typical contribution workflow)</div>      <pre><code>git clone https://github.com/your-username/express.git
+cd express
+git checkout -b fix/query-parsing-edge-case
 
+# ...make the change, add/update a test...
+npm test
+
+git add .
+git commit -m "fix: handle empty query string in req.query parsing"
+git push origin fix/query-parsing-edge-case
+# then open a pull request from your fork on GitHub</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">repro.js (a minimal bug reproduction)</div>      <pre><code>// A good bug report includes something like this: small, self-contained,
+// no unrelated dependencies, and it reliably shows the problem.
+const express = require("express");
+const app = express();
+
+app.get("/search", (req, res) =&gt; {
+  res.json({ query: req.query }); // BUG: crashes on a specific malformed query string
+});
+
+app.listen(3000, () =&gt; {
+  console.log("Reproduce with: curl 'localhost:3000/search?a[=1'");
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -120,12 +163,20 @@
         <li>Documentation contributions are just as valuable as code, and a much lower-friction way to start.</li>
         <li>A minimal, reliable bug reproduction is often the single most useful thing you can hand a maintainer.</li>
         <li>Reading a framework's core source code (even without contributing) is one of the fastest ways to level up your own Node architecture skills.</li>
+        <li>A focused pull request that changes only what's needed for the issue at hand is far easier to review than one mixing in unrelated changes.</li>
+        <li>Adding or updating a test alongside a bug fix is usually expected, not optional, in a well-maintained project's contribution process.</li>
+        <li>Look for labels like <code>good first issue</code> or <code>help wanted</code> as a starting point rather than guessing which issues are approachable.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick a Node.js framework or library you use regularly, find an open issue labeled 'good first issue', and submit a fix or a clear, reproducible bug report.</p>
+      <p>Pick a Node.js framework or library you use regularly, find an open issue labeled good first issue or help wanted, and either submit a fix with an accompanying test or write a clear, minimal, reproducible bug report for an issue that doesn't have one yet. Before opening a pull request, read the project's CONTRIBUTING guide and confirm your change follows its expected commit message and testing conventions.</p>
     </div>
+    <a class="capstone-banner" href="project-hero.html">
+      <span class="cb-label">You've finished the Hero stage &mdash; capstone project</span>
+      <span class="cb-title">A multi-service backend with a queue, cache, and load-tested API</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

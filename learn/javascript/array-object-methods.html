@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Array/object methods: map, filter, reduce, destructuring</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="events-and-event-listeners.html">Events and event listeners</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>map()</code> transforms every item in an array into something new, returning a new array of the same length. <code>filter()</code> keeps only items matching a condition. <code>reduce()</code> collapses an array down into a single value — a sum, an object, anything.</p>
-    <p>Destructuring pulls values out of arrays or objects into named variables in one line, which pairs especially well with function parameters and imports.</p>
+    <p class="lead"><code>map()</code>, <code>filter()</code>, and <code>reduce()</code> are the three workhorses of working with arrays in modern JavaScript, and together they replace the vast majority of manual for-loops you'd otherwise write. <code>map()</code> transforms every item into something new, always returning a new array of exactly the same length. <code>filter()</code> keeps only the items for which a test function returns true, returning a new array that can be shorter (or the same length, or empty). <code>reduce()</code> is the most general of the three — it collapses an entire array down into a single accumulated value, which could be a sum, a new object, another array, or anything else.</p>
+    <p>None of these three methods mutate the array they're called on — they always return a brand new array (or, for reduce, whatever value you build), leaving the original untouched. This is a deliberate and important property: it makes code easier to reason about, since you never have to worry that calling <code>.map()</code> somewhere quietly changed data that other code still holds a reference to. Contrast this with mutating methods like <code>.push()</code>, <code>.sort()</code>, and <code>.splice()</code>, which change the array in place.</p>
+    <p><code>reduce(callback, initialValue)</code> takes a callback of <code>(accumulator, currentValue) => newAccumulator</code> plus a starting value for the accumulator. Skipping the initial value is legal but risky — reduce will then use the array's first element as the starting accumulator and start iterating from the second element, which silently breaks (or behaves unexpectedly) on an empty array. Always pass an explicit initial value unless you have a specific reason not to.</p>
+    <p>Destructuring pulls values out of arrays or objects into named variables in a single expression, and it works almost anywhere a variable is normally assigned: in a plain assignment, in a function parameter list, and in a <code>for...of</code> loop. Array destructuring matches by position (<code>const [first, second] = arr</code>), while object destructuring matches by key name (<code>const { name, age } = obj</code>) and lets you rename or provide a default at the same time (<code>const { name: userName = "Anonymous" } = obj</code>).</p>
+    <p>Destructuring a function's parameters is an especially common and readable pattern — instead of a function taking a single options object and then manually pulling fields out of it line by line, you destructure directly in the parameter list, which also self-documents exactly which properties the function actually uses.</p>
+    <p>These methods are commonly chained: <code>products.filter(...).map(...)</code> reads naturally left to right, top to bottom, first narrowing down to the items you care about and then transforming them. For very large arrays, chaining several passes does mean iterating multiple times, so if performance in a hot path genuinely matters, a single <code>reduce()</code> (or a plain loop) that does everything in one pass can be faster — but readability should usually win unless profiling shows it's actually a bottleneck.</p>
     <div class="code-block">
 <div class="cap">arrayMethods.js</div>      <pre><code>const products = [
   { name: "Mug", price: 12 },
@@ -125,19 +142,56 @@ const total = products.reduce((sum, p) =&gt; sum + p.price, 0);
 
 const { name, price } = products[0]; // destructuring</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">reduce-building-an-object.js</div>      <pre><code>// reduce isn't limited to summing numbers — it can build any shape
+const products = [
+  { name: "Mug", category: "kitchen", price: 12 },
+  { name: "Pen", category: "office", price: 2 },
+  { name: "Notebook", category: "office", price: 5 },
+];
+
+const byCategory = products.reduce((groups, product) =&gt; {
+  const key = product.category;
+  groups[key] = groups[key] || [];
+  groups[key].push(product);
+  return groups;
+}, {});
+
+console.log(byCategory.office.length); // 2
+
+// Destructuring in a function parameter, with a default and a rename
+function printProduct({ name, price, category: type = "misc" }) {
+  console.log(`${name} ($${price}) — ${type}`);
+}
+printProduct(products[0]);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">reduce-empty-array-gotcha.js</div>      <pre><code>// Risky: no initial value, and the array happens to be empty
+const totalRisky = [].reduce((sum, n) =&gt; sum + n);
+// TypeError: Reduce of empty array with no initial value
+
+// Safe: always pass an explicit initial value
+const totalSafe = [].reduce((sum, n) =&gt; sum + n, 0);
+console.log(totalSafe); // 0, no error</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>map</code> always returns an array of the same length; <code>filter</code> can return fewer items; <code>reduce</code> can return anything at all.</li>
-        <li>None of these methods mutate the original array — they return a new one.</li>
-        <li>Destructuring works on both arrays (<code>const [a, b] = arr</code>) and objects (<code>const { x, y } = obj</code>).</li>
-        <li>Chaining is common: <code>products.filter(...).map(...)</code> reads left to right, top to bottom.</li>
+        <li>None of these methods mutate the original array — they return a new one, unlike <code>.push()</code>, <code>.sort()</code>, or <code>.splice()</code>.</li>
+        <li>Always pass an explicit initial value to <code>reduce()</code> — omitting it breaks on an empty array and can produce subtly wrong results otherwise.</li>
+        <li>Destructuring works on both arrays (<code>const [a, b] = arr</code>, matched by position) and objects (<code>const { x, y } = obj</code>, matched by key name).</li>
+        <li>Object destructuring can rename and default in one step: <code>const { name: userName = "Anonymous" } = obj</code>.</li>
+        <li>Destructuring directly in a function's parameter list both extracts values and documents exactly which fields the function uses.</li>
+        <li>Chaining is common and readable: <code>products.filter(...).map(...)</code> — but each link is a separate pass over the array, worth collapsing into one <code>reduce()</code> only if profiling shows it matters.</li>
+        <li><code>reduce()</code> can build far more than a number — it's routinely used to build objects, group items, flatten nested arrays, or count occurrences.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Given an array of product objects, use filter and reduce together to calculate the total price of only the items under $10.</p>
+      <p>Given an array of product objects, use filter and reduce together to calculate the total price of only the items under $10. Then use reduce alone to group that same array of products by category into an object of arrays, and write a function that accepts a single destructured product argument (with a default for a missing category) and logs a formatted summary line.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

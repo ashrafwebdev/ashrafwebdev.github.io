@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Lists, dictionaries, tuples, sets</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="functions-and-default-arguments.html">Functions and default arguments</a></p>
   </div>
 
   <article>
-    <p class="lead">Lists (<code>[]</code>) are ordered, mutable sequences. Tuples (<code>()</code>) are ordered but immutable — once created, their contents can't change, which makes them useful for fixed collections like coordinates. Dictionaries (<code>{}</code>) map keys to values. Sets (<code>{}</code> without key:value pairs) hold unique, unordered values.</p>
-    <p>Choosing the right collection type communicates intent: a tuple signals 'this won't change,' a set signals 'duplicates don't matter, only membership does,' and a dict signals 'I'm looking things up by a key.'</p>
+    <p class="lead">Lists (<code>[]</code>) are ordered, mutable sequences — you can append, insert, remove, and reorder items after creation. Tuples (<code>()</code>) are ordered but immutable — once created, their contents can't change, which makes them useful for fixed collections like coordinates, and safe to use as dictionary keys since they're hashable when their contents are.</p>
+    <p>Dictionaries (<code>{}</code> with <code>key: value</code> pairs) map keys to values and, since Python 3.7, preserve insertion order as a guaranteed language feature rather than an implementation detail. Sets (<code>{}</code> without key:value pairs, or <code>set()</code> for an empty one) hold unique, unordered values and are built for fast membership testing and mathematical set operations.</p>
+    <p>Choosing the right collection type communicates intent to anyone reading the code: a tuple signals 'this is a fixed record that won't change,' a set signals 'duplicates don't matter, only membership does,' and a dict signals 'I'm looking things up by a key,' not by position.</p>
+    <p>Dictionary keys must be hashable — strings, numbers, and tuples of hashable items all work, but a list or another dict cannot be used as a key because they're mutable and their hash would change if their contents did. This same rule applies to what you can put inside a set.</p>
+    <p>List, dict, and set comprehensions (<code>[x*2 for x in nums]</code>, <code>{k: v*2 for k, v in prices.items()}</code>, <code>{x for x in nums if x > 0}</code>) are the idiomatic, often faster alternative to building a collection with a manual loop and <code>.append()</code> calls — they read as 'build this collection from that source, optionally filtered.'</p>
+    <p>Nesting these types is common and powerful — a list of dicts is the natural Python shape for a list of database records or API results, and a dict of lists is a natural way to group items by category. Just be careful copying nested structures: assigning <code>b = a</code> doesn't copy a list, it creates a second name pointing at the same object, so mutating <code>b</code> mutates <code>a</code> too — use <code>a.copy()</code> or the <code>copy</code> module's <code>deepcopy</code> for nested structures.</p>
     <div class="code-block">
 <div class="cap">collections.py</div>      <pre><code>fruits = ["apple", "banana", "cherry"]  # list
 point = (3, 4)                          # tuple
@@ -120,19 +137,44 @@ unique_tags = {"python", "web", "python"} # set, dedupes automatically
 
 print(fruits[0], user["name"], len(unique_tags))</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">comprehensions.py</div>      <pre><code>nums = [1, 2, 3, 4, 5, 6]
+
+squares = [n * n for n in nums]                  # [1, 4, 9, 16, 25, 36]
+evens = [n for n in nums if n % 2 == 0]           # [2, 4, 6]
+by_parity = {n: ("even" if n % 2 == 0 else "odd") for n in nums}
+unique_remainders = {n % 3 for n in nums}         # {0, 1, 2}
+
+print(squares, evens, by_parity, unique_remainders)</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">copy_gotcha.py</div>      <pre><code>original = ["a", "b", "c"]
+alias = original          # NOT a copy -- same list, two names
+alias.append("d")
+print(original)           # ['a', 'b', 'c', 'd']  -- original changed too!
+
+real_copy = original.copy()   # or list(original), or original[:]
+real_copy.append("e")
+print(original)               # unchanged by the copy</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Lists are mutable and ordered; tuples are immutable and ordered; sets are mutable but unordered and deduplicated.</li>
-        <li>Dictionary keys must be hashable (strings, numbers, tuples) — lists can't be used as dict keys.</li>
-        <li>List/dict/set comprehensions (<code>[x*2 for x in nums]</code>) are the idiomatic, often faster alternative to building a collection with a manual loop.</li>
-        <li>Use <code>.get(key, default)</code> on a dict to avoid a KeyError when a key might not exist.</li>
+        <li>Dictionaries preserve insertion order (guaranteed since Python 3.7) and map keys to values for fast lookup by key.</li>
+        <li>Dictionary keys — and set members — must be hashable — strings, numbers, and tuples of hashable items work, but lists and dicts can't be used as keys.</li>
+        <li>List/dict/set comprehensions are the idiomatic, often faster alternative to building a collection with a manual loop.</li>
+        <li>Use <code>.get(key, default)</code> on a dict to avoid a KeyError when a key might not exist, and <code>dict.setdefault()</code> to fill in a default only if the key is missing.</li>
+        <li>Assigning one list to another name (<code>b = a</code>) doesn't copy it — both names point at the same object, so mutating one mutates the other.</li>
+        <li><code>collections.Counter</code> and <code>collections.defaultdict</code> solve two very common dict patterns (counting things, grouping things) without manual boilerplate.</li>
+        <li>Sets support real set algebra: <code>a | b</code> (union), <code>a &amp; b</code> (intersection), <code>a - b</code> (difference).</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a dictionary representing a book (title, author, year), then a list of three such book dictionaries, and print each title in a loop.</p>
+      <p>Create a dictionary representing a book (title, author, year), then a list of three such book dictionaries, and print each title in a loop. Then, using a list comprehension, build a new list containing only the titles published after 2000, and separately build a set of all the distinct authors across your three books.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

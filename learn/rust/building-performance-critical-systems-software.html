@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Building performance-critical systems software</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="advanced-macro-programming.html">Advanced macro programming</a></p>
   </div>
 
   <article>
     <p class="lead">Rust's combination of zero-cost abstractions, no garbage collector, and precise control over memory layout makes it a common choice for systems software: operating system components, game engines, browser engines, and databases all have significant production Rust codebases.</p>
     <p>Choosing the right data layout matters enormously at this level: <code>#[repr(C)]</code> controls struct field ordering for FFI compatibility, and understanding cache-friendly access patterns (iterating a Vec sequentially versus jumping through pointers) often dominates real-world performance more than algorithmic complexity alone.</p>
     <p>Rust's ownership model gives you C-like control over allocation without a garbage collector's unpredictable pauses, which is precisely why latency-sensitive systems (game engines, real-time audio, embedded systems) increasingly reach for Rust over garbage-collected alternatives.</p>
+    <p>Guessing at what's slow is unreliable, so performance work in systems Rust leans heavily on measurement: <code>criterion</code> is a statistically rigorous benchmarking crate that runs alongside <code>cargo bench</code> and reports confidence intervals rather than a single noisy number, and profiling with a tool like <code>perf</code> or generating a flamegraph before touching any code is standard practice &mdash; "measure, don't guess" applies with unusual force at this level.</p>
+    <p>Hot paths often go further and avoid heap allocation entirely, reusing an existing buffer across loop iterations, preferring stack-allocated arrays and slices, or reaching for an arena/bump allocator crate, since even a fast general-purpose allocator is slower than simply not allocating. Iterator chains that transform data in place, rather than collecting into an intermediate <code>Vec</code> only to immediately transform it again, are a common instance of this same principle.</p>
+    <p><code>#[inline]</code> hints the compiler to inline a small, frequently-called function directly at its call sites, and generic functions are already monomorphized &mdash; compiled to a separate, fully specialized copy for each concrete type they're used with &mdash; which enables exactly this kind of aggressive inlining and optimization across what would otherwise be a dynamic-dispatch boundary. The tradeoff is binary size: monomorphizing the same generic function across many different types can meaningfully bloat the compiled binary if applied carelessly.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>#[repr(C)]
 struct Point {
@@ -129,6 +145,43 @@ fn main() {
     println!("{}", sum_of_squares(&amp;points));
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">two_implementations.rs</div>      <pre><code>// version 1: manual loop with an explicit accumulator
+fn sum_squares_loop(values: &amp;[f32]) -&gt; f32 {
+    let mut total = 0.0;
+    for v in values {
+        total += v * v;
+    }
+    total
+}
+
+// version 2: iterator chain
+fn sum_squares_iter(values: &amp;[f32]) -&gt; f32 {
+    values.iter().map(|v| v * v).sum()
+}
+
+// don't assume which is faster -- measure with `cargo bench` and
+// criterion, which reports a statistically sound comparison
+// rather than a single noisy timing.
+fn main() {
+    let data = vec![1.0, 2.0, 3.0, 4.0];
+    println!("{} {}", sum_squares_loop(&amp;data), sum_squares_iter(&amp;data));
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">reuse_buffer.rs</div>      <pre><code>// avoids allocating a new Vec on every call by reusing one buffer
+fn process_batches(batches: &amp;[Vec&lt;i32&gt;]) -&gt; i32 {
+    let mut scratch: Vec&lt;i32&gt; = Vec::with_capacity(64);
+    let mut total = 0;
+
+    for batch in batches {
+        scratch.clear(); // reuse capacity instead of reallocating
+        scratch.extend(batch.iter().filter(|&amp;&amp;x| x &gt; 0));
+        total += scratch.iter().sum::&lt;i32&gt;();
+    }
+    total
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -136,12 +189,17 @@ fn main() {
         <li><code>#[repr(C)]</code> gives predictable, FFI-compatible struct memory layout.</li>
         <li>Cache-friendly, sequential data access often matters more for real performance than algorithmic tweaks.</li>
         <li>No GC pauses make Rust attractive for real-time and embedded workloads compared to GC'd languages.</li>
+        <li>criterion and cargo bench measure performance rigorously instead of relying on assumptions or a single timing.</li>
+        <li>Profiling (perf, flamegraphs) before optimizing is standard practice, not an optional extra step.</li>
+        <li>Avoiding heap allocation on hot paths (reused buffers, stack arrays, arenas) is a recurring optimization technique.</li>
+        <li>Monomorphized generics enable aggressive inlining but can increase binary size if used carelessly across many types.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that sums the squared magnitude of a slice of Point structs using an iterator chain, and compare its clarity against writing the same logic with a manual for loop.</p>
+      <p>Write two versions of a function that sums the squares of a slice of f32 values: one using a for loop with an explicit accumulator, and one using an iterator chain with map and sum. Add a comment describing how you would set up cargo bench with criterion to actually compare their performance rather than assuming one is faster.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

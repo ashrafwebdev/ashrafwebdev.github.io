@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,15 +119,19 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Designing large-scale .NET architectures</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="performance-and-memory-tuning.html">Performance and memory tuning</a></p>
   </div>
 
   <article>
-    <p class="lead">Large .NET systems commonly follow <b>Clean Architecture</b> or a similar layered approach: a core domain layer with no external dependencies, surrounded by application logic, then infrastructure (database, external APIs) and presentation (Web API, UI) layers that depend inward, never the reverse.</p>
-    <p><b>CQRS</b> (Command Query Responsibility Segregation) combined with the MediatR library is a popular .NET pattern for separating write operations (commands) from read operations (queries), keeping each handler focused on a single responsibility.</p>
-    <p>As systems grow past a single deployable, patterns from the broader microservices world apply equally in .NET: message queues (Azure Service Bus, RabbitMQ) for asynchronous communication between services, and dependency injection configured at the composition root to keep components loosely coupled.</p>
+    <p class="lead">Large .NET systems commonly follow <b>Clean Architecture</b> or a similar layered approach: a core domain layer with no external dependencies, surrounded by application logic, then infrastructure (database, external APIs) and presentation (Web API, UI) layers that depend inward, never the reverse. This inversion is what lets you swap a database provider or a UI framework without touching the domain's business rules, since nothing in the domain layer even references those outer layers.</p>
+    <p><b>CQRS</b> (Command Query Responsibility Segregation) combined with the MediatR library is a popular .NET pattern for separating write operations (commands) from read operations (queries), keeping each handler focused on a single responsibility; taken further, some systems use entirely separate models (and even separate databases) for reads versus writes, though that level of separation is usually reserved for genuinely high-scale or complex-reporting scenarios rather than every project.</p>
+    <p>Dependency injection is the mechanism that makes the inward-pointing dependency rule practical: infrastructure classes implement interfaces defined in the application or domain layer, and are only wired together at the <b>composition root</b> (typically <code>Program.cs</code>), so the domain layer can define "I need something that saves an order" as an interface without knowing or caring that the concrete implementation happens to use EF Core and SQL Server.</p>
+    <p>As systems grow past a single deployable, patterns from the broader microservices world apply equally in .NET: message queues (Azure Service Bus, RabbitMQ) for asynchronous communication between services, the outbox pattern for reliably publishing an event only after a database transaction commits, and API gateways for presenting a single entry point over several backend services.</p>
+    <p>Domain-Driven Design concepts &mdash; <b>entities</b> (objects with identity that persists across changes), <b>value objects</b> (immutable objects compared by their values, a natural fit for C# records), and <b>aggregates</b> (a cluster of entities and value objects treated as a single unit for consistency, with one designated root that's the only object outside code is allowed to reference directly) &mdash; give a shared vocabulary for modeling complex business rules that a purely data-centric, table-driven design tends to lose.</p>
+    <p>None of this is free: layering, CQRS, and DDD all add indirection and ceremony that a small CRUD application doesn't need. The judgment call is matching architectural investment to actual complexity &mdash; a simple internal tool is often better served by a straightforward three-layer app than a full Clean Architecture solution with a dozen projects.</p>
     <div class="code-block">
 <div class="cap">layout</div>      <pre><code>src/
-  Domain/          # entities, no external dependencies
+  Domain/          # entities, value objects, no external dependencies
   Application/      # use cases, commands, queries, interfaces
   Infrastructure/    # EF Core, external API clients, implementations
   Api/              # controllers, composition root, DI setup
@@ -123,19 +139,71 @@
 # dependency direction: Api -&gt; Application -&gt; Domain
 #                     Infrastructure -&gt; Application -&gt; Domain</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">CqrsHandler.cs</div>      <pre><code>// Application layer: defines the interface, knows nothing about EF Core
+public interface IOrderRepository
+{
+    Task SaveAsync(Order order);
+}
+
+public record PlaceOrderCommand(string Customer, decimal Amount) : IRequest&lt;int&gt;;
+
+public class PlaceOrderHandler : IRequestHandler&lt;PlaceOrderCommand, int&gt;
+{
+    private readonly IOrderRepository _repository;
+    public PlaceOrderHandler(IOrderRepository repository) =&gt; _repository = repository;
+
+    public async Task&lt;int&gt; Handle(PlaceOrderCommand cmd, CancellationToken ct)
+    {
+        var order = new Order(cmd.Customer, cmd.Amount);
+        await _repository.SaveAsync(order);
+        return order.Id;
+    }
+}
+
+// Infrastructure layer: the only place that knows about EF Core
+public class EfOrderRepository : IOrderRepository
+{
+    private readonly AppDbContext _db;
+    public EfOrderRepository(AppDbContext db) =&gt; _db = db;
+    public async Task SaveAsync(Order order)
+    {
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync();
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">CompositionRoot.cs</div>      <pre><code>// Program.cs: the composition root -- the only place that wires
+// interfaces (defined inward) to implementations (defined outward)
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped&lt;IOrderRepository, EfOrderRepository&gt;();
+builder.Services.AddMediatR(cfg =&gt;
+    cfg.RegisterServicesFromAssemblyContaining&lt;PlaceOrderHandler&gt;());
+
+var app = builder.Build();
+app.MapPost("/orders", async (PlaceOrderCommand cmd, IMediator mediator) =&gt;
+    Results.Ok(await mediator.Send(cmd)));
+app.Run();</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Clean Architecture keeps the domain layer free of dependencies on infrastructure or frameworks.</li>
         <li>CQRS with MediatR separates command handlers from query handlers for clearer responsibilities.</li>
         <li>Dependencies should always point inward toward the domain, never outward.</li>
+        <li>The composition root (typically Program.cs) is the only place interfaces get wired to concrete implementations.</li>
         <li>Message queues decouple services and support asynchronous, resilient communication at scale.</li>
+        <li>DDD's entities, value objects, and aggregates give shared vocabulary for modeling complex business rules.</li>
+        <li>Layering and DDD add real ceremony &mdash; match the architecture's complexity to the problem's actual complexity.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch a folder layout for a Clean Architecture .NET solution for a library-lending system, listing what belongs in Domain, Application, Infrastructure, and Api.</p>
+      <p>Sketch a folder layout for a Clean Architecture .NET solution for a library-lending system, listing what belongs in Domain, Application, Infrastructure, and Api. Then write a small IRequestHandler-style command handler for "CheckOutBook" that depends only on an interface defined in the Application layer, and describe in a sentence where and how that interface's concrete implementation would be wired up at the composition root.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>File I/O</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="exception-handling.html">Exception handling</a></p>
   </div>
 
   <article>
-    <p class="lead">Java's modern file API lives in <code>java.nio.file</code>, centered on the <code>Path</code> and <code>Files</code> classes. Simple operations, like reading an entire text file into memory, take a single line with <code>Files.readString</code> or <code>Files.readAllLines</code>.</p>
-    <p>For larger files or streaming reads, <code>BufferedReader</code> combined with a <code>FileReader</code> lets you process a file line by line without loading it all into memory at once. Writing works symmetrically with <code>Files.writeString</code> or a <code>BufferedWriter</code>.</p>
-    <p>Because file operations can fail (missing file, no permission, disk full), most methods in this API throw a checked <code>IOException</code>, so file code is almost always paired with try-with-resources or a try/catch block.</p>
+    <p class="lead">Java's modern file API lives in <code>java.nio.file</code>, centered on the <code>Path</code> and <code>Files</code> classes. Simple operations, like reading an entire text file into memory, take a single line with <code>Files.readString</code> or <code>Files.readAllLines</code>; these are convenient but load the whole file into memory, so they're only appropriate for files you know are reasonably small.</p>
+    <p>For larger files or streaming reads, <code>BufferedReader</code> combined with a <code>FileReader</code> (or <code>Files.newBufferedReader</code>) lets you process a file line by line without loading it all into memory at once, using <code>readLine()</code> in a loop until it returns <code>null</code>. Writing works symmetrically with <code>Files.writeString</code> or a <code>BufferedWriter</code>.</p>
+    <p>Because file operations can fail (missing file, no permission, disk full, another process holding a lock), most methods in this API throw a checked <code>IOException</code>, so file code is almost always paired with try-with-resources or a try/catch block; this is one of the clearest real-world examples of why Java's checked exceptions exist.</p>
+    <p><code>Files</code> also provides methods for inspecting and manipulating the filesystem beyond reading and writing content: <code>Files.exists</code>, <code>Files.createDirectories</code>, <code>Files.delete</code>, <code>Files.copy</code>, and <code>Files.list</code> (which returns a lazily-populated <code>Stream</code> of the entries in a directory) cover most everyday filesystem tasks without needing the older, clunkier <code>java.io.File</code> class.</p>
+    <p>When working with binary data rather than text, <code>Files.readAllBytes</code> and <code>Files.write(path, byte[])</code> read and write raw bytes directly; for text, always be conscious of <b>character encoding</b> &mdash; the overloads that don't take a <code>Charset</code> argument use UTF-8 by default in modern Java, but explicitly passing <code>StandardCharsets.UTF_8</code> makes that assumption visible in the code rather than implicit.</p>
+    <p>Relative paths are resolved against the JVM's current working directory, which can be a source of confusing bugs when a program is launched from a different directory than expected; <code>Path.of("notes.txt").toAbsolutePath()</code> is a handy way to see exactly where a relative path actually resolves to at runtime.</p>
     <div class="code-block">
 <div class="cap">FileDemo.java</div>      <pre><code>import java.nio.file.*;
 import java.io.IOException;
@@ -130,19 +146,48 @@ public class FileDemo {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">StreamingRead.java</div>      <pre><code>import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+
+public class StreamingRead {
+    public static void main(String[] args) throws IOException {
+        Path log = Path.of("large_log.txt");
+        if (!Files.exists(log)) {
+            Files.createFile(log);
+        }
+
+        long errorCount = 0;
+        try (BufferedReader reader = Files.newBufferedReader(log, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("ERROR")) errorCount++;
+            }
+        } // reader.close() is called automatically, even if an exception is thrown
+
+        System.out.println("Error lines: " + errorCount);
+        System.out.println("Resolved to: " + log.toAbsolutePath());
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>java.nio.file.Files</code> and <code>Path</code> are the modern, preferred file API.</li>
-        <li><code>Files.readString</code>/<code>readAllLines</code> are convenient for small files; <code>BufferedReader</code> suits large ones.</li>
+        <li><code>java.nio.file.Files</code> and <code>Path</code> are the modern, preferred file API over the older java.io.File.</li>
+        <li><code>Files.readString</code>/<code>readAllLines</code> are convenient for small files; <code>BufferedReader</code> suits large files processed line by line.</li>
         <li>Most file operations throw the checked <code>IOException</code>, which callers must handle or declare.</li>
-        <li>Try-with-resources ensures streams and readers are closed even when an error occurs.</li>
+        <li>Try-with-resources ensures streams and readers are closed even when an error occurs mid-read.</li>
+        <li><code>Files</code> also handles directory and metadata operations: exists, createDirectories, delete, copy, list.</li>
+        <li>Be explicit about character encoding with StandardCharsets.UTF_8 rather than relying on implicit defaults.</li>
+        <li>Relative paths resolve against the JVM's working directory; toAbsolutePath() reveals exactly where that is.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a program that writes a small list of names to a file, one per line, then reads the file back and prints each name in uppercase.</p>
+      <p>Write a program that writes a small list of names to a file, one per line, then reads the file back and prints each name in uppercase. Then extend it to stream a larger file line by line with BufferedReader, count how many lines contain a given keyword, and print the file's absolute path using toAbsolutePath() so you can confirm exactly which file was read.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

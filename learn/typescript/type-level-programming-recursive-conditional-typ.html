@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Type-level programming (recursive conditional types, template literal types)</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="strict-mode-and-gradually-typing-a-large-codebas.html">Strict mode and gradually typing a large codebase</a></p>
   </div>
 
   <article>
-    <p class="lead">At the far end of TypeScript's type system, types can be computed recursively — a conditional type can reference itself, letting you express things like 'deeply readonly' or parse a string type character by character, entirely at compile time.</p>
-    <p>Template literal types apply the same pattern as JavaScript template strings to types themselves, letting you construct and validate string types like <code>`on${Capitalize&lt;Event&gt;}`</code> — genuinely useful for typing things like event names or CSS properties precisely.</p>
+    <p class="lead">At the far end of TypeScript's type system, types can be computed recursively — a conditional type can reference itself, letting you express things like a deeply readonly transformation that recurses into nested objects, or parse a string type character by character, entirely at compile time, with no runtime code involved at all.</p>
+    <p>Template literal types apply the exact same pattern as JavaScript's template strings, but to types themselves, letting you construct and validate string types by combining literal segments and other types — a genuinely useful technique for typing things like event handler names or CSS custom property names precisely, rather than settling for a loose, unconstrained <code>string</code>.</p>
+    <p>Recursive conditional types let a type call itself, similar in spirit to a recursive function, but they're bounded by TypeScript's own internal recursion depth limits — a type that recurses too deeply (commonly seen when parsing or transforming a very long string type, or an extremely deeply nested object type) will eventually hit an instantiation depth error from the compiler rather than recursing forever.</p>
+    <p>String manipulation utility types like the built-in <code>Uppercase</code>, <code>Lowercase</code>, <code>Capitalize</code>, and <code>Uncapitalize</code> are intrinsic types implemented directly by the compiler rather than pure TypeScript, and they're the building blocks most template literal type tricks are actually composed from, combined with ordinary template literal syntax around them.</p>
+    <p>Recursive conditional types are also how you can parse a string type into a tuple of its individual pieces at the type level — matching a template literal pattern like a first-segment-and-rest-of-string pattern, extracting each piece with <code>infer</code>, and recursing on the remainder, is the core technique behind things like splitting a comma-separated string type into a tuple of its parts, entirely as compile-time types.</p>
+    <p>This corner of TypeScript is genuinely powerful but has real limits on both readability and compile performance — a codebase leaning heavily on deep type-level programming can produce compiler error messages that are extremely difficult for anyone but the original author to decode, and can measurably slow down editor responsiveness on large files. Libraries like Zod and tRPC lean into this territory deliberately to provide end-to-end type safety, but that's a different tradeoff than doing the same thing casually in application code.</p>
     <div class="code-block">
 <div class="cap">typeLevel.ts</div>      <pre><code>type DeepReadonly&lt;T&gt; = {
   readonly [K in keyof T]: T[K] extends object ? DeepReadonly&lt;T[K]&gt; : T[K];
@@ -120,19 +137,43 @@
 type EventName&lt;T extends string&gt; = `on${Capitalize&lt;T&gt;}`;
 type ClickEvent = EventName&lt;"click"&gt;; // "onClick"</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">recursive-string-split.ts</div>      <pre><code>// Split a comma-separated string type into a tuple of its parts,
+// entirely at the type level, using recursion and infer.
+type Split&lt;S extends string, Delim extends string&gt; =
+  S extends `${infer Head}${Delim}${infer Rest}`
+    ? [Head, ...Split&lt;Rest, Delim&gt;]
+    : [S];
+
+type Parts = Split&lt;"red,green,blue", ","&gt;; // ["red", "green", "blue"]</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">depth-limit-caution.ts</div>      <pre><code>// Deep recursion on a very long input can hit TypeScript's
+// instantiation depth limit, producing a compiler error like:
+// "Type instantiation is excessively deep and possibly infinite."
+type CountUp&lt;N extends number, Acc extends any[] = []&gt; =
+  Acc["length"] extends N ? Acc : CountUp&lt;N, [...Acc, 0]&gt;;
+
+// type Safe = CountUp&lt;50&gt;;   // fine
+// type Risky = CountUp&lt;50000&gt;; // likely hits the recursion depth limit</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Recursive conditional types let a type call itself, similar to a recursive function, bounded by TypeScript's own recursion depth limits.</li>
         <li>Template literal types apply string-manipulation logic (concatenation, <code>Capitalize</code>, <code>Uppercase</code>) directly to types.</li>
+        <li>Built-in intrinsic string types like <code>Uppercase</code> and <code>Capitalize</code> are implemented by the compiler itself, not pure TypeScript.</li>
+        <li>Combining <code>infer</code> with a template literal pattern and recursion is the core technique for parsing a string type into a tuple of its parts.</li>
+        <li>Deeply recursive type-level code can hit TypeScript's instantiation depth limit and produce a compiler error instead of recursing indefinitely.</li>
         <li>This corner of TypeScript is powerful but has real limits on readability and compile performance — use it deliberately, not by default.</li>
-        <li>Libraries like <code>zod</code> and <code>trpc</code> lean heavily on type-level programming to provide end-to-end type safety.</li>
+        <li>Libraries like Zod and tRPC lean heavily on type-level programming to provide end-to-end type safety as a deliberate library-design tradeoff.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write your own DeepReadonly recursive mapped type and verify it makes nested object properties readonly, not just the top level.</p>
+      <p>Write your own simplified DeepReadonly recursive mapped type and verify it makes nested object properties readonly, not just the top level. Then write a small recursive conditional type that splits a delimiter-separated string type into a tuple of its parts, and test it against a string with several segments.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

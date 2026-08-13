@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Semantic HTML5: header, nav, main, article, section, footer</h1>
     <p class="lang-line"><b>HTML</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="basic-forms.html">Basic forms: input, button, label</a></p>
   </div>
 
   <article>
     <p class="lead">Before HTML5, everything was a <code>&lt;div&gt;</code> — the browser (and screen readers, and search engines) had no idea which div was the navigation and which was the footer. Semantic elements fix that by naming the role directly: <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;article&gt;</code>, <code>&lt;section&gt;</code>, <code>&lt;aside&gt;</code>, and <code>&lt;footer&gt;</code>.</p>
     <p>Use <code>&lt;main&gt;</code> exactly once for the page's primary content. Use <code>&lt;article&gt;</code> for something that would make sense on its own (a blog post, a product card); use <code>&lt;section&gt;</code> for a thematic grouping within a page that has its own heading.</p>
+    <p>The distinction between <code>&lt;article&gt;</code> and <code>&lt;section&gt;</code> trips people up constantly, and a useful test is: could this chunk of content be pulled out and syndicated on its own (an RSS feed entry, a standalone card) and still make complete sense? If yes, it's an <code>&lt;article&gt;</code>. If it's just one themed part of a bigger page — a "Features" block on a landing page, say — it's a <code>&lt;section&gt;</code>, and per spec it should have its own heading so it can appear correctly in a page's accessibility outline.</p>
+    <p><code>&lt;header&gt;</code> and <code>&lt;footer&gt;</code> aren't limited to the top and bottom of the whole page — they can appear once per <code>&lt;article&gt;</code> too. A blog post's <code>&lt;article&gt;</code> commonly has its own inner <code>&lt;header&gt;</code> holding the title and publish date, distinct from the page-level <code>&lt;header&gt;</code> holding the site logo and main navigation.</p>
+    <p><code>&lt;aside&gt;</code> marks content that's tangentially related to the surrounding content but not essential to it — a pull quote, a "related articles" list, or a sidebar of ads. It's meant to be safely skippable, which is exactly the signal it gives assistive technology.</p>
+    <p>None of these tags change how content looks by default — most render like a plain block-level <code>&lt;div&gt;</code> visually. Their entire value is the meaning they add to the document's structure: a screen reader user can pull up a landmark list and jump straight to <code>&lt;main&gt;</code> or <code>&lt;nav&gt;</code> instead of tabbing through the entire page from the top, and a search engine can better understand which part of the page is the actual content worth indexing.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;header&gt;
   &lt;h1&gt;My Blog&lt;/h1&gt;
@@ -129,19 +146,46 @@
   &lt;p&gt;&amp;copy; 2026 My Blog&lt;/p&gt;
 &lt;/footer&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">a page with sections, an article header, and an aside</div>      <pre><code>&lt;main&gt;
+  &lt;section&gt;
+    &lt;h2&gt;Features&lt;/h2&gt;
+    &lt;p&gt;Fast, simple, and free.&lt;/p&gt;
+  &lt;/section&gt;
+
+  &lt;article&gt;
+    &lt;header&gt;
+      &lt;h2&gt;My First Post&lt;/h2&gt;
+      &lt;p&gt;Published &lt;time datetime="2026-08-01"&gt;August 1, 2026&lt;/time&gt;&lt;/p&gt;
+    &lt;/header&gt;
+    &lt;p&gt;Post content goes here...&lt;/p&gt;
+  &lt;/article&gt;
+
+  &lt;aside&gt;
+    &lt;h2&gt;Related posts&lt;/h2&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href="/post-2"&gt;My Second Post&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/aside&gt;
+&lt;/main&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>One <code>&lt;main&gt;</code> per page — it's a landmark screen reader users can jump straight to.</li>
-        <li><code>&lt;article&gt;</code> = stands alone; <code>&lt;section&gt;</code> = part of a larger whole with its own heading.</li>
+        <li><code>&lt;article&gt;</code> = stands alone and could be syndicated on its own; <code>&lt;section&gt;</code> = part of a larger whole with its own heading.</li>
         <li><code>&lt;nav&gt;</code> should wrap primary navigation links, not every group of links on the page.</li>
-        <li>Semantic tags replace <code>&lt;div class="header"&gt;</code>-style guessing with names browsers understand.</li>
+        <li><code>&lt;header&gt;</code> and <code>&lt;footer&gt;</code> can be nested inside an <code>&lt;article&gt;</code>, not just at the page level.</li>
+        <li><code>&lt;aside&gt;</code> marks tangential content that's safe for a reader to skip.</li>
+        <li>Semantic tags replace <code>&lt;div class="header"&gt;</code>-style guessing with names browsers and assistive tech actually understand.</li>
+        <li>These tags carry no default visual styling of their own — their value is entirely structural and semantic.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Rebuild your recipe page from earlier using header, main, article, and footer instead of generic divs.</p>
+      <p>Rebuild your recipe page from earlier using header, main, article, and footer instead of generic divs. Add a section with its own heading for a 'Tips' block, an aside linking to two other recipes, and give the article its own inner header containing the recipe title and a time element with the publish date.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Interfaces and type aliases</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="type-annotations-on-variables-and-functions.html">Type annotations on variables and functions</a></p>
   </div>
 
   <article>
-    <p class="lead">Interfaces describe the shape of an object — which properties it must have and their types. Type aliases (<code>type</code>) do something similar but are more flexible, able to describe unions, primitives, and tuples too, not just object shapes.</p>
-    <p>For plain object shapes, interfaces and type aliases are largely interchangeable; interfaces are extendable and mergeable (useful for library authors), while type aliases can express things interfaces can't, like union types.</p>
+    <p class="lead">Interfaces describe the shape of an object — which properties it must have and their types. Type aliases (the <code>type</code> keyword) do something similar but are more flexible, able to describe unions, primitives, tuples, and function types too, not just object shapes, so a type alias can represent essentially any type expression TypeScript supports.</p>
+    <p>For plain object shapes, interfaces and type aliases are largely interchangeable in everyday use; interfaces are extendable with <code>extends</code> and mergeable across multiple declarations with the same name (useful for library authors augmenting a third-party type), while type aliases can express things interfaces fundamentally can't, like a union of several distinct shapes.</p>
+    <p>Declaration merging is a genuinely unique interface feature: writing <code>interface User { id: number }</code> twice in the same scope combines both declarations into one interface with all the properties from both. This is intentional and widely used for augmenting types from external libraries (adding a custom property to <code>Window</code>, for example), but it also means an accidentally duplicated interface name silently merges instead of producing the redeclaration error you might expect from a type alias.</p>
+    <p>Optional properties, marked with <code>?</code> after the name, and readonly properties, marked with the <code>readonly</code> modifier before the name, both work identically whether you're using an interface or an object-shaped type alias — these modifiers are a property of the object type itself, not of the interface/type distinction.</p>
+    <p>Extending an interface with <code>extends</code> composes cleanly and produces genuinely useful error messages when a conflict arises (say, two base interfaces disagreeing on a property's type). Type aliases have a rough equivalent for combining two shapes into one, but the syntax and a specific gotcha around conflicting properties are worth saving for the dedicated lesson on union and intersection types coming up shortly — for now, <code>extends</code> is the tool to reach for when one object shape builds on another.</p>
+    <p>Most teams settle on a convention rather than agonizing over interface versus type alias for every declaration — a common one is interfaces for object shapes that might be extended or implemented by a class, and type aliases for everything else (unions, tuples, mapped types, function signatures). Consistency within a codebase matters far more than which specific convention is chosen.</p>
     <div class="code-block">
 <div class="cap">shapes.ts</div>      <pre><code>interface User {
   id: number;
@@ -119,25 +136,55 @@
   email?: string; // optional property
 }
 
-type Status = "active" | "inactive" | "banned"; // a type alias for a union
+type UserId = number; // a type alias can name any type, not just an object shape
 
 function greet(user: User): string {
   return `Hello, ${user.name}`;
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">extending-and-merging.ts</div>      <pre><code>interface Animal {
+  name: string;
+}
+
+interface Dog extends Animal {
+  breed: string;
+}
+
+const rex: Dog = { name: "Rex", breed: "Labrador" };
+
+// Declaration merging: augmenting a type declared elsewhere
+interface Window {
+  myAppVersion: string;
+}
+// window.myAppVersion is now valid, merged with the built-in Window interface</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">readonly-properties.ts</div>      <pre><code>interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+const origin: Point = { x: 0, y: 0 };
+// origin.x = 5; // Error: cannot assign to 'x' because it's read-only</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>?</code> after a property name marks it optional — <code>email?: string</code> means it may be undefined.</li>
-        <li>Interfaces can be extended (<code>interface Admin extends User</code>) and merged across declarations; type aliases cannot.</li>
-        <li>Type aliases are required for unions (<code>"a" | "b"</code>) and tuples — interfaces can't express these.</li>
-        <li>Most teams pick one convention (interface for objects, type for everything else) and apply it consistently.</li>
+        <li><code>readonly</code> before a property name prevents reassignment after the object is created, catchable at compile time.</li>
+        <li>Interfaces can be extended (<code>interface Admin extends User</code>) and merged across declarations; type aliases support neither.</li>
+        <li>Type aliases are required for unions, tuples, and function-type shorthand — interfaces can't express these directly.</li>
+        <li>Declaration merging is intentional and useful for augmenting third-party types, but can silently combine an accidental duplicate interface name.</li>
+        <li>Combining two shapes into one is also possible with type aliases (their own dedicated lesson, coming up soon) — for now, <code>extends</code> is the predictable way to build one interface on top of another.</li>
+        <li>Most teams pick one convention (interface for objects, type for everything else) and apply it consistently rather than deciding case by case.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a Product interface with id, name, price, and an optional description, then write a function that formats it as a display string.</p>
+      <p>Define a Product interface with id, name, price, and an optional description, then write a function that formats it as a display string. Afterward, create an ElectronicsProduct interface that extends Product with an extra warrantyMonths property, and try constructing one that's missing a required field to see the resulting compiler error.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

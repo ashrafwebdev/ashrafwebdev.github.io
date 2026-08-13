@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,16 +119,61 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>A framework in depth: Laravel or Symfony fundamentals</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="psr-standards-and-modern-php-conventions.html">PSR standards and modern PHP conventions</a></p>
   </div>
 
   <article>
-    <p class="lead">Laravel is the most popular PHP framework today, known for developer-friendly conventions: Eloquent (its ORM), Blade (its templating engine), and an expressive routing syntax. Symfony is more modular and enterprise-oriented — many of its components are used standalone by other projects, including Laravel itself.</p>
-    <p>Both provide routing, an ORM, templating, and a CLI tool (Artisan for Laravel, the Symfony Console for Symfony) that scaffolds common code and runs maintenance tasks.</p>
+    <p class="lead">Laravel is the most popular PHP framework today, known for developer-friendly conventions: Eloquent (its ORM), Blade (its templating engine), and an expressive routing syntax. Symfony is more modular and enterprise-oriented — many of its components are used standalone by other projects, including Laravel itself, which relies on several Symfony components (like the HttpFoundation and Console components) under the hood.</p>
+    <p>Both provide routing, an ORM, templating, and a CLI tool (Artisan for Laravel, the Symfony Console for Symfony) that scaffolds common code and runs maintenance tasks like database migrations, cache clearing, and code generation from a single command-line interface.</p>
+    <p>Eloquent, Laravel's ORM, follows the active record pattern — a model class both represents a database row and knows how to save, delete, and query itself directly (<code>$user->save()</code>, <code>User::find(1)</code>). Doctrine, Symfony's typical ORM, follows the data mapper pattern instead — entity classes are plain data objects with no database awareness, and a separate EntityManager handles all persistence. This is a meaningfully different mental model: Eloquent models are more convenient for quick CRUD work, while Doctrine's separation tends to scale better in complex domains where you don't want persistence concerns bleeding into your business objects.</p>
+    <p>Middleware is a core concept in both frameworks: a piece of code that runs before (and sometimes after) a request reaches its controller, used for cross-cutting concerns like authentication checks, CORS headers, rate limiting, or logging — without cluttering every individual controller with the same repeated logic.</p>
+    <p>Both frameworks are built around dependency injection via a service container: instead of a class manually instantiating its own dependencies, it declares what it needs (usually via constructor type hints), and the framework's container resolves and injects the right concrete implementation automatically. This makes it straightforward to swap implementations — for testing, or for a different environment — without touching the class that depends on them.</p>
+    <p>Artisan (<code>php artisan make:model</code>, <code>make:controller</code>, <code>make:migration</code>) and the Symfony Console (<code>php bin/console make:entity</code>, <code>make:controller</code>) both scaffold boilerplate quickly and consistently, which matters more than it sounds — consistent generated file structure keeps a codebase navigable across a large team.</p>
     <div class="code-block">
 <div class="cap">routes/web.php (Laravel)</div>      <pre><code>Route::get("/users/{id}", function ($id) {
     $user = User::findOrFail($id);
     return view("users.show", ["user" =&gt; $user]);
 });</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">app/Models/Post.php (Eloquent with a relationship)</div>      <pre><code>&lt;?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    protected $fillable = ['title', 'body', 'user_id'];
+
+    public function author()
+    {
+        return $this-&gt;belongsTo(User::class, 'user_id');
+    }
+}
+
+// Usage elsewhere:
+// $post = Post::with('author')-&gt;find(1);
+// echo $post-&gt;author-&gt;name;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">app/Http/Middleware/EnsureIsAdmin.php (Laravel middleware)</div>      <pre><code>&lt;?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class EnsureIsAdmin
+{
+    public function handle($request, Closure $next)
+    {
+        if (! $request-&gt;user() || ! $request-&gt;user()-&gt;is_admin) {
+            abort(403, 'Admins only.');
+        }
+
+        return $next($request); // pass the request down the pipeline
+    }
+}</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -125,12 +182,17 @@
         <li>Symfony's component-based architecture means you can use just the pieces you need, even outside a full Symfony app.</li>
         <li>Both frameworks include a built-in ORM (Eloquent / Doctrine) that handles most day-to-day database work without raw SQL.</li>
         <li>Artisan (<code>php artisan make:model</code>, etc.) and the Symfony Console both scaffold boilerplate quickly.</li>
+        <li>Eloquent follows the active record pattern (models know how to save themselves); Doctrine follows the data mapper pattern (plain entities, separate EntityManager) — a real architectural difference, not just syntax.</li>
+        <li>Middleware handles cross-cutting request concerns (auth, CORS, rate limiting) in one place instead of duplicating that logic in every controller.</li>
+        <li>Both frameworks rely on a service container for dependency injection, resolving constructor-declared dependencies automatically.</li>
+        <li>Laravel is itself built on top of several standalone Symfony components, showing how the two ecosystems overlap more than their reputations suggest.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Install Laravel (or Symfony) fresh, create one Eloquent (or Doctrine) model, and build a route that lists all records of that model.</p>
+      <p>Install Laravel (or Symfony) fresh, create one Eloquent (or Doctrine) model, and build a route that lists all records of that model. Then add a second related model (like Post belonging to a User) with the relationship defined, and write one piece of middleware that restricts a route to authenticated users only.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,14 +119,18 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Designing distributed systems in Go</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="performance-profiling-pprof-and-optimization.html">Performance profiling (pprof) and optimization</a></p>
   </div>
 
   <article>
-    <p class="lead">Go's lightweight goroutines, fast compilation, and small static binaries make it a common choice for the networked services that make up a distributed system &mdash; API gateways, message consumers, and internal RPC services alike.</p>
-    <p>For service-to-service communication, Go projects commonly choose between JSON over HTTP for simplicity and broad compatibility, or <b>gRPC</b> (with Protocol Buffers) for strongly-typed, efficient binary communication and built-in streaming support.</p>
-    <p>Distributed systems must handle partial failure as the normal case: patterns like retries with exponential backoff, circuit breakers, and idempotent request handling (often via an idempotency key) keep a Go service resilient when its dependencies are slow or unavailable.</p>
+    <p class="lead">Go's lightweight goroutines, fast compilation, and small static binaries make it a common choice for the networked services that make up a distributed system &mdash; API gateways, message consumers, and internal RPC services alike &mdash; and its strong standard library for networking (<code>net</code>, <code>net/http</code>, <code>net/rpc</code>) means many building blocks don't require third-party dependencies at all.</p>
+    <p>For service-to-service communication, Go projects commonly choose between JSON over HTTP for simplicity, human-readability, and broad compatibility with any client language, or <b>gRPC</b> (with Protocol Buffers) for strongly-typed, efficient binary communication, built-in streaming support (unary, server-streaming, client-streaming, and bidirectional), and code generation that keeps client and server in sync as the API evolves.</p>
+    <p>Distributed systems must handle partial failure as the normal case, not an exception: any given dependency can be slow, unreachable, or returning errors at any moment, and a well-designed Go service degrades gracefully rather than cascading that failure &mdash; patterns like retries with exponential backoff (ideally with jitter added to avoid many clients retrying in lockstep) and circuit breakers (which stop calling a dependency that's clearly failing, giving it time to recover instead of piling on more load) are standard tools.</p>
+    <p>Idempotent request handling &mdash; often via an idempotency key the client generates and the server deduplicates on &mdash; is essential once retries are in play, since a retried request might actually have succeeded the first time and the response simply got lost in transit; without idempotency, a naive retry of a "charge this card" request could charge it twice.</p>
+    <p>Message queues and event streams (Kafka, NATS, RabbitMQ, or cloud-managed equivalents) decouple producers from consumers in time, letting a slow or temporarily-down consumer catch up later rather than blocking the producer, and Go's small memory footprint and fast startup make consumer processes cheap to run many of, horizontally scaling consumption by adding more instances reading from different partitions.</p>
+    <p>Consistent, structured logging with a correlation or trace ID threaded through every log line and every downstream call is what makes a distributed failure debuggable at all &mdash; without it, reconstructing what happened to one specific failed request across a dozen services means grepping timestamps and guessing, so this is worth setting up from day one rather than retrofitting under pressure.</p>
     <div class="code-block">
-<div class="cap">main.go</div>      <pre><code>func callWithRetry(fn func() error, attempts int) error {
+<div class="cap">retry.go</div>      <pre><code>func callWithRetry(fn func() error, attempts int) error {
 	var err error
 	for i := 0; i &lt; attempts; i++ {
 		if err = fn(); err == nil {
@@ -125,19 +141,91 @@
 	return err
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">retry_with_jitter_and_ctx.go</div>      <pre><code>package main
+
+import (
+	"context"
+	"math/rand"
+	"time"
+)
+
+func callWithBackoff(ctx context.Context, fn func() error, attempts int) error {
+	var err error
+	for i := 0; i &lt; attempts; i++ {
+		if err = fn(); err == nil {
+			return nil
+		}
+
+		base := time.Duration(1&lt;&lt;i) * 100 * time.Millisecond
+		jitter := time.Duration(rand.Int63n(int64(base) / 2))
+
+		select {
+		case &lt;-time.After(base + jitter):
+		case &lt;-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return err
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">circuit_breaker_sketch.go</div>      <pre><code>package main
+
+import (
+	"errors"
+	"sync"
+	"time"
+)
+
+var ErrCircuitOpen = errors.New("circuit breaker is open")
+
+type CircuitBreaker struct {
+	mu          sync.Mutex
+	failures    int
+	threshold   int
+	openedAt    time.Time
+	cooldown    time.Duration
+}
+
+func (cb *CircuitBreaker) Call(fn func() error) error {
+	cb.mu.Lock()
+	if cb.failures &gt;= cb.threshold &amp;&amp; time.Since(cb.openedAt) &lt; cb.cooldown {
+		cb.mu.Unlock()
+		return ErrCircuitOpen
+	}
+	cb.mu.Unlock()
+
+	err := fn()
+
+	cb.mu.Lock()
+	defer cb.mu.Unlock()
+	if err != nil {
+		cb.failures++
+		cb.openedAt = time.Now()
+	} else {
+		cb.failures = 0
+	}
+	return err
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Go's small binaries and cheap goroutines make it well suited to networked service workloads.</li>
-        <li>gRPC with Protocol Buffers offers typed, efficient, streaming-capable service-to-service communication.</li>
-        <li>Retries with exponential backoff and circuit breakers keep services resilient to slow dependencies.</li>
+        <li>gRPC with Protocol Buffers offers typed, efficient, streaming-capable service-to-service communication; JSON over HTTP favors simplicity and compatibility.</li>
+        <li>Retries with exponential backoff and jitter, plus circuit breakers, keep services resilient to slow or failing dependencies.</li>
         <li>Idempotency keys let a retried request be safely handled more than once without duplicate side effects.</li>
+        <li>Message queues decouple producers from consumers in time, and Go's cheap process footprint makes horizontal consumer scaling easy.</li>
+        <li>Distributed systems must treat partial failure as normal, not exceptional, and degrade gracefully rather than cascading it.</li>
+        <li>Structured logging with a correlation ID threaded through every service is what makes a distributed failure debuggable.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a callWithRetry helper that retries a failing function up to N times with increasing backoff, then use it to wrap a function that fails the first two times and succeeds on the third.</p>
+      <p>Write a callWithRetry helper that retries a failing function up to N times with increasing backoff, then use it to wrap a function that fails the first two times and succeeds on the third. Then extend it to accept a context.Context so retries stop early if the context is cancelled, and sketch (in comments or a short struct) how you'd add jitter and a simple circuit breaker on top.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

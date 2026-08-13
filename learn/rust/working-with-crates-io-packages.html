@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Working with crates.io packages</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="collections-vec-hashmap.html">Collections (Vec, HashMap)</a></p>
   </div>
 
   <article>
     <p class="lead"><b>crates.io</b> is Rust's central package registry, and any dependency added with <code>cargo add crate_name</code> is fetched from there automatically, recorded in <code>Cargo.toml</code>, with exact resolved versions locked in <code>Cargo.lock</code> for reproducible builds.</p>
     <p>Popular crates cover most common needs: <code>serde</code> for serialization, <code>tokio</code> for async runtimes, <code>reqwest</code> for HTTP clients, and <code>clap</code> for command-line argument parsing are all near-universal choices in their respective niches.</p>
     <p>Documentation for every published crate is automatically hosted on docs.rs, generated directly from the crate's own doc comments, so reading a new dependency's API is usually a matter of visiting one consistent, predictable URL.</p>
+    <p>Cargo follows semantic versioning by default: a dependency listed as <code>version = "1.2"</code> is treated as a caret requirement, meaning any released <code>1.x.y</code> version that is at least <code>1.2</code> satisfies it. <code>Cargo.lock</code> freezes the exact versions actually resolved for a build so everyone on a team gets identical dependency versions, and <code>cargo update</code> is the explicit, deliberate action needed to move those pinned versions forward within their semver constraints.</p>
+    <p>Many crates expose optional <b>feature flags</b> &mdash; serde's <code>derive</code> feature is a common example &mdash; that pull in extra dependencies and code only when explicitly enabled, keeping a default installation lean. You can also disable a crate's default features with <code>default-features = false</code> when you only need a small subset of what it offers.</p>
+    <p>Before depending on a niche or unfamiliar crate, it's normal Rust practice to check its health on crates.io or lib.rs: recent download counts, how recently it was published, and how many open issues it has. A broken or abandoned dependency becomes your project's problem the moment you adopt it, so a small amount of due diligence up front is standard etiquette, not paranoia.</p>
     <div class="code-block">
 <div class="cap">Cargo.toml</div>      <pre><code>[dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -122,6 +138,17 @@ serde_json = "1"
 # $ cargo add serde --features derive
 # $ cargo add serde_json</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Cargo.toml (feature flags)</div>      <pre><code>[dependencies]
+# pull in only what's needed, skip the rest of tokio's default features
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros"] }
+clap = { version = "4", features = ["derive"] }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">terminal</div>      <pre><code>$ cargo update              # bump locked versions within semver constraints
+$ cargo tree                # inspect the full dependency graph
+$ cargo tree -i serde        # see which crates depend on serde specifically</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -129,12 +156,21 @@ serde_json = "1"
         <li>Cargo.lock pins exact dependency versions for reproducible builds across machines.</li>
         <li>serde, tokio, reqwest, and clap are near-universal crates in their respective problem spaces.</li>
         <li>docs.rs auto-generates and hosts documentation for every published crate.</li>
+        <li>Version requirements follow semver caret rules by default; cargo update moves the lockfile forward explicitly.</li>
+        <li>Feature flags (like serde's derive) pull in extra code only when explicitly enabled.</li>
+        <li><code>default-features = false</code> trims a dependency down to only the features you actually need.</li>
+        <li>cargo tree inspects the full dependency graph; checking a crate's activity and issues is standard due diligence.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add the serde and serde_json crates to a new project with cargo add, derive Serialize and Deserialize on a small struct, and serialize an instance of it to a JSON string.</p>
+      <p>Add the serde and serde_json crates to a new project with cargo add, derive Serialize and Deserialize on a small struct, and serialize an instance of it to a JSON string. Then add clap with its derive feature enabled, define a small struct-based CLI argument parser, and run cargo tree to see what clap itself depends on.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">Your terminal to-do list, saved to disk between runs</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

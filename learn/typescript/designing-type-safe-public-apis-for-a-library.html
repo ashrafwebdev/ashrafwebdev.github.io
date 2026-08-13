@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Designing type-safe public APIs for a library</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="type-level-programming-recursive-conditional-typ.html">Type-level programming (recursive conditional types, template literal types)</a></p>
   </div>
 
   <article>
-    <p class="lead">When you're the one authoring a library others will depend on, your exported types ARE your API contract — a breaking type change is exactly as disruptive to consumers as a breaking runtime change, even though no test might catch it.</p>
-    <p>Good library type design favors clarity and stability: minimal generic complexity at the surface, well-named exported types (not just inline anonymous shapes), and careful use of function overloads only when they genuinely improve the calling experience.</p>
+    <p class="lead">When you're the one authoring a library others will depend on, your exported types ARE your API contract — a breaking type change is exactly as disruptive to consumers as a breaking runtime change, even though no runtime test might ever catch it, since the break only shows up when a consumer's own project fails to compile against the new version.</p>
+    <p>Good library type design favors clarity and stability over cleverness: minimal generic complexity at the surface, well-named exported types (not just inline anonymous object shapes buried in a function signature), and function overloads used only when they genuinely improve the calling experience, rather than as a way to paper over a poorly-designed single signature.</p>
+    <p>Exporting named interfaces and types for anything a consumer will reference directly is worth the extra effort even when an inline anonymous type would technically work — a consumer trying to write their own function that accepts your library's options object needs an actual named type to reference, and forcing them to reconstruct or copy an anonymous shape by hand is a real usability cost most library authors underestimate.</p>
+    <p>Keeping the generic surface of a public API as simple as it can be while still being genuinely useful matters because complexity compounds for every single consumer: a library author who deals with one confusing generic constraint once, while designing the API, is trading that one-time cost against every consumer having to understand the same complexity, repeatedly, for as long as they use the library.</p>
+    <p>Function overloads (multiple signatures for the same function name, each handling a different combination of argument types) are a genuinely useful tool for a public API when a single generic signature would produce a confusing or overly permissive result type — but they add real maintenance burden, since every overload needs to be kept consistent with the single actual implementation signature underneath them, and it's easy for overloads to drift out of sync as a library evolves.</p>
+    <p>Testing your published types deliberately, the same way you'd test runtime behavior, catches a category of regression that ordinary unit tests miss entirely — tools like <code>tsd</code> or <code>expect-type</code> let you write assertions purely about what type a given expression resolves to, which is the only way to reliably catch an accidental type-signature regression before it reaches consumers.</p>
     <div class="code-block">
 <div class="cap">A clear public API</div>      <pre><code>// Exported, named, documented — this IS the contract
 export interface FetchOptions {
@@ -124,19 +141,42 @@ export function fetchWithRetry(url: string, options?: FetchOptions): Promise&lt;
   return fetch(url);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">overloads-for-a-clearer-result-type.ts</div>      <pre><code>// A single generic signature here would force every caller to get back
+// `Element | null`, even when they already know the specific tag.
+export function createElement(tag: "input"): HTMLInputElement;
+export function createElement(tag: "div"): HTMLDivElement;
+export function createElement(tag: string): HTMLElement {
+  return document.createElement(tag);
+}
+
+const input = createElement("input"); // typed as HTMLInputElement, not HTMLElement</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">type-testing-the-public-api.ts</div>      <pre><code>import { expectType } from "expect-type";
+import { fetchWithRetry } from "./index";
+
+// This test file never runs the function — it only checks the TYPE
+// that fetchWithRetry resolves to, catching accidental signature regressions.
+expectType&lt;Promise&lt;Response&gt;&gt;(fetchWithRetry("https://example.com"));</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Exported types are as much a stability contract as your runtime API — treat type changes with the same care as breaking changes.</li>
         <li>Export named interfaces/types for anything consumers will reference directly, rather than leaving them anonymous and inferred.</li>
-        <li>Keep the generic surface of a public API as simple as it can be while still being useful — complexity compounds for every consumer.</li>
+        <li>Keep the generic surface of a public API as simple as it can be while still being useful — complexity compounds for every consumer, repeatedly.</li>
+        <li>Function overloads can produce a clearer, more specific result type than a single generic signature, at the cost of extra maintenance burden.</li>
+        <li>Overload signatures must be kept consistent with the single real implementation signature underneath them as the library evolves.</li>
         <li>Test your published types the same way you test runtime behavior — tools like <code>tsd</code> or <code>expect-type</code> exist for exactly this.</li>
+        <li>A breaking type change surfaces only when a consumer's project fails to compile, not through any runtime test, making it an easy category of regression to miss.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Design and document the exported TypeScript interface for a small hypothetical library function, considering what should be required vs. optional.</p>
+      <p>Design and document the exported TypeScript interface for a small hypothetical library function, considering what should be required vs. optional. Then add two function overloads to the same function that narrow the return type based on a specific literal argument, and write a short type-only test asserting the resolved type of a call to it.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

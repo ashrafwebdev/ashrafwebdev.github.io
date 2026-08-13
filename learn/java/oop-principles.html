@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,15 +119,20 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>OOP principles: inheritance, polymorphism, interfaces</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="compiling-and-running-with-javac-java.html">Compiling and running with javac/java</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>Inheritance</b> lets one class (a subclass) extend another (a superclass) with <code>extends</code>, inheriting its fields and methods while adding or overriding its own. <b>Polymorphism</b> means a variable declared with a supertype can hold any subtype object, and calling an overridden method invokes the subtype's version automatically at runtime.</p>
-    <p>An <b>interface</b> defines a contract of method signatures without implementation (though it can include default methods). A class <code>implements</code> an interface, promising to provide those methods, which is how Java achieves a form of multiple inheritance of behavior.</p>
-    <p>Favoring interfaces over deep inheritance hierarchies is a widely followed Java design principle: it keeps classes flexible and easier to test, since code can depend on an interface rather than a concrete implementation.</p>
+    <p class="lead"><b>Inheritance</b> lets one class (a subclass) extend another (a superclass) with <code>extends</code>, inheriting its fields and methods while adding or overriding its own. Java only allows single inheritance of classes &mdash; a class can extend exactly one superclass &mdash; which avoids the diamond-inheritance ambiguity that multiple class inheritance can cause in other languages.</p>
+    <p><b>Polymorphism</b> means a variable declared with a supertype can hold any subtype object, and calling an overridden method invokes the subtype's version automatically at runtime; this is called <b>dynamic dispatch</b>. It's what lets code written against a <code>Shape</code> reference correctly call <code>Circle.area()</code> or <code>Square.area()</code> without ever knowing which concrete subtype it's holding.</p>
+    <p>Overriding a method requires the same signature as the superclass version and is best marked with <code>@Override</code>, which isn't strictly required but causes the compiler to catch typos (a misspelled method name silently creates a new, unrelated method instead of overriding, and <code>@Override</code> turns that mistake into a compile error).</p>
+    <p>An <b>interface</b> defines a contract of method signatures without implementation (though it can include <code>default</code> methods with a body, and <code>static</code> methods). A class <code>implements</code> an interface, promising to provide those methods, and unlike class inheritance a single class can implement many interfaces, which is how Java achieves a form of multiple inheritance of behavior.</p>
+    <p>The keyword <code>super</code> lets a subclass call its superclass's constructor (<code>super(args)</code>, must be the first statement) or an overridden method's original implementation (<code>super.methodName()</code>), which is useful when you want to extend rather than completely replace inherited behavior.</p>
+    <p>Favoring interfaces (or composition) over deep inheritance hierarchies is a widely followed Java design principle: deep hierarchies tend to become fragile, where a change to a base class ripples unpredictably into many subclasses, while interfaces keep classes flexible and easier to test, since code can depend on a contract rather than a specific implementation.</p>
     <div class="code-block">
 <div class="cap">Shapes.java</div>      <pre><code>interface Shape {
     double area();
+    default String describe() { return "A shape with area " + area(); }
 }
 
 class Circle implements Shape {
@@ -134,24 +151,62 @@ public class Shapes {
     public static void main(String[] args) {
         Shape[] shapes = { new Circle(2), new Square(3) };
         for (Shape s : shapes) {
-            System.out.println(s.getClass().getSimpleName() + ": " + s.area());
+            System.out.println(s.getClass().getSimpleName() + ": " + s.describe());
         }
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Employees.java</div>      <pre><code>class Employee {
+    protected String name;
+    protected double baseSalary;
+
+    Employee(String name, double baseSalary) {
+        this.name = name;
+        this.baseSalary = baseSalary;
+    }
+
+    double totalPay() { return baseSalary; }
+}
+
+class Manager extends Employee {
+    private double bonus;
+
+    Manager(String name, double baseSalary, double bonus) {
+        super(name, baseSalary); // must be the first statement
+        this.bonus = bonus;
+    }
+
+    @Override
+    double totalPay() {
+        return super.totalPay() + bonus; // extend, don't fully replace
+    }
+}
+
+public class Employees {
+    public static void main(String[] args) {
+        Employee e = new Manager("Karim", 60000, 8000);
+        System.out.println(e.totalPay()); // dynamic dispatch calls Manager's version
     }
 }</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>extends</code> creates a subclass; <code>implements</code> fulfills an interface contract.</li>
-        <li>Polymorphism lets a supertype reference invoke the correct overridden method at runtime.</li>
-        <li>Interfaces describe capabilities without dictating how they are implemented.</li>
+        <li><code>extends</code> creates a subclass (single inheritance only); <code>implements</code> fulfills an interface contract (multiple allowed).</li>
+        <li>Polymorphism lets a supertype reference invoke the correct overridden method at runtime via dynamic dispatch.</li>
+        <li>Always mark overrides with <code>@Override</code> so the compiler catches signature mismatches instead of silently creating a new method.</li>
+        <li>Interfaces describe capabilities without dictating how they are implemented, and may include default and static methods.</li>
+        <li><code>super(args)</code> must be the first statement in a subclass constructor; <code>super.method()</code> calls the parent's original implementation.</li>
         <li>Programming against interfaces rather than concrete classes improves flexibility and testability.</li>
+        <li>Deep inheritance hierarchies tend to be fragile; prefer shallow hierarchies or composition where possible.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a Payable interface with an amountDue() method, implement it in two classes (Invoice and Subscription), then loop over an array of Payable and print each amount due.</p>
+      <p>Define a Payable interface with an amountDue() method, implement it in two classes (Invoice and Subscription), then loop over an array of Payable and print each amount due. Then create a PastDueInvoice subclass of Invoice that overrides amountDue() to add a late fee using super.amountDue(), and confirm via the polymorphic loop that the correct overridden value is used.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

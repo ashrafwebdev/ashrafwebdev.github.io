@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,38 +119,67 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Authoring reusable Web Components / design-system primitives</h1>
     <p class="lang-line"><b>HTML</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="progressive-enhancement-principles.html">Progressive enhancement principles</a></p>
   </div>
 
   <article>
     <p class="lead">At the hero stage, Web Components stop being a curiosity and become a real tool for building a design system — a small set of reusable, framework-agnostic primitives (buttons, cards, tooltips) that any team can drop into any project, React or not.</p>
     <p>This means thinking about public API design: which attributes should be configurable, which internal details should stay hidden behind the Shadow DOM, and how consumers style your component from the outside using CSS custom properties you expose deliberately.</p>
+    <p>CSS custom properties (variables) are the primary styling bridge across the Shadow DOM boundary, because unlike ordinary CSS rules, they inherit through shadow roots. A component author defines an internal style using <code>var(--btn-bg, #1F4E44)</code> with a sensible default, and a consumer overrides just that one value from outside without ever needing to pierce the component's internals or use fragile, framework-specific escape hatches like <code>::part</code> for every property.</p>
+    <p>For the handful of cases custom properties don't cover — styling a specific internal element structurally rather than just a color or spacing value — the <code>::part</code> pseudo-element is the deliberate, sanctioned escape hatch: the component author tags an internal element with <code>part="icon"</code>, and only elements explicitly exposed that way become stylable from outside, keeping everything else genuinely encapsulated.</p>
+    <p>A reusable primitive also needs to handle the same states a native element would: disabled, focus-visible, loading, and error, at minimum. Skipping these is the most common way a hand-rolled component ends up feeling worse than the native HTML element it's replacing — a custom <code>&lt;app-button&gt;</code> that doesn't dim and reject clicks when disabled, or doesn't show a visible focus ring, is a regression compared to a plain <code>&lt;button disabled&gt;</code>.</p>
+    <p>Versioning discipline matters as soon as more than one project consumes your components: a renamed attribute or a changed default value is a breaking change exactly like it would be in any published library, and should be communicated the same way — semantic versioning, a changelog entry, and ideally a deprecation warning logged to the console for at least one version before the old behavior is removed.</p>
     <div class="code-block">
 <div class="cap">Exposing a styling hook</div>      <pre><code>class AppButton extends HTMLElement {
   connectedCallback() {
     const shadow = this.attachShadow({ mode: 'open' });
     shadow.innerHTML = `
       &lt;style&gt;
-        button { background: var(--btn-bg, #1F4E44); color: white; }
+        button {
+          background: var(--btn-bg, #1F4E44);
+          color: var(--btn-fg, white);
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:focus-visible { outline: 3px solid var(--btn-focus-ring, #94b8ac); }
       &lt;/style&gt;
-      &lt;button&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/button&gt;
+      &lt;button part="button" ?disabled="${this.hasAttribute('disabled')}"&gt;
+        &lt;slot&gt;&lt;/slot&gt;
+      &lt;/button&gt;
     `;
   }
 }
 customElements.define('app-button', AppButton);</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">consumer overriding the hook, and using ::part</div>      <pre><code>&lt;style&gt;
+  /* Overrides the exposed custom property, no internals touched */
+  .danger-zone app-button { --btn-bg: #b3261e; }
+
+  /* Styles the internal button element via the explicitly exposed part */
+  app-button::part(button) { border-radius: 999px; }
+&lt;/style&gt;
+
+&lt;div class="danger-zone"&gt;
+  &lt;app-button&gt;Delete account&lt;/app-button&gt;
+&lt;/div&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Design-system components should expose intentional CSS custom-property "hooks", not require overriding internal styles.</li>
+        <li>CSS custom properties inherit through Shadow DOM boundaries — they're the primary styling bridge for encapsulated components.</li>
+        <li><code>::part</code> is the sanctioned escape hatch for structural styling of internals the component author explicitly exposes.</li>
         <li>Keep the public attribute API small and well-documented — every attribute is a promise you have to maintain.</li>
+        <li>Handle disabled, focus-visible, loading, and error states — skipping them makes a custom component feel worse than the native element it replaces.</li>
         <li>Framework-agnostic components (Web Components) can sit alongside React, Vue, or plain HTML in the same org.</li>
-        <li>Document usage examples alongside the component — an undocumented component doesn't get reused.</li>
+        <li>Treat attribute renames and default-value changes as breaking changes with real versioning and deprecation warnings.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Design a small component library (3-4 components: button, card, badge) with consistent, documented CSS custom-property hooks for theming.</p>
+      <p>Design a small component library (3-4 components: button, card, badge) with consistent, documented CSS custom-property hooks for theming. Give at least one component a part-exposed internal element for structural styling, implement a disabled and a focus-visible state on the button, and write a short changelog entry as if you'd just renamed one attribute.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

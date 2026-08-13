@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,32 +119,100 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Performance profiling (pprof) and optimization</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="context-for-cancellation-and-timeouts.html">Context for cancellation and timeouts</a></p>
   </div>
 
   <article>
-    <p class="lead">Go's standard library includes <code>net/http/pprof</code>, which exposes live CPU, memory, and goroutine profiles over HTTP with a single import, and the <code>go tool pprof</code> command analyzes the resulting profile data interactively or generates flame graphs.</p>
-    <p>CPU profiling samples where the program spends its time; memory profiling tracks where allocations happen, which in Go is often the more actionable lever since excessive allocation drives extra garbage-collection work.</p>
-    <p>As in any language, the discipline is to profile first, then optimize the specific hot path the data points to &mdash; Go's benchmark functions (<code>func BenchmarkXxx(b *testing.B)</code>, run via <code>go test -bench</code>) make it easy to verify an optimization actually helped.</p>
+    <p class="lead">Go's standard library includes <code>net/http/pprof</code>, which exposes live CPU, memory (heap), goroutine, and mutex-contention profiles over HTTP with a single blank import (<code>import _ "net/http/pprof"</code>), and the <code>go tool pprof</code> command analyzes the resulting profile data interactively or generates flame graphs and call-graph visualizations from it.</p>
+    <p>CPU profiling samples where the program spends its time by periodically interrupting execution and recording the call stack, giving a statistical picture of hot functions rather than an exact trace; memory profiling tracks where allocations happen (by size and call site), which in Go is often the more actionable lever since excessive allocation drives extra garbage-collection work that steals CPU time from the actual workload.</p>
+    <p>A goroutine profile (<code>/debug/pprof/goroutine</code>) dumps the stack trace of every currently running goroutine, which is invaluable for diagnosing a goroutine leak in production &mdash; a steadily climbing goroutine count over time, visible in this profile or in a simple metric, is the classic symptom.</p>
+    <p>As in any language, the discipline is to profile first, then optimize the specific hot path the data points to, rather than guessing &mdash; Go's benchmark functions (<code>func BenchmarkXxx(b *testing.B)</code>, run via <code>go test -bench=. -benchmem</code>) make it easy to verify an optimization actually helped, and <code>-benchmem</code> specifically reports allocations per operation, which often matters more than raw nanoseconds.</p>
+    <p>Common, well-known Go performance patterns include preallocating a slice's capacity with <code>make([]T, 0, n)</code> when the final size is roughly known (avoiding repeated reallocation as <code>append</code> grows it), using <code>strings.Builder</code> instead of repeated <code>+</code> string concatenation (which would otherwise allocate a new string on every operation, since strings are immutable), and reusing buffers via <code>sync.Pool</code> for short-lived objects allocated in a hot loop.</p>
+    <p>The Go runtime's garbage collector is a concurrent, low-latency collector tuned to keep pause times short rather than to minimize total CPU overhead, and it's tunable via the <code>GOGC</code> environment variable (or <code>debug.SetGCPercent</code>) which controls how much the heap is allowed to grow between collections &mdash; raising it trades higher memory usage for less GC CPU overhead, useful for latency-sensitive services with memory to spare.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>import _ "net/http/pprof"
 // exposes profiles at /debug/pprof/ once the server is running
 
 $ go tool pprof http://localhost:8080/debug/pprof/profile?seconds=30
+$ go tool pprof http://localhost:8080/debug/pprof/heap
 $ go test -bench=. -benchmem ./...</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">string_builder_bench_test.go</div>      <pre><code>package strutil
+
+import (
+	"strings"
+	"testing"
+)
+
+func concatPlus(words []string) string {
+	result := ""
+	for _, w := range words {
+		result += w // allocates a new string every iteration
+	}
+	return result
+}
+
+func concatBuilder(words []string) string {
+	var b strings.Builder
+	for _, w := range words {
+		b.WriteString(w) // reuses an internal growable buffer
+	}
+	return b.String()
+}
+
+var words = []string{"go", "is", "fast", "and", "simple"}
+
+func BenchmarkConcatPlus(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ {
+		concatPlus(words)
+	}
+}
+
+func BenchmarkConcatBuilder(b *testing.B) {
+	for i := 0; i &lt; b.N; i++ {
+		concatBuilder(words)
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">preallocate.go</div>      <pre><code>package main
+
+// slow: append reallocates repeatedly as the slice outgrows its capacity
+func buildSlow(n int) []int {
+	var out []int
+	for i := 0; i &lt; n; i++ {
+		out = append(out, i)
+	}
+	return out
+}
+
+// fast: capacity is known up front, so append never reallocates
+func buildFast(n int) []int {
+	out := make([]int, 0, n)
+	for i := 0; i &lt; n; i++ {
+		out = append(out, i)
+	}
+	return out
+}</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>net/http/pprof</code> exposes CPU, memory, and goroutine profiles over HTTP with one import.</li>
-        <li><code>go tool pprof</code> analyzes profile data and can render flame graphs of hot paths.</li>
-        <li>Excess allocation is often the real cost in Go programs, since it drives more GC work.</li>
-        <li>Benchmark functions (<code>BenchmarkXxx</code>) verify whether an optimization actually improved performance.</li>
+        <li><code>net/http/pprof</code> exposes CPU, heap, goroutine, and mutex profiles over HTTP with one import.</li>
+        <li><code>go tool pprof</code> analyzes profile data and can render flame graphs and call graphs of hot paths.</li>
+        <li>Excess allocation is often the real cost in Go programs, since it drives more GC work &mdash; memory profiles pinpoint where allocations happen.</li>
+        <li>A goroutine profile dumping every running goroutine's stack is the standard tool for diagnosing goroutine leaks in production.</li>
+        <li>Benchmark functions (<code>BenchmarkXxx</code>, run with <code>-bench -benchmem</code>) verify whether an optimization actually improved speed and allocations.</li>
+        <li>Preallocating slice capacity, using <code>strings.Builder</code> over repeated concatenation, and pooling short-lived objects with <code>sync.Pool</code> are common wins.</li>
+        <li><code>GOGC</code> tunes how much the heap grows between collections, trading memory for less GC CPU overhead.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Benchmark function for a string-concatenation helper, run it with go test -bench, then rewrite the helper using strings.Builder and compare the benchmark results.</p>
+      <p>Write a Benchmark function for a string-concatenation helper, run it with go test -bench -benchmem, then rewrite the helper using strings.Builder and compare the benchmark results including allocations per operation. Then write a second pair of benchmarks comparing a slice built with append from a nil slice against one preallocated with make([]T, 0, n), and note the difference in allocation counts.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

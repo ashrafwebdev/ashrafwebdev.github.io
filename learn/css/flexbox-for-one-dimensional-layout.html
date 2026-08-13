@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Flexbox for one-dimensional layout</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="linking-a-stylesheet-and-basic-cascading-rules.html">Linking a stylesheet and basic cascading rules</a></p>
   </div>
 
   <article>
-    <p class="lead">Flexbox lays out children in a single row or column that can grow, shrink, and align to fill available space — it's the right tool whenever you're arranging items along one axis, like a navbar or a row of cards.</p>
-    <p>Set <code>display: flex</code> on the parent to activate it. <code>justify-content</code> controls alignment along the main axis (usually horizontal); <code>align-items</code> controls the cross axis (usually vertical); <code>gap</code> adds space between items without messy margins.</p>
+    <p class="lead">Flexbox lays out children in a single row or column that can grow, shrink, and align to fill available space — it's the right tool whenever you're arranging items along one axis, like a navbar, a row of cards, or a form's label-and-input pairing.</p>
+    <p>Set <code>display: flex</code> on the parent to activate it. <code>justify-content</code> controls alignment along the <b>main axis</b> (horizontal by default); <code>align-items</code> controls the <b>cross axis</b> (vertical by default); <code>gap</code> adds space between items without the messy negative-margin tricks people used before <code>gap</code> was supported.</p>
+    <p><code>flex-direction: column</code> rotates the main axis to vertical, which also rotates what <code>justify-content</code> and <code>align-items</code> each control — this trips people up until they internalize that the two properties always refer to 'main axis' and 'cross axis', not literally 'horizontal' and 'vertical'.</p>
+    <p>The <code>flex</code> shorthand (<code>flex-grow flex-shrink flex-basis</code>) controls how a child shares available space. <code>flex: 1</code> is shorthand for <code>flex: 1 1 0%</code> — it lets an item grow and shrink freely, ignoring its content size as a starting point, which is why several <code>flex: 1</code> siblings end up exactly equal width regardless of their content.</p>
+    <p>By default, flex items won't shrink below their content's natural minimum size (<code>min-width: auto</code>), which is a common cause of unwanted overflow in a flex row containing long text or an image — setting <code>min-width: 0</code> (or <code>overflow: hidden</code>) on the offending child is the standard fix.</p>
+    <p><code>flex-wrap: wrap</code> lets items move onto additional lines instead of shrinking indefinitely or overflowing, turning a single flex row into something closer to a simple, unaligned grid — useful for tag lists or button groups whose count isn't fixed.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.navbar {
   display: flex;
@@ -122,19 +139,40 @@
 
 .navbar .spacer { flex: 1; } /* grows to push siblings apart */</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (equal columns + the min-width overflow trap)</div>      <pre><code>.columns { display: flex; gap: 16px; }
+
+.columns &gt; div {
+  flex: 1;        /* three children end up exactly equal width */
+  min-width: 0;   /* without this, a long word or wide image can overflow the box */
+  overflow-wrap: break-word;
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (wrapping tag list)</div>      <pre><code>.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-list .tag { flex: 0 0 auto; } /* don't grow or shrink, size to content */</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>display: flex</code> on the parent, then control children with <code>justify-content</code>, <code>align-items</code>, and <code>gap</code>.</li>
-        <li><code>flex-direction: column</code> switches the main axis to vertical.</li>
-        <li><code>flex: 1</code> on a child lets it grow to fill remaining space.</li>
-        <li>Flexbox is one-dimensional — for rows AND columns together, reach for Grid instead.</li>
+        <li><code>flex-direction: column</code> switches the main axis to vertical, and with it, what justify-content/align-items each control.</li>
+        <li><code>flex: 1</code> (shorthand for <code>1 1 0%</code>) lets a child grow and shrink to fill remaining space, ignoring its own content size as a base.</li>
+        <li>Flex items have an implicit <code>min-width: auto</code> that can cause overflow with long content — set <code>min-width: 0</code> to override it.</li>
+        <li><code>flex-wrap: wrap</code> lets items flow onto new lines instead of shrinking or overflowing indefinitely.</li>
+        <li><code>gap</code> adds spacing between flex items without the negative-margin workarounds older CSS required.</li>
+        <li>Flexbox is one-dimensional — for rows AND columns aligned together, reach for Grid instead.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a navbar with a logo on the left, three nav links in the middle, and a button on the right, all aligned using Flexbox.</p>
+      <p>Build a navbar with a logo on the left, three nav links in the middle, and a button on the right, all aligned using Flexbox. Then add a fourth navbar with several tag-like items and flex-wrap enabled, and shrink the viewport in DevTools to confirm the tags wrap onto new lines instead of overflowing.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

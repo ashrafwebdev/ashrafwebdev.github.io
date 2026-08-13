@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Built-in utility types (Partial, Pick, Omit, Record)</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="type-narrowing-and-type-guards.html">Type narrowing and type guards</a></p>
   </div>
 
   <article>
-    <p class="lead">TypeScript ships a set of generic utility types that transform existing types instead of requiring you to redefine them from scratch. <code>Partial&lt;T&gt;</code> makes every property optional — perfect for an 'update' function that only changes some fields.</p>
-    <p><code>Pick&lt;T, Keys&gt;</code> and <code>Omit&lt;T, Keys&gt;</code> create a new type from a subset (or everything except a subset) of another type's properties. <code>Record&lt;Keys, ValueType&gt;</code> builds an object type mapping a set of keys to a consistent value type.</p>
+    <p class="lead">TypeScript ships a set of generic utility types that transform existing types instead of requiring you to redefine them from scratch. The version of a type wrapped with <code>Partial</code> makes every property optional — perfect for an 'update' function that only changes some fields of an entity, without needing a completely separate interface just for that partial payload.</p>
+    <p>The <code>Pick</code> and <code>Omit</code> utilities create a new type from a subset (or everything except a subset) of another type's properties, letting narrower, purpose-built types stay derived from one source of truth rather than being hand-copied and risking drifting out of sync as the original type changes over time.</p>
+    <p>The <code>Record</code> utility builds an object type mapping a set of keys to a consistent value type — it's the idiomatic way to type an object used purely as a lookup map or dictionary, and reads more clearly than the equivalent index signature syntax for the common case of a known or generic key type.</p>
+    <p><code>Required</code> is the direct opposite of <code>Partial</code>: it strips optionality from every property, forcing every field to be present. This is genuinely useful after validating an input object, when you want the rest of your code to be able to rely on every field actually being there without repeated undefined checks.</p>
+    <p><code>Readonly</code> wraps every property with the <code>readonly</code> modifier, which is useful for representing a value that should never be mutated after creation — though it's worth remembering this is a shallow, compile-time-only guarantee: it doesn't deep-freeze nested objects, and nothing stops a runtime caller who ignores the type error from mutating the object anyway.</p>
+    <p>These utility types are not special compiler magic — they're just generics defined using mapped types and conditional types you can write yourself, and TypeScript's own standard library source for them (in <code>lib.es5.d.ts</code>) is genuinely short and readable, making it a great next step once these become comfortable to use.</p>
     <div class="code-block">
 <div class="cap">utilityTypes.ts</div>      <pre><code>interface User {
   id: number;
@@ -125,19 +142,55 @@ type UserPreview = Pick&lt;User, "id" | "name"&gt;;
 type UserWithoutId = Omit&lt;User, "id"&gt;;
 type UsersById = Record&lt;number, User&gt;;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">required-and-readonly.ts</div>      <pre><code>interface DraftEvent {
+  title?: string;
+  date?: string;
+}
+
+function publish(event: Required&lt;DraftEvent&gt;) {
+  // safe to use event.title and event.date directly, no undefined checks
+  console.log(`${event.title} on ${event.date}`);
+}
+
+const config: Readonly&lt;{ retries: number }&gt; = { retries: 3 };
+// config.retries = 5; // Error: cannot assign to a readonly property</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">combining-utilities.ts</div>      <pre><code>interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+}
+
+// Combine utilities: an update payload that's a partial version
+// of everything except the immutable id field
+type ProductUpdate = Partial&lt;Omit&lt;Product, "id"&gt;&gt;;
+
+function updateProduct(id: number, changes: ProductUpdate) { /* ... */ }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>Partial&lt;T&gt;</code>: every property optional. <code>Required&lt;T&gt;</code>: the opposite, every property mandatory.</li>
-        <li><code>Pick&lt;T, K&gt;</code> selects specific keys; <code>Omit&lt;T, K&gt;</code> excludes them — often used together across an app's types.</li>
-        <li><code>Record&lt;K, V&gt;</code> is the idiomatic way to type an object used as a lookup map.</li>
-        <li>These utility types are just generics defined using features you already know — reading their source is a great learning exercise.</li>
+        <li>The <code>Partial</code> utility makes every property optional; the <code>Required</code> utility does the opposite, making every property mandatory.</li>
+        <li><code>Pick</code> selects specific keys from a type; <code>Omit</code> excludes them — often used together across an app's derived types.</li>
+        <li><code>Record</code> is the idiomatic way to type an object used as a lookup map, mapping a set of keys to a consistent value type.</li>
+        <li><code>Readonly</code> prevents reassignment of top-level properties at compile time — it's a shallow guarantee, not a deep freeze.</li>
+        <li>Utility types can be composed together, like a <code>Partial</code> wrapped around an <code>Omit</code>, to express precise derived shapes.</li>
+        <li>These utility types are just generics defined using mapped and conditional types you already have access to — nothing about them is special compiler magic.</li>
+        <li>Deriving narrower types from one source interface (via <code>Pick</code>/<code>Omit</code>) keeps related types in sync automatically as the source evolves.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Given a User interface, define UserPreview (Pick of id/name), UpdatePayload (Partial), and UsersById (Record) using the built-in utility types.</p>
+      <p>Given a User interface, define UserPreview (a Pick of id and name), UpdatePayload (a Partial of the whole interface), and UsersById (a Record keyed by id) using the built-in utility types. Then combine two utilities together to express an update payload that excludes the id field entirely and makes every remaining field optional.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A type-safe fetch() wrapper for a public API you choose</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

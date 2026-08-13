@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Basic MVC structure</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="composer-and-package-management.html">Composer and package management</a></p>
   </div>
 
   <article>
-    <p class="lead">MVC (Model-View-Controller) separates concerns: Models handle data and business logic, Views handle presentation (HTML output), and Controllers coordinate between them, responding to requests by calling models and choosing a view to render.</p>
-    <p>Even without a framework, organizing plain PHP code into these three roles makes a codebase far easier to navigate and test than mixing database queries, business logic, and HTML output all in one file.</p>
+    <p class="lead">MVC (Model-View-Controller) separates concerns: Models handle data and business logic, Views handle presentation (HTML output), and Controllers coordinate between them, responding to requests by calling models and choosing a view to render. Even without a framework, organizing plain PHP code into these three roles makes a codebase far easier to navigate and test than mixing database queries, business logic, and HTML output all in one file.</p>
+    <p>A common structural companion to MVC is the front controller pattern: instead of every URL mapping directly to its own PHP file (<code>/about.php</code>, <code>/contact.php</code>), a single entry point (<code>index.php</code>) receives every request, and a small router inspects the URL to decide which controller and action should handle it. This gives you one place to apply things like authentication checks or logging to every request.</p>
+    <p>Models shouldn't just be thin wrappers around a single database table — a model's job is to represent a piece of business data and the rules around it (like "an order can't be marked shipped until it's been paid"), whether that logic reads from a database, a cache, or an external API. Keeping this logic in models rather than scattered across controllers is what makes MVC actually pay off as an app grows.</p>
+    <p>Views should contain minimal logic — mostly just outputting variables the controller already prepared, using simple loops and conditionals for display purposes only. A view that runs its own database queries or contains complex branching business logic has effectively broken the separation MVC is meant to provide, and tends to become hard to test or reuse.</p>
+    <p>Controllers should stay thin too: their job is to read the request, ask the right model for data or to perform an action, and hand the result to a view — not to contain the actual business rules themselves. A controller with hundreds of lines of logic is a sign that logic belongs in a model or a dedicated service class instead.</p>
+    <p>Frameworks (Laravel, Symfony) formalize and extend this pattern with routing, ORMs, and templating built in, plus conventions for where each piece of code should live — which is why moving from a hand-rolled MVC structure to a framework usually feels familiar rather than foreign, since the underlying separation of concerns is the same idea with more tooling around it.</p>
     <div class="code-block">
 <div class="cap">A minimal manual MVC flow</div>      <pre><code>&lt;?php
 // Controller
@@ -121,6 +138,38 @@ $user = UserModel::find($userId); // Model: fetches data
 // Hand off to a View for rendering:
 require "views/user_profile.php"; // View: pure HTML + $user</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">index.php (a tiny front controller)</div>      <pre><code>&lt;?php
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+switch ($path) {
+    case '/users':
+        require 'controllers/UsersController.php';
+        (new UsersController())-&gt;index();
+        break;
+    case '/':
+        require 'controllers/HomeController.php';
+        (new HomeController())-&gt;index();
+        break;
+    default:
+        http_response_code(404);
+        require 'views/404.php';
+}
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">models/UserModel.php</div>      <pre><code>&lt;?php
+class UserModel {
+    public static function find(int $id): ?array {
+        global $pdo;
+        $stmt = $pdo-&gt;prepare("SELECT * FROM users WHERE id = :id");
+        $stmt-&gt;execute(["id" =&gt; $id]);
+        $row = $stmt-&gt;fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+}
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -128,12 +177,21 @@ require "views/user_profile.php"; // View: pure HTML + $user</code></pre>
         <li>Views should contain minimal logic — mostly just outputting variables the controller already prepared.</li>
         <li>Frameworks (Laravel, Symfony) formalize and extend this pattern with routing, ORMs, and templating built in.</li>
         <li>Even a small script benefits from separating these concerns as it grows past a single file.</li>
+        <li>A front controller (a single index.php with a router) gives every request one common entry point for concerns like auth and logging.</li>
+        <li>Models should encapsulate business rules, not just act as thin table wrappers — that's what makes the pattern useful as an app grows.</li>
+        <li>A controller ballooning to hundreds of lines is a sign business logic has leaked in and should move to a model or service class.</li>
+        <li>A view running its own database queries has broken MVC's separation of concerns, even if the app still "works."</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Refactor a single mixed PHP script (with SQL, logic, and HTML all together) into separate model, view, and controller files.</p>
+      <p>Refactor a single mixed PHP script (with SQL, logic, and HTML all together) into separate model, view, and controller files. Then add a minimal front controller (index.php) that routes at least two different URL paths to two different controllers, each rendering its own view.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A hand-rolled blog engine with real logins and comments</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with xUnit</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="entity-framework-core.html">Entity Framework Core</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>xUnit</b> is one of the most widely used testing frameworks in the .NET ecosystem. A test method is marked with <code>[Fact]</code> for a single fixed test case, or <code>[Theory]</code> combined with <code>[InlineData]</code> to run the same test logic against multiple sets of inputs.</p>
-    <p>Assertions live in the <code>Assert</code> class &mdash; <code>Assert.Equal</code>, <code>Assert.True</code>, <code>Assert.Throws</code> &mdash; and follow the same Arrange-Act-Assert structure recommended across most testing frameworks.</p>
-    <p>xUnit creates a fresh instance of the test class for every test method by default, which keeps tests naturally isolated from each other without needing explicit setup/teardown attributes for common cases.</p>
+    <p class="lead"><b>xUnit</b> is one of the most widely used testing frameworks in the .NET ecosystem. A test method is marked with <code>[Fact]</code> for a single fixed test case, or <code>[Theory]</code> combined with <code>[InlineData]</code> to run the same test logic against multiple sets of inputs, avoiding copy-pasted near-identical test methods that differ only in their input values.</p>
+    <p>Assertions live in the <code>Assert</code> class &mdash; <code>Assert.Equal</code>, <code>Assert.True</code>, <code>Assert.Throws</code>, <code>Assert.Contains</code> &mdash; and tests generally follow the Arrange-Act-Assert structure: set up the objects under test, perform the action being tested, then verify the outcome, kept as three clearly separated sections even in a short test.</p>
+    <p>xUnit creates a fresh instance of the test class for every test method by default, which keeps tests naturally isolated from each other without needing explicit setup/teardown attributes for common cases; anything you'd normally put in a setup method instead goes in the test class's constructor, and anything for teardown implements <code>IDisposable</code> on the test class itself.</p>
+    <p>Shared, expensive setup that must persist across multiple tests (like spinning up a test database once) uses a <b>fixture</b>: a class implementing <code>IClassFixture of TFixture</code> for sharing across tests within one class, or <code>ICollectionFixture</code> combined with a <code>[Collection]</code> attribute for sharing across multiple test classes &mdash; a deliberate opt-in, since the framework's default of per-test isolation is usually what you want.</p>
+    <p>Good unit tests isolate the code under test from its dependencies using fakes, stubs, or mocking libraries like Moq, so a test failure points precisely at the class being tested rather than at a database, network call, or file system it happens to depend on; dependency injection (registering interfaces rather than concrete classes) is what makes substituting a fake implementation practical in the first place.</p>
+    <p><code>dotnet test</code> runs the whole suite from the command line or CI, and supports filtering with <code>--filter</code> to run a subset of tests by name, trait, or namespace, which is essential once a test suite grows past a few dozen tests and running everything on every save becomes slow.</p>
     <div class="code-block">
 <div class="cap">CalculatorTests.cs</div>      <pre><code>public class CalculatorTests
 {
@@ -133,19 +149,69 @@
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ConstructorSetupAndFixture.cs</div>      <pre><code>public class OrderServiceTests : IDisposable
+{
+    private readonly OrderService _service;
+
+    // Runs before every test method -- this IS the setup step
+    public OrderServiceTests()
+    {
+        _service = new OrderService(new InMemoryOrderRepository());
+    }
+
+    [Fact]
+    public void PlaceOrder_IncreasesCount()
+    {
+        // Arrange is done in the constructor above
+        _service.PlaceOrder("Widget", 3);          // Act
+        Assert.Equal(1, _service.OrderCount);       // Assert
+    }
+
+    // Runs after every test method -- teardown
+    public void Dispose() =&gt; _service.Dispose();
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">MockedDependency.cs</div>      <pre><code>public interface IEmailSender { void Send(string to, string body); }
+
+public class SignupServiceTests
+{
+    [Fact]
+    public void Signup_SendsWelcomeEmail()
+    {
+        var mockSender = new Mock&lt;IEmailSender&gt;();
+        var service = new SignupService(mockSender.Object);
+
+        service.Signup("amina@example.com");
+
+        mockSender.Verify(
+            s =&gt; s.Send("amina@example.com", It.IsAny&lt;string&gt;()),
+            Times.Once);
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>[Fact]</code> marks a single test case; <code>[Theory]</code> with <code>[InlineData]</code> parameterizes one across inputs.</li>
         <li><code>Assert.Equal</code>, <code>Assert.True</code>, and <code>Assert.Throws</code> cover most verification needs.</li>
-        <li>A fresh test class instance per test method keeps tests isolated by default.</li>
-        <li><code>dotnet test</code> runs the whole suite from the command line or CI.</li>
+        <li>A fresh test class instance per test method keeps tests isolated by default; use the constructor for setup and <code>IDisposable</code> for teardown.</li>
+        <li>Shared expensive setup across tests uses a fixture (<code>IClassFixture</code> or <code>ICollectionFixture</code>) as a deliberate opt-in.</li>
+        <li>Mocking a dependency's interface isolates the code under test so failures point at the right class.</li>
+        <li>Arrange-Act-Assert keeps each test readable even as the scenario grows more complex.</li>
+        <li><code>dotnet test</code> runs the whole suite from the command line or CI, with <code>--filter</code> to run a subset.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write an xUnit test class for a StringUtils.IsPalindrome method with a Theory covering a palindrome, a non-palindrome, and an empty string.</p>
+      <p>Write an xUnit test class for a StringUtils.IsPalindrome method with a Theory covering a palindrome, a non-palindrome, and an empty string. Then write a second test class with constructor-based setup for a small service of your choice, and add one test that uses a mocked dependency (or a simple hand-written fake) to verify the service calls that dependency correctly.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">A tested, async, EF-Core-backed habit tracker API</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

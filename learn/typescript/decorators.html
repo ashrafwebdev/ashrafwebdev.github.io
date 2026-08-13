@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Decorators</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="declaration-files-d-ts-for-untyped-libraries.html">Declaration files (.d.ts) for untyped libraries</a></p>
   </div>
 
   <article>
-    <p class="lead">Decorators are a special kind of annotation you can attach to classes, methods, or properties to modify or observe their behavior — widely used by frameworks like Angular and NestJS for dependency injection and metadata.</p>
-    <p>A decorator is just a function that receives the thing it's decorating and can return a modified version of it. TypeScript's decorator syntax has evolved to track the evolving ECMAScript decorators proposal, so behavior can differ slightly between TS versions and configs.</p>
+    <p class="lead">Decorators are a special kind of annotation you can attach to classes, methods, properties, or accessors to modify or observe their behavior — widely used by frameworks like Angular and NestJS for dependency injection and declarative metadata, where a decorator like a route or injectable marker tells the framework how to treat the thing it's attached to.</p>
+    <p>A decorator is fundamentally just a function that receives the thing it's decorating and can return a modified version of it (or, in the newer standard, register extra behavior via a context object) — the special <code>@</code> syntax is essentially sugar for calling that function and reassigning its result back onto the class, method, or property.</p>
+    <p>TypeScript's decorator syntax has evolved to track the evolving ECMAScript decorators proposal, which went through significant design changes on its way to becoming a real, stable part of JavaScript itself — as a result, behavior and required configuration can differ noticeably between an older codebase using <code>experimentalDecorators</code> (TypeScript's original, pre-standard implementation) and a newer one targeting the now-standardized JavaScript decorators.</p>
+    <p>A class decorator receives the class constructor itself and can replace it entirely, which is how framework decorators like a component or injectable marker are able to wrap the original class with extra registration logic without the class author needing to write that logic by hand every time.</p>
+    <p>A method decorator (in the older, <code>experimentalDecorators</code> style) receives the class prototype, the method name, and a property descriptor whose <code>value</code> it can reassign to a wrapped version of the original function — this is the mechanism behind common decorator patterns like automatic logging, timing, or memoization applied to a single method.</p>
+    <p>Decorators are genuinely powerful but add real complexity: they run implicit code at class-definition time (not at instantiation time, a subtlety that surprises people expecting decorator logic to run per-instance), can be stacked and composed in ways that are easy to misorder, and are generally best reached for when a framework specifically requires them rather than as a stylistic choice for casual application code.</p>
     <div class="code-block">
 <div class="cap">decorators.ts</div>      <pre><code>function logCall(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
   const original = descriptor.value;
@@ -126,19 +143,54 @@ class Calculator {
   add(a: number, b: number) { return a + b; }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">class-decorator.ts</div>      <pre><code>function sealed(constructor: Function) {
+  Object.seal(constructor);
+  Object.seal(constructor.prototype);
+}
+
+@sealed
+class Config {
+  timeout = 3000;
+}
+// After @sealed runs, no new properties can be added to Config
+// or its prototype, even though the class still behaves normally.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">timing-decorator-with-stacking.ts</div>      <pre><code>function timed(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  const original = descriptor.value;
+  descriptor.value = function (...args: any[]) {
+    const start = performance.now();
+    const result = original.apply(this, args);
+    console.log(`${propertyKey} took ${performance.now() - start}ms`);
+    return result;
+  };
+}
+
+class ReportGenerator {
+  @logCall  // decorators apply bottom-up: timed wraps the original,
+  @timed    // then logCall wraps the already-timed version
+  generate(rows: number) { /* expensive work */ return rows * 2; }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Decorators are heavily used by Angular, NestJS, and TypeORM for declarative metadata and dependency injection.</li>
-        <li>A method decorator receives the class prototype, the method name, and a property descriptor it can modify.</li>
+        <li>A decorator is fundamentally just a function that receives what it's decorating and can return a modified version of it.</li>
+        <li>A method decorator receives the class prototype, the method name, and a property descriptor it can modify to wrap the original implementation.</li>
+        <li>A class decorator receives the constructor itself and can replace it entirely, enabling framework registration logic without manual boilerplate.</li>
         <li>Enable <code>experimentalDecorators</code> (or check your framework's required config) since decorator syntax has changed across TS/JS versions.</li>
-        <li>Decorators are powerful but add real complexity — reach for them when a framework requires them, not for casual use.</li>
+        <li>Decorator logic runs at class-definition time, not per-instance at instantiation time — a common source of confusion for newcomers.</li>
+        <li>Stacked decorators apply bottom-up (closest to the method first), which matters when the order of wrapping actually affects behavior.</li>
+        <li>Decorators are powerful but add real complexity — reach for them when a framework requires them, not for casual, everyday use.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a simple method decorator that logs how long a method takes to execute, and apply it to a method on a small class.</p>
+      <p>Write a simple method decorator that logs how long a method takes to execute, and apply it to a method on a small class. Then stack a second decorator (for example, one that logs the method's arguments) on the same method and observe, by adding console output to each, in which order the two decorators actually run.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with JUnit</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="spring-boot-fundamentals.html">Spring Boot fundamentals</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>JUnit</b> (currently JUnit 5) is the standard framework for writing automated tests in Java. A test method is annotated with <code>@Test</code> and typically calls methods from <code>org.junit.jupiter.api.Assertions</code>, such as <code>assertEquals</code> and <code>assertTrue</code>, to verify expected behavior.</p>
-    <p>Good tests follow the <b>Arrange-Act-Assert</b> pattern: set up the inputs and objects needed, perform the action being tested, then assert the outcome matches expectations. Each test should focus on one specific behavior so failures are easy to diagnose.</p>
-    <p><code>@BeforeEach</code> and <code>@AfterEach</code> let you run shared setup and teardown code around every test method, keeping test bodies focused on the specific behavior being verified rather than repeated boilerplate.</p>
+    <p class="lead"><b>JUnit</b> (currently JUnit 5, also called Jupiter) is the standard framework for writing automated tests in Java. A test method is annotated with <code>@Test</code> and typically calls methods from <code>org.junit.jupiter.api.Assertions</code>, such as <code>assertEquals</code>, <code>assertTrue</code>, and <code>assertThrows</code>, to verify expected behavior; the test runner reports each method's pass/fail status independently.</p>
+    <p>Good tests follow the <b>Arrange-Act-Assert</b> pattern: set up the inputs and objects needed, perform the action being tested, then assert the outcome matches expectations. Each test should focus on one specific behavior so that when a test fails, the failure message alone tells you roughly what broke, without needing to read the whole test body to figure out which assertion actually failed.</p>
+    <p><code>@BeforeEach</code> and <code>@AfterEach</code> let you run shared setup and teardown code around every test method, keeping test bodies focused on the specific behavior being verified rather than repeated boilerplate; <code>@BeforeAll</code>/<code>@AfterAll</code> (which must be static, unless the test class uses per-class lifecycle) run once for the whole test class instead of once per test.</p>
+    <p><code>@ParameterizedTest</code> combined with a source annotation like <code>@ValueSource</code> or <code>@CsvSource</code> runs the same test logic against a whole table of different inputs, which catches far more edge cases than writing one hand-written test method per case and keeps the test file from growing unwieldy as more cases are added.</p>
+    <p>For code that depends on external collaborators (a database, a network call, another service), tests often use a <b>mocking</b> library like Mockito to substitute a fake, controllable stand-in for the real dependency, letting you test a class's logic in complete isolation without needing a real database or network connection just to run a unit test.</p>
+    <p>Test coverage tools (like JaCoCo) report what percentage of lines or branches your tests actually execute, but high coverage alone doesn't guarantee good tests &mdash; a test that calls a method without asserting anything meaningful about its result gets "credit" for coverage while verifying nothing at all, so coverage is a useful signal, not a target to chase for its own sake.</p>
     <div class="code-block">
 <div class="cap">CalculatorTest.java</div>      <pre><code>import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -136,19 +152,53 @@ class CalculatorTest {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">StringUtilsTest.java</div>      <pre><code>import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import static org.junit.jupiter.api.Assertions.*;
+
+class StringUtilsTest {
+
+    @ParameterizedTest
+    @CsvSource({
+        "racecar, true",
+        "hello, false",
+        "'', true",
+        "A man a plan a canal Panama, false" // case-sensitive, spaces count
+    })
+    void isPalindromeAcrossManyInputs(String input, boolean expected) {
+        assertEquals(expected, StringUtils.isPalindrome(input));
+    }
+
+    @Test
+    void nullInputThrowsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class,
+            () -&gt; StringUtils.isPalindrome(null));
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>@Test</code> marks a method as an automatically-run test case.</li>
-        <li><code>Assertions.assertEquals</code>, <code>assertTrue</code>, and <code>assertThrows</code> verify expected outcomes.</li>
-        <li><code>@BeforeEach</code> runs shared setup before every test, keeping tests DRY and focused.</li>
+        <li>@Test marks a method as an automatically-run test case, reported pass/fail independently of other tests.</li>
+        <li>Assertions.assertEquals, assertTrue, and assertThrows verify expected outcomes.</li>
+        <li>@BeforeEach runs shared setup before every test, keeping tests DRY and focused; @BeforeAll runs once per class.</li>
+        <li>@ParameterizedTest with @ValueSource or @CsvSource runs one test method against many input cases.</li>
+        <li>Mocking libraries like Mockito substitute fake collaborators so a unit test can isolate the logic under test.</li>
         <li>Each test should verify one behavior, making a failing test easy to pinpoint.</li>
+        <li>High code coverage doesn't guarantee good tests; a test must actually assert meaningful outcomes to be worth anything.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a StringUtils class with an isPalindrome method, then write three JUnit tests covering a palindrome, a non-palindrome, and an empty string.</p>
+      <p>Write a StringUtils class with an isPalindrome method, then write three JUnit tests covering a palindrome, a non-palindrome, and an empty string. Then convert those three cases into a single @ParameterizedTest using @CsvSource, add a case for null input that expects an IllegalArgumentException, and add a @BeforeEach that logs which test is about to run.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">TaskFlow: a Spring Boot task-tracking API with a database</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

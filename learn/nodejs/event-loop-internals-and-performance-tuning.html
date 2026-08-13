@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,35 +119,70 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Event loop internals and performance tuning</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="basics-of-microservice-architecture.html">Basics of microservice architecture</a></p>
   </div>
 
   <article>
-    <p class="lead">Node's event loop is what lets a single JavaScript thread handle thousands of concurrent connections — I/O operations (file, network, database) are delegated to the system and handled asynchronously, so the main thread is never blocked waiting on them.</p>
-    <p>The danger is CPU-bound work: a long synchronous loop or expensive computation blocks the entire event loop, stalling every other request being handled by that same process, no matter how many concurrent connections there are.</p>
+    <p class="lead">Node's event loop is what lets a single JavaScript thread handle thousands of concurrent connections — I/O operations (file, network, database) are delegated to the operating system (or libuv's internal thread pool) and handled asynchronously, so the main thread is never blocked waiting on them and can keep processing other work in the meantime.</p>
+    <p>The event loop actually runs in distinct phases each iteration — timers (due <code>setTimeout</code>/<code>setInterval</code> callbacks), pending callbacks, poll (retrieving new I/O events and running their callbacks), check (<code>setImmediate</code> callbacks), and close callbacks — cycling through them repeatedly for as long as the process has pending work.</p>
+    <p>Promise callbacks (microtasks) run at a higher priority than the phases above — after every synchronous chunk of code finishes and before the event loop moves to the next phase, all pending microtasks (resolved <code>.then()</code> callbacks, <code>queueMicrotask</code>) drain completely first. This is why a resolved promise's <code>.then()</code> reliably runs before a <code>setTimeout(fn, 0)</code> scheduled around the same time, even though both look 'immediate'.</p>
+    <p><code>setImmediate()</code> and <code>setTimeout(fn, 0)</code> look similar but aren't guaranteed to run in the same order relative to each other outside I/O callbacks — inside an I/O callback specifically, <code>setImmediate()</code> is guaranteed to run before any timer, which is the one case where their ordering is deterministic.</p>
+    <p>The real danger for a Node server is CPU-bound work: a long synchronous loop or expensive computation (heavy JSON parsing, image processing, complex regex, cryptographic hashing) blocks the entire event loop, stalling every other request being handled by that same process, no matter how many concurrent connections there are — there's no free parallelism within a single Node process for CPU work the way there is for I/O.</p>
+    <p><code>worker_threads</code> lets you run genuinely CPU-heavy code on a separate thread, off the main event loop, communicating with the main thread via message passing — this is the standard fix once profiling (with the <code>--prof</code> flag or the Chrome DevTools Node inspector) confirms a specific piece of synchronous computation is the actual bottleneck, rather than guessing.</p>
     <div class="code-block">
 <div class="cap">Blocking vs. non-blocking</div>      <pre><code>// Blocks the event loop — every other request waits
 app.get("/bad", (req, res) =&gt; {
   let total = 0;
   for (let i = 0; i &lt; 10_000_000_000; i++) total += i;
   res.json({ total });
-});
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">worker.js and main.js (offloading real CPU work)</div>      <pre><code>// worker.js
+const { parentPort, workerData } = require("worker_threads");
+let total = 0;
+for (let i = 0; i &lt; workerData.limit; i++) total += i;
+parentPort.postMessage(total);
 
-// Offload real CPU work to a worker thread instead
-const { Worker } = require("worker_threads");</code></pre>
+// main.js — the event loop stays free while this runs
+const { Worker } = require("worker_threads");
+
+app.get("/good", (req, res) =&gt; {
+  const worker = new Worker("./worker.js", { workerData: { limit: 10_000_000_000 } });
+  worker.on("message", (total) =&gt; res.json({ total }));
+  worker.on("error", (err) =&gt; res.status(500).json({ error: err.message }));
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">ordering.js (microtasks vs. macrotasks)</div>      <pre><code>console.log("1: sync");
+
+setTimeout(() =&gt; console.log("4: setTimeout"), 0);
+
+Promise.resolve().then(() =&gt; console.log("3: promise microtask"));
+
+console.log("2: sync");
+
+// Output order: 1, 2, 3, 4
+// All synchronous code runs first, then ALL pending microtasks drain,
+// and only then does the event loop move on to timer callbacks.</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Node handles I/O concurrency well by design; CPU-bound work is where it needs deliberate help (worker threads, clustering).</li>
+        <li>The event loop cycles through distinct phases — timers, pending callbacks, poll, check, close — each iteration.</li>
+        <li>Microtasks (resolved promises) always drain completely before the event loop proceeds to its next phase — they run before timers, even <code>setTimeout(fn, 0)</code>.</li>
         <li><code>worker_threads</code> lets you run genuinely CPU-heavy code off the main event loop.</li>
-        <li>The <code>--prof</code> flag and Chrome DevTools' Node inspector both help profile where time is actually going.</li>
+        <li>The <code>--prof</code> flag and Chrome DevTools' Node inspector both help profile where time is actually going, rather than guessing.</li>
         <li>A single slow synchronous operation can stall every concurrent request a Node process is handling — there's no free parallelism within one process.</li>
+        <li><code>setImmediate()</code> is only guaranteed to run before timers specifically when called from inside an I/O callback.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a route that does expensive synchronous computation and observe (with a second concurrent request) how it blocks other requests, then move that computation to a worker thread and compare.</p>
+      <p>Write a route that does expensive synchronous computation and observe (with a second concurrent request in another terminal tab) how it blocks other requests entirely while it runs. Then move that computation to a worker_threads worker and confirm the second request now responds immediately regardless of how long the computation takes.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

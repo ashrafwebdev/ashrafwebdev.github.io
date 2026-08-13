@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkouts and late fees: a library catalog on the command line — Java capstone project — Learn to Code</title>
+<meta name="description" content="Checkouts and late fees: a library catalog on the command line — the Zero-stage capstone project for Java, part of a free zero-to-hero programming guide.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/learn/java/project-zero.html">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --paper:#E9EDEA; --paper-raised:#F4F6F4; --ink:#1A231F; --ink-soft:#485650;
+    --line:#C9D1CB; --teal:#2E6B5E; --teal-deep:#1F4E44; --amber:#C1832E; --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;}
+  a{color:inherit;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{max-width:760px; margin:0 auto; padding:0 28px; display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+
+  .breadcrumb{font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--mono-label); padding:22px 0 0;}
+  .breadcrumb a{color:var(--teal-deep); text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+
+  .lesson-head{padding:14px 0 30px; border-bottom:1px solid var(--line);}
+  .stage-chip{
+    display:inline-flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); background:var(--paper-raised);
+    border:1px solid var(--line); border-radius:20px; padding:5px 12px; margin-bottom:16px;
+  }
+  .stage-chip .n{color:var(--amber); font-weight:600;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(26px,4.2vw,36px); margin:0 0 10px; line-height:1.25;}
+  .lang-line{font-size:14px; color:var(--ink-soft);}
+  .lang-line b{color:var(--ink);}
+
+  article{padding:32px 0 8px;}
+  article p{font-size:16px; color:var(--ink); margin:0 0 18px;}
+  article p.lead{font-size:17.5px; color:var(--ink); margin:0 0 22px;}
+
+  .code-block{background:#1B231E; border-radius:8px; overflow:hidden; margin:0 0 24px;}
+  .code-block .cap{font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#9FB3AA; padding:10px 16px; border-bottom:1px solid #2A362F;}
+  .code-block pre{margin:0; padding:16px; overflow-x:auto;}
+  .code-block code{font-family:'IBM Plex Mono', monospace; font-size:13px; color:#EAF1EC; line-height:1.6; white-space:pre;}
+
+  .key-points{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--teal-deep); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .key-points .kp-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .key-points ul{margin:0; padding:0 0 0 18px;}
+  .key-points li{font-size:14.5px; margin-bottom:8px;}
+  .key-points li:last-child{margin-bottom:0;}
+
+  .exercise{background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px; padding:22px 24px; margin:0 0 8px;}
+  .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
+  .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
+  .lesson-nav a{
+    flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
+    text-decoration:none; color:var(--ink);
+  }
+  .lesson-nav a:hover{border-color:var(--teal-deep);}
+  .lesson-nav .dir{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--mono-label); display:block; margin-bottom:6px;}
+  .lesson-nav .next{text-align:right;}
+  .lesson-nav .ttl{font-size:14.5px; font-weight:600;}
+
+  footer{padding:28px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:600px){
+    .lesson-nav .next{text-align:left;}
+  }
+
+
+  .req-box, .approach-box, .stretch-box{background:var(--paper-raised); border:1px solid var(--line); border-radius:6px; padding:20px 24px; margin:0 0 24px;}
+  .req-box{border-left:4px solid var(--teal-deep);}
+  .approach-box{border-left:4px solid var(--amber);}
+  .stretch-box{border-left:4px solid var(--mono-label);}
+  .box-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--teal-deep); margin:0 0 12px; display:block;}
+  .approach-box .box-label{color:var(--amber);}
+  .stretch-box .box-label{color:var(--mono-label);}
+  .req-box ul, .approach-box ol, .stretch-box ul{margin:0; padding:0 0 0 20px;}
+  .req-box li, .approach-box li, .stretch-box li{font-size:14.5px; margin-bottom:9px;}
+  .req-box li:last-child, .approach-box li:last-child, .stretch-box li:last-child{margin-bottom:0;}
+
+  .used-topics{margin:0 0 28px; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:8px;}
+  .used-topics li a{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-decoration:none; color:var(--teal-deep);
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:6px 12px; display:inline-block;
+  }
+  .used-topics li a:hover{background:#fff; border-color:var(--teal-deep);}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:24px 26px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:19px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:0 0 18px;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="navrow">
+    <a class="name" href="../../index.html"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../../index.html#work">Work</a>
+      <a href="../../index.html#religious-sites">Web Design</a>
+      <a href="../index.html">Learn</a>
+      <a href="../../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="wrap"><a href="../index.html">Learn</a> / <a href="../index.html#java">Java</a> / Zero / Capstone project</div>
+</div>
+
+<div class="wrap">
+  <div class="lesson-head">
+    <span class="stage-chip"><span class="n">01</span> Zero stage capstone</span>
+    <h1>Checkouts and late fees: a library catalog on the command line</h1>
+    <p class="lang-line"><b>Java</b> &middot; ties together everything in the Zero stage</p>
+  </div>
+
+  <article>
+    <p class="lead">The five Zero-stage topics for Java &mdash; syntax and types, control flow and methods, classes and objects, arrays, and the <code>javac</code>/<code>java</code> workflow &mdash; all exist to answer one question: can you model a small piece of the real world as objects and make them behave correctly? This project asks you to model a neighborhood library: books that can be checked out and returned, and members who borrow them, entirely as plain Java classes with no external libraries.</p>
+    <p>You're deliberately restricted to what this stage has actually taught you. That means fixed-size arrays instead of the Collections framework, no file saving (the catalog resets every time the program runs), and no interactive keyboard input &mdash; instead, your <code>main</code> method seeds the catalog with sample data and runs a fixed sequence of actions, printing a formatted report of what happened. That constraint is the whole point: everything has to work through classes, methods, arrays, and control flow alone.</p>
+    <p>By the end you'll have a small set of <code>.java</code> files that compile cleanly with <code>javac</code> and produce a readable console report when run with <code>java</code>, with two classes that know how to describe themselves properly instead of printing the default, unhelpful object representation.</p>
+    <ul class="used-topics">
+      <li><a href="syntax-variables-and-types.html">Syntax, variables, and types</a></li>
+      <li><a href="control-flow-and-methods.html">Control flow and methods</a></li>
+      <li><a href="classes-and-objects-basics.html">Classes and objects basics</a></li>
+      <li><a href="arrays.html">Arrays</a></li>
+      <li><a href="compiling-and-running-with-javac-java.html">Compiling and running with javac/java</a></li>
+    </ul>
+    <div class="req-box">
+      <span class="box-label">Requirements</span>
+      <ul>
+        <li>A <code>Book</code> class with private fields for title, author, ISBN, and a checked-out flag; a constructor that sets them all; and <code>checkOut()</code> and <code>returnBook()</code> methods that update the flag and report whether the action actually succeeded (a book that's already checked out can't be checked out again).</li>
+        <li>A <code>Member</code> class with a private name field and a fixed-size array (for example, room for 3 books) tracking which <code>Book</code> objects that member currently has borrowed, with methods to add and remove a book from that array.</li>
+        <li>Both <code>Book</code> and <code>Member</code> override <code>toString()</code> so printing an instance shows readable information instead of the default class-and-hashcode text; <code>Book</code> also overrides <code>equals()</code> and <code>hashCode()</code> so two Book objects with the same ISBN are considered equal.</li>
+        <li>A <code>Main</code> class whose <code>main</code> method builds an array of at least 5 <code>Book</code> objects and an array of at least 3 <code>Member</code> objects with hardcoded sample data, then runs through a checkout, a second attempt to check out that same already-borrowed book, and a return.</li>
+        <li>At least one overloaded method &mdash; for example a <code>findBook</code> method that can be called with either a title or an ISBN &mdash; showing you understand that Java resolves overloads by parameter type at compile time.</li>
+        <li>The whole thing compiles cleanly with <code>javac</code> and runs with <code>java Main</code>, ending with a formatted console report listing every book, its checked-out status, and (when applicable) which member currently holds it.</li>
+        <li>Every failure case &mdash; book not found, book already checked out, member's borrowed-books array already full &mdash; is handled with plain <code>if</code> checks and a printed message, not by letting the program throw an uncaught exception and crash.</li>
+      </ul>
+    </div>
+    <div class="approach-box">
+      <span class="box-label">Suggested approach</span>
+      <ol>
+        <li>Start with the <code>Book</code> class alone: fields, constructor, <code>checkOut()</code>/<code>returnBook()</code>, and <code>toString()</code>. Compile it with a throwaway <code>main</code> that creates one Book and prints it before writing anything else.</li>
+        <li>Add the <code>Member</code> class next, including its fixed-size borrowed-books array, and test creating a couple of members standalone before connecting them to books at all.</li>
+        <li>Wire Book and Member together inside <code>Main</code> with hardcoded sample arrays, and implement the overloaded <code>findBook</code> method so you have a way to look items up by either title or ISBN.</li>
+        <li>Add the checkout/return workflow logic, including the already-checked-out and not-found cases, testing each branch by hand with a scripted sequence of calls in <code>main</code>.</li>
+        <li>Finish with the formatted console report, and only then go back and add <code>equals</code>/<code>hashCode</code> to <code>Book</code>, confirming with a quick test that two Book objects built with the same ISBN but different object identity now compare as equal.</li>
+      </ol>
+    </div>
+    <div class="stretch-box">
+      <span class="box-label">Stretch goals</span>
+      <ul>
+        <li>Add a simple <code>daysBorrowed</code> int field to the checkout process and print a late fee for any book held past a hardcoded threshold, using nothing but arithmetic and conditionals.</li>
+        <li>Make a member's borrowed-books array grow instead of staying fixed at 3 slots: track a count separately, and when the array fills up, use <code>Arrays.copyOf</code> to allocate a bigger array and copy the existing entries into it.</li>
+        <li>Split <code>Book</code>, <code>Member</code>, and <code>Main</code> into three separate files, and practice the multi-file <code>javac</code> invocation that compiles all of them together in one command.</li>
+      </ul>
+    </div>
+  </article>
+
+  <div class="lesson-nav">
+    <a href="compiling-and-running-with-javac-java.html"><span class="dir">&larr; Back to lesson</span><span class="ttl">Compiling and running with javac/java</span></a>
+    <a class="next" href="../java/oop-principles.html"><span class="dir">Next stage &rarr;</span><span class="ttl">OOP principles: inheritance, polymorphism, interfaces</span></a>
+  </div>
+</div>
+
+<footer>
+  Part of the free <a href="../index.html">Learn to Code</a> guide by <a href="../../index.html">Mohammed Ashraf</a>.
+</footer>
+
+</body>
+</html>

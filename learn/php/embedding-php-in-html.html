@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Embedding PHP in HTML</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="superglobals.html">Superglobals: $_GET, $_POST, $_SESSION</a></p>
   </div>
 
   <article>
-    <p class="lead">PHP was designed to mix directly with HTML — you can drop in and out of <code>&lt;?php ... ?&gt;</code> tags anywhere in a file, using PHP only for the dynamic parts and letting the rest remain plain HTML.</p>
-    <p>The short echo tag <code>&lt;?= $value ?&gt;</code> is shorthand for <code>&lt;?php echo $value; ?&gt;</code>, and is common in template-style files that are mostly HTML with small dynamic pieces sprinkled in.</p>
+    <p class="lead">PHP was designed to mix directly with HTML — you can drop in and out of <code>&lt;?php ... ?&gt;</code> tags anywhere in a file, using PHP only for the dynamic parts and letting the rest remain plain HTML. There's no limit to how many times a single file switches between the two modes; a template file often opens and closes PHP tags dozens of times around small dynamic fragments.</p>
+    <p>The short echo tag <code>&lt;?= $value ?&gt;</code> is shorthand for <code>&lt;?php echo $value; ?&gt;</code>, and is common in template-style files that are mostly HTML with small dynamic pieces sprinkled in. Unlike the old short open tag <code>&lt;? ?&gt;</code> (which required a php.ini setting and is best avoided entirely), the short echo tag is always available regardless of configuration.</p>
+    <p>PHP offers an alternative syntax for control structures specifically meant for use inside HTML templates: <code>if (...): ... endif;</code>, <code>foreach (...): ... endforeach;</code>, and similarly for <code>while</code> and <code>for</code>. This colon-and-keyword form avoids a wall of nested curly braces interleaved with HTML tags, which gets visually confusing fast in a mixed file.</p>
+    <p>A subtle whitespace gotcha: a newline immediately after a closing <code>?&gt;</code> tag is consumed automatically by PHP so it doesn't leak an extra blank line into the output, but this rule only applies to that one specific newline — extra blank lines or stray output before the first <code>&lt;?php</code> tag (for example a byte-order-mark or trailing whitespace after a closing tag in an included file) will be sent to the browser and can break things like <code>header()</code> calls, which must run before any output.</p>
+    <p>Keeping business logic out of files that also contain HTML is a discipline worth enforcing even without a framework: a mixed file should ideally only reference variables that were already computed and validated earlier in the request, using PHP purely to output and loop over that prepared data rather than to fetch it from a database or run validation inline.</p>
+    <p>Modern PHP projects, especially anything built on Laravel (Blade) or Symfony (Twig), typically use a dedicated templating engine instead of raw embedded PHP tags for larger views — templating engines add features like template inheritance, automatic escaping by default, and a syntax that's harder to accidentally break out of into arbitrary PHP.</p>
     <div class="code-block">
 <div class="cap">page.php</div>      <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html&gt;
@@ -125,19 +142,53 @@
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">alt_syntax.php</div>      <pre><code>&lt;?php $cart = ['apple' =&gt; 2, 'bread' =&gt; 1]; ?&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+  &lt;?php if (empty($cart)): ?&gt;
+    &lt;p&gt;Your cart is empty.&lt;/p&gt;
+  &lt;?php else: ?&gt;
+    &lt;ul&gt;
+      &lt;?php foreach ($cart as $product =&gt; $qty): ?&gt;
+        &lt;li&gt;&lt;?= htmlspecialchars($product) ?&gt; x &lt;?= (int) $qty ?&gt;&lt;/li&gt;
+      &lt;?php endforeach; ?&gt;
+    &lt;/ul&gt;
+  &lt;?php endif; ?&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common_mistake.php (output before header())</div>      <pre><code>  &lt;!-- A stray blank line or space BEFORE the opening &lt;?php tag,
+       or here after a closing ?&gt; tag in an included file,
+       counts as output already sent to the browser. --&gt;
+&lt;?php
+require 'includes/header_fragment.php'; // if that file has trailing
+                                          // whitespace after its closing ?&gt;,
+                                          // this next line will fail:
+header('Location: /dashboard.php'); // Warning: headers already sent
+exit;
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>The alternative syntax (<code>foreach (...): ... endforeach;</code>) is common specifically in templates mixing PHP with HTML — more readable than nested braces in that context.</li>
         <li>Always escape dynamic values with <code>htmlspecialchars()</code> when echoing them into HTML.</li>
         <li>A file can switch between PHP and HTML mode as many times as needed with <code>&lt;?php ?&gt;</code> tags.</li>
-        <li>Modern PHP projects often use a dedicated templating engine (like Twig) instead of raw embedded PHP for larger views.</li>
+        <li><code>&lt;?= $value ?&gt;</code> is always available and is shorthand for <code>&lt;?php echo $value; ?&gt;</code> — prefer it over the old, configuration-dependent short open tag.</li>
+        <li>Output sent before a <code>header()</code> call — even a single stray blank line or space outside PHP tags — causes a "headers already sent" error.</li>
+        <li>Keep templates focused on displaying already-prepared data; fetching and validating data belongs earlier in the request, not inside the HTML file.</li>
+        <li>Modern PHP projects generally reach for a templating engine (Blade, Twig) rather than raw embedded PHP once a view grows past something trivial.</li>
+        <li>PHP automatically swallows exactly one newline right after a closing <code>?&gt;</code> tag, but not any other stray whitespace.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a page.php file that loops over a PHP array of items and displays them as an HTML list, safely escaping each item.</p>
+      <p>Build a page.php file that loops over a PHP array of items and displays them as an HTML list, safely escaping each item. Then rewrite the same loop using the alternative colon syntax (foreach/endforeach) instead of curly braces, and add a conditional block using if/endif that shows a "no items" message when the array is empty.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

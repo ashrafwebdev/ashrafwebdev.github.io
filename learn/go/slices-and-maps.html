@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Slices and maps</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="control-flow-and-functions.html">Control flow and functions</a></p>
   </div>
 
   <article>
-    <p class="lead">A Go <b>slice</b> is a resizable, flexible view over an underlying array &mdash; the everyday collection type, created with <code>[]int{1, 2, 3}</code> or grown dynamically with the built-in <code>append</code> function, which returns a (possibly reallocated) slice.</p>
-    <p>A <b>map</b> (<code>map[string]int</code>) associates keys with values, similar to a dictionary or hash map in other languages. Looking up a missing key returns the value type's zero value rather than an error, so Go's "comma ok" idiom (<code>v, ok := m[key]</code>) is used to distinguish a genuinely-zero value from a missing key.</p>
-    <p>Slices and maps are both reference-like: passing one to a function does not copy the underlying data, so mutations inside the function are visible to the caller, unlike Go's plain arrays or structs which are copied by value.</p>
+    <p class="lead">A Go <b>slice</b> is a resizable, flexible view over an underlying array &mdash; the everyday collection type, created with <code>[]int{1, 2, 3}</code> or grown dynamically with the built-in <code>append</code> function, which returns a (possibly reallocated) slice. Internally a slice is a small struct of a pointer, a length, and a capacity; <code>len(s)</code> gives the number of elements currently in use and <code>cap(s)</code> gives how many the underlying array can hold before a reallocation is needed.</p>
+    <p>Because a slice header is a lightweight value wrapping a pointer to shared backing storage, two slices can point at overlapping memory. Slicing an existing slice (<code>s[1:3]</code>) does not copy data &mdash; it shares the same backing array, so mutating an element through one slice is visible through the other until an <code>append</code> forces a reallocation, which is a common source of subtle bugs when code assumes slicing always copies.</p>
+    <p>A <b>map</b> (<code>map[string]int</code>) associates keys with values, similar to a dictionary or hash map in other languages, and must be created with <code>make(map[K]V)</code> or a map literal before use &mdash; a nil map can be read from safely (returning zero values) but writing to a nil map panics. Looking up a missing key returns the value type's zero value rather than an error, so Go's "comma ok" idiom (<code>v, ok := m[key]</code>) is used to distinguish a genuinely-zero value from a missing key.</p>
+    <p>Map iteration order is deliberately randomized by the Go runtime, specifically to prevent code from ever accidentally depending on a stable order &mdash; if you need sorted output, collect the keys into a slice and sort that slice explicitly with <code>sort.Strings</code> or <code>sort.Slice</code> before iterating.</p>
+    <p>Slices and maps are both reference-like: passing one to a function does not copy the underlying data, so mutations inside the function are visible to the caller, unlike Go's plain arrays or structs which are copied by value on assignment or when passed as arguments. This matters for performance too &mdash; passing a large slice around is cheap regardless of how many elements it contains, since only the small header is copied.</p>
+    <p>The built-in <code>copy(dst, src)</code> function copies elements between two slices (up to the shorter one's length) and is the standard way to make an independent, non-aliased duplicate of a slice's data when you specifically don't want sharing; <code>delete(m, key)</code> removes a key from a map, and is a no-op if the key isn't present.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -132,19 +148,65 @@ func main() {
 	fmt.Println(scores)
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">sorted_iteration.go</div>      <pre><code>package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	stock := map[string]int{"cherries": 12, "apples": 50, "bananas": 30}
+
+	keys := make([]string, 0, len(stock))
+	for k := range stock {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		fmt.Printf("%s: %d\n", k, stock[k])
+	}
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">aliasing_gotcha.go</div>      <pre><code>package main
+
+import "fmt"
+
+func main() {
+	original := []int{1, 2, 3, 4, 5}
+	view := original[1:3] // shares backing array with original
+
+	view[0] = 99 // mutates original[1] too
+	fmt.Println(original) // [1 99 3 4 5]
+
+	// to get an independent copy instead:
+	independent := make([]int, len(view))
+	copy(independent, view)
+	independent[0] = -1
+	fmt.Println(original) // unaffected: [1 99 3 4 5]
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>append</code> grows a slice, possibly returning a new underlying array &mdash; always reassign its result.</li>
+        <li>A slice header is a pointer, length, and capacity; re-slicing shares the same backing array rather than copying.</li>
         <li>The "comma ok" idiom (<code>v, ok := m[key]</code>) distinguishes a missing key from a genuine zero value.</li>
+        <li>A nil map can be read (returns zero values) but panics on write; always initialize with <code>make</code> or a literal first.</li>
+        <li>Map iteration order is intentionally randomized &mdash; sort the keys explicitly if you need deterministic output.</li>
         <li>Slices and maps are reference-like; mutating them inside a function affects the caller's data too.</li>
+        <li><code>copy(dst, src)</code> makes an independent duplicate of slice data when aliasing the backing array is undesirable.</li>
         <li>Iterate either with <code>for i, v := range slice</code> or <code>for k, v := range map</code>.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a map[string]int counting word frequency in a slice of strings, then print each word and its count using range.</p>
+      <p>Build a map[string]int counting word frequency in a slice of strings, then print each word and its count in sorted key order using sort.Strings and range. Then demonstrate the slice-aliasing gotcha: slice an existing slice, mutate the sub-slice, show the original changed too, and finally use copy to make an independent slice that mutating no longer affects.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

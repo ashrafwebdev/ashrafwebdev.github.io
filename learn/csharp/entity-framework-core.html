@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Entity Framework Core</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="asp-net-core-web-apis.html">ASP.NET Core Web APIs</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>Entity Framework Core</b> (EF Core) is Microsoft's object-relational mapper: you define C# classes representing your data, and EF Core translates LINQ queries against a <code>DbContext</code> into SQL, mapping rows back into objects automatically.</p>
-    <p>A <code>DbContext</code> subclass exposes <code>DbSet of T</code> properties, one per table, and EF Core tracks changes to loaded entities so calling <code>SaveChanges()</code> generates the appropriate INSERT, UPDATE, or DELETE statements.</p>
-    <p><b>Migrations</b> let you evolve your database schema alongside your C# model classes in version control: <code>dotnet ef migrations add</code> generates a migration file describing the schema change, and <code>dotnet ef database update</code> applies it.</p>
+    <p class="lead"><b>Entity Framework Core</b> (EF Core) is Microsoft's object-relational mapper: you define C# classes representing your data, and EF Core translates LINQ queries against a <code>DbContext</code> into SQL, mapping rows back into objects automatically, so most day-to-day database access never requires writing raw SQL by hand.</p>
+    <p>A <code>DbContext</code> subclass exposes <code>DbSet of T</code> properties, one per table, and EF Core tracks changes to loaded entities (this is called the <b>change tracker</b>) so calling <code>SaveChanges()</code> generates the appropriate INSERT, UPDATE, or DELETE statements for everything that changed since the entities were loaded, without you writing any SQL yourself.</p>
+    <p>Loading related data requires deliberate choices: by default EF Core does <b>not</b> load navigation properties (a customer's orders, say) unless you ask via <code>.Include(c => c.Orders)</code> (eager loading), access them lazily with a proxy (lazy loading, which must be explicitly enabled and can cause subtle N+1 query performance problems if overused), or query them separately. The N+1 problem &mdash; issuing one query per row of an outer result instead of one combined query &mdash; is one of the most common EF Core performance mistakes in real applications.</p>
+    <p>Queries that will only be read, never modified, should use <code>.AsNoTracking()</code>, which skips the overhead of change tracking and can meaningfully improve performance for read-heavy endpoints like API GET actions where nothing is ever saved back.</p>
+    <p><b>Migrations</b> let you evolve your database schema alongside your C# model classes in version control: <code>dotnet ef migrations add</code> generates a migration file (both an Up and Down method) describing the schema change based on differences EF Core detects between your model and the last migration, and <code>dotnet ef database update</code> applies pending migrations to the actual database.</p>
+    <p>A <code>DbContext</code> is intentionally lightweight and not thread-safe, and is meant to be short-lived &mdash; typically one instance per web request in ASP.NET Core, registered with a <code>Scoped</code> lifetime, rather than a single long-lived shared instance, which would cause both threading bugs and an ever-growing change-tracker memory footprint.</p>
     <div class="code-block">
 <div class="cap">AppDbContext.cs</div>      <pre><code>public class Product
 {
@@ -131,19 +147,60 @@ public class AppDbContext : DbContext
 using var db = new AppDbContext();
 var cheap = db.Products.Where(p =&gt; p.Price &lt; 20).ToList();</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">RelatedDataAndNoTracking.cs</div>      <pre><code>public class Customer
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public List&lt;Order&gt; Orders { get; set; } = new();
+}
+
+public class Order
+{
+    public int Id { get; set; }
+    public decimal Total { get; set; }
+    public int CustomerId { get; set; }
+}
+
+// Eager loading avoids the N+1 problem: one query, not one-per-customer
+var withOrders = db.Customers
+    .Include(c =&gt; c.Orders)
+    .ToList();
+
+// Read-only query: skip change tracking overhead entirely
+var readOnly = db.Products
+    .AsNoTracking()
+    .Where(p =&gt; p.Price &gt; 50)
+    .ToList();</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">terminal-migrations.sh</div>      <pre><code>$ dotnet tool install --global dotnet-ef
+$ dotnet ef migrations add AddProductPriceIndex
+$ dotnet ef database update
+
+# Change tracking + SaveChanges: EF Core figures out the SQL
+var product = db.Products.First(p =&gt; p.Name == "Widget");
+product.Price = 24.99m;      // tracked automatically
+db.Products.Remove(oldItem); // marked for DELETE
+db.SaveChanges();            // one round trip: UPDATE + DELETE</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A <code>DbContext</code> subclass with <code>DbSet of T</code> properties models your database tables.</li>
         <li>EF Core translates LINQ queries against a DbContext into SQL automatically.</li>
-        <li><code>SaveChanges()</code> commits tracked insertions, updates, and deletions in one call.</li>
+        <li><code>SaveChanges()</code> commits tracked insertions, updates, and deletions in one call, using the change tracker.</li>
+        <li>Related data isn't loaded automatically &mdash; use <code>.Include(...)</code> for eager loading and watch out for N+1 query problems.</li>
+        <li><code>.AsNoTracking()</code> skips change-tracking overhead for read-only queries.</li>
         <li>Migrations version-control schema changes alongside your C# model classes.</li>
+        <li>A DbContext should be short-lived and registered with a Scoped lifetime, typically one per web request.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a DbContext with a Customer entity (Id, Name, Email), and write a LINQ query against it that returns customers whose email ends in a specific domain.</p>
+      <p>Define a DbContext with a Customer entity (Id, Name, Email), and write a LINQ query against it that returns customers whose email ends in a specific domain. Then add an Order entity with a foreign key to Customer, write a query using .Include to eagerly load each customer's orders, and write a second read-only version of the query using .AsNoTracking().</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

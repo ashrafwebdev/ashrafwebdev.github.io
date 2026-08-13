@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Connecting to a database (MongoDB or PostgreSQL)</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="environment-variables-and-configuration.html">Environment variables and configuration</a></p>
   </div>
 
   <article>
-    <p class="lead">MongoDB (via the official driver or Mongoose) stores flexible, JSON-like documents — a natural fit for JavaScript's own data shapes. PostgreSQL (via <code>pg</code> or an ORM like Prisma) is a relational database, better suited when your data has clear structure and relationships.</p>
-    <p>In both cases, use a connection pool rather than opening a fresh connection per request — establishing a database connection is comparatively expensive, and pools reuse existing ones.</p>
+    <p class="lead">MongoDB (via the official driver or Mongoose) stores flexible, JSON-like documents — a natural fit for JavaScript's own data shapes, and forgiving when your data's structure evolves over time. PostgreSQL (via <code>pg</code> or an ORM like Prisma) is a relational database, better suited when your data has clear structure, relationships, and needs strong consistency guarantees like multi-table transactions.</p>
+    <p>In both cases, use a connection pool rather than opening a fresh connection per request — establishing a database connection is comparatively expensive (a TCP handshake, authentication, sometimes TLS negotiation), and pools reuse a small set of existing connections across many requests instead of paying that cost every time.</p>
+    <p>Always use parameterized queries — placeholders like <code>$1</code> in <code>pg</code> or a query builder/ORM's own parameter handling — never build SQL or query filters by concatenating raw, untrusted strings. String concatenation is exactly how SQL injection vulnerabilities happen, and it remains one of the most common real-world security bugs in web applications.</p>
+    <p>A transaction groups multiple operations so they either all succeed or all roll back together — essential whenever related writes must stay consistent, like debiting one account and crediting another. Skipping transactions for multi-step writes risks leaving data in a half-updated, inconsistent state if a later step fails.</p>
+    <p>Indexes dramatically speed up queries that filter or sort on a given column, at the cost of slightly slower writes and extra storage — a query that scans every row of a large table (a 'full table scan') gets progressively slower as the table grows, while an indexed lookup stays roughly constant. Watch for N+1 query patterns too: fetching a list, then querying once per item in a loop for related data, which an ORM's <code>include</code>/<code>populate</code> features (a single joined query) usually solve much more efficiently.</p>
+    <p>ORMs (Prisma, Mongoose, Sequelize) trade some raw SQL control for productivity and built-in protection against common mistakes like injection, and they typically also handle schema migrations — versioned, repeatable scripts that evolve a database's structure over time as the application changes.</p>
     <div class="code-block">
 <div class="cap">db.js (PostgreSQL with pg)</div>      <pre><code>const { Pool } = require("pg");
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -121,19 +138,54 @@ async function getUser(id) {
   return result.rows[0];
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">transfer.js (a transaction with pg)</div>      <pre><code>async function transferFunds(fromId, toId, amount) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("UPDATE accounts SET balance = balance - $1 WHERE id = $2", [amount, fromId]);
+    await client.query("UPDATE accounts SET balance = balance + $1 WHERE id = $2", [amount, toId]);
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK"); // undo both writes if either failed
+    throw err;
+  } finally {
+    client.release(); // always return the connection to the pool
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">user.js (Mongoose model)</div>      <pre><code>const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+});
+
+const User = mongoose.model("User", userSchema);
+
+async function createUser(name, email) {
+  return User.create({ name, email }); // validated against the schema
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Always use parameterized queries (<code>$1</code>, <code>?</code>) — never build SQL by concatenating raw strings, which opens the door to SQL injection.</li>
         <li>A connection pool reuses database connections across requests instead of creating a new one every time.</li>
-        <li>ORMs (Prisma, Mongoose, Sequelize) trade some raw SQL control for productivity and built-in protection against common mistakes.</li>
+        <li>Wrap related multi-step writes in a transaction (BEGIN/COMMIT/ROLLBACK) so they succeed or fail together, keeping data consistent.</li>
+        <li>Indexes speed up filtered/sorted queries significantly, at the cost of slightly slower writes — add them for columns you query on often.</li>
+        <li>Watch for N+1 query patterns (a query per loop iteration) — an ORM's join/include features usually replace them with one efficient query.</li>
+        <li>ORMs (Prisma, Mongoose, Sequelize) trade some raw SQL control for productivity, built-in injection protection, and migration tooling.</li>
         <li>Store the connection string in an environment variable, never hardcoded in source.</li>
+        <li>Always release a pooled connection back to the pool (in a <code>finally</code> block) even when a query fails, or the pool will eventually run dry.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Connect a small Express app to a PostgreSQL or MongoDB instance and build one route that reads real data from it.</p>
+      <p>Connect a small Express app to a PostgreSQL or MongoDB instance and build one route that reads real data from it, using parameterized queries throughout. Then add a second route that performs two related writes inside a single transaction (PostgreSQL) or with appropriate error handling (MongoDB), and confirm that a forced error during the second write leaves the data unchanged rather than half-updated.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

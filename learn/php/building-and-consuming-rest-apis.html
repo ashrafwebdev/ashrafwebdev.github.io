@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,17 +119,61 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Building and consuming REST APIs</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="testing-with-phpunit.html">Testing with PHPUnit</a></p>
   </div>
 
   <article>
-    <p class="lead">A PHP REST API returns structured data (usually JSON) instead of HTML — set the response's content type explicitly and use <code>json_encode()</code>/<code>json_decode()</code> to convert between PHP arrays and JSON.</p>
-    <p>Consuming an external API from PHP typically uses <code>curl</code> or, more conveniently, an HTTP client library like Guzzle, which wraps curl with a much friendlier interface.</p>
+    <p class="lead">A PHP REST API returns structured data (usually JSON) instead of HTML — set the response's content type explicitly and use <code>json_encode()</code>/<code>json_decode()</code> to convert between PHP arrays and JSON. Unlike a normal HTML page, an API's "view" is really just its response format, so most of the meaningful logic lives in validating the request and shaping the output correctly.</p>
+    <p>Consuming an external API from PHP typically uses <code>curl</code> or, more conveniently, an HTTP client library like Guzzle, which wraps curl with a much friendlier interface — handling things like automatic JSON encoding/decoding, timeouts, retries, and exceptions on non-2xx responses without you manually configuring cURL options for each request.</p>
+    <p>Meaningful REST APIs use HTTP status codes deliberately rather than always returning 200: <code>201 Created</code> after successfully creating a resource, <code>204 No Content</code> for a successful action with nothing to return, <code>400 Bad Request</code> for malformed input, <code>401 Unauthorized</code> when authentication is missing or invalid, <code>404 Not Found</code> for a resource that doesn't exist, and <code>422 Unprocessable Entity</code> for validation failures — these let API consumers handle different outcomes programmatically without parsing the response body just to find out what happened.</p>
+    <p>Most real APIs require authentication — common approaches include a static API key sent in a header, a Bearer token (often a JWT) sent as <code>Authorization: Bearer &lt;token&gt;</code>, or full OAuth2 for delegated third-party access. Whichever scheme is used, credentials should travel over HTTPS only and never be accepted as a URL query parameter, since query strings tend to end up logged in server access logs and browser history.</p>
+    <p>When a client sends a JSON request body (common for POST/PUT/PATCH to an API), that body doesn't arrive in <code>$_POST</code> the way an HTML form submission does — <code>$_POST</code> is only populated for form-encoded submissions. Instead, you read the raw request body from the <code>php://input</code> stream and decode it yourself with <code>json_decode($raw, true)</code>.</p>
+    <p>Designing for the long term means thinking about versioning (commonly a <code>/v1/</code> URL prefix or an <code>Accept</code> header) so you can change an API's shape later without breaking existing consumers, and rate limiting so a single misbehaving client can't overwhelm the service for everyone else.</p>
     <div class="code-block">
 <div class="cap">api.php (plain PHP)</div>      <pre><code>&lt;?php
 header("Content-Type: application/json");
 
 $users = [["id" =&gt; 1, "name" =&gt; "Amina"]];
 echo json_encode($users);
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">create_user.php (reading a JSON body, using status codes)</div>      <pre><code>&lt;?php
+header("Content-Type: application/json");
+
+$raw = file_get_contents("php://input");
+$data = json_decode($raw, true);
+
+if (!isset($data['name']) || trim($data['name']) === '') {
+    http_response_code(422);
+    echo json_encode(["error" =&gt; "name is required"]);
+    exit;
+}
+
+// ...save the user, get back a new id...
+$newId = 42;
+
+http_response_code(201);
+echo json_encode(["id" =&gt; $newId, "name" =&gt; $data['name']]);
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">consuming_api.php (Guzzle client)</div>      <pre><code>&lt;?php
+require "vendor/autoload.php";
+
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+
+$client = new Client(['base_uri' =&gt; 'https://api.example.com', 'timeout' =&gt; 5]);
+
+try {
+    $response = $client-&gt;get('/users/1', [
+        'headers' =&gt; ['Authorization' =&gt; 'Bearer ' . $apiToken],
+    ]);
+    $user = json_decode($response-&gt;getBody(), true);
+} catch (RequestException $e) {
+    echo "API call failed: " . $e-&gt;getMessage();
+}
 ?&gt;</code></pre>
     </div>
     <div class="key-points">
@@ -127,12 +183,17 @@ echo json_encode($users);
         <li>Use appropriate HTTP status codes (<code>http_response_code(404)</code>) rather than always defaulting to 200.</li>
         <li>Guzzle is the de facto standard HTTP client library for consuming external APIs from PHP.</li>
         <li>Frameworks provide dedicated API resource/response classes (Laravel's API Resources, for instance) for more consistent JSON output.</li>
+        <li>A JSON request body doesn't populate <code>$_POST</code> — read it from <code>php://input</code> and decode it manually.</li>
+        <li>Never accept API credentials as a URL query parameter — they end up in logs and browser history; use headers over HTTPS instead.</li>
+        <li>Distinguish status codes purposefully: 201 for created, 204 for no content, 401 for missing/invalid auth, 422 for validation errors.</li>
+        <li>Version an API (e.g. a <code>/v1/</code> prefix) from the start so its shape can evolve later without breaking existing consumers.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a plain-PHP endpoint that returns a JSON array of items, setting the correct content type and status code.</p>
+      <p>Build a plain-PHP endpoint that returns a JSON array of items, setting the correct content type and status code. Then add a second endpoint that accepts a JSON POST body (read via php://input), validates a required field, and returns 201 with the created resource on success or 422 with an error message on invalid input. Finally, write a short script using curl or Guzzle that calls your own endpoint and prints the decoded response.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Progressive enhancement principles</h1>
     <p class="lang-line"><b>HTML</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="performance.html">Performance: lazy loading, preloading, resource hints</a></p>
   </div>
 
   <article>
     <p class="lead">Progressive enhancement means building a solid, working experience with plain HTML first, then layering CSS and JavaScript on top as enhancements — never as requirements. If JavaScript fails to load, a progressively-enhanced form still submits; it just doesn't get fancy inline validation.</p>
     <p>This is the opposite of assuming JavaScript will always be available. Slow connections, corporate content blockers, and script errors happen constantly in the real world — a page built with progressive enhancement degrades gracefully instead of breaking completely.</p>
+    <p>It helps to think of the approach as three distinct layers built in order: a content and structure layer (semantic HTML that's fully readable and navigable on its own), a presentation layer (CSS that makes it look intentional, and which should also fail gracefully — a page with no stylesheet loaded should still be usable, just plain), and a behavior layer (JavaScript that adds convenience — instant filtering, inline validation, animations — without which the core task still completes).</p>
+    <p>A related but distinct concept worth not confusing this with is <b>graceful degradation</b>, which starts from the opposite direction: build the full rich experience first, then patch in fallbacks for older or limited environments as an afterthought. Progressive enhancement tends to produce more robust, simpler results because the baseline experience was the actual starting point and was tested first, rather than bolted on at the end under time pressure.</p>
+    <p>Server-rendered HTML is what makes true progressive enhancement possible at all — a page that only exists as an empty <code>&lt;div id="root"&gt;&lt;/div&gt;</code> until a JavaScript bundle finishes downloading and rendering has nothing to progressively enhance; without JavaScript, or while it's still loading, there's simply nothing there. This is one of the main reasons server-side rendering and static HTML generation have seen a resurgence even in JavaScript-framework-heavy tooling.</p>
+    <p>In practice, full progressive enhancement isn't always the right tradeoff for every project — a highly interactive tool like a spreadsheet or a design app has no meaningful non-JavaScript experience to fall back to. The principle is most valuable, and most achievable, for content-driven and transactional pages: articles, marketing pages, checkout flows, and forms, where a working baseline is realistic and the cost of losing a visitor to a failed script is genuinely high.</p>
     <div class="code-block">
 <div class="cap">A form that works with or without JS</div>      <pre><code>&lt;!-- Works with a plain server-side POST even if JS never loads --&gt;
 &lt;form action="/subscribe" method="POST"&gt;
@@ -122,7 +139,22 @@
 &lt;script&gt;
   // Enhancement: intercept and submit via fetch for a smoother UX,
   // but the form above works perfectly without this script.
+  document.querySelector('form').addEventListener('submit', async (e) =&gt; {
+    e.preventDefault();
+    await fetch(e.target.action, { method: 'POST', body: new FormData(e.target) });
+    alert('Subscribed!');
+  });
 &lt;/script&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">a details/summary fallback for a JS-free accordion</div>      <pre><code>&lt;!-- Native &lt;details&gt; works with zero JavaScript at all --&gt;
+&lt;details&gt;
+  &lt;summary&gt;What ingredients do I need?&lt;/summary&gt;
+  &lt;p&gt;Flour, eggs, milk, and a pinch of salt.&lt;/p&gt;
+&lt;/details&gt;
+
+&lt;!-- JS could later enhance this with custom animation, but the
+     core expand/collapse behavior already works without it --&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -131,12 +163,20 @@
         <li>A real <code>&lt;form action=...&gt;</code> should work even if every script on the page fails.</li>
         <li>Test your site with JavaScript disabled at least once — it's an eye-opening exercise.</li>
         <li>This is different from "no JS allowed" — it's about not making JS a single point of failure.</li>
+        <li>Progressive enhancement (baseline-up) tends to be more robust than graceful degradation (rich-experience-down).</li>
+        <li>A page that's an empty div until a JS bundle renders it has nothing to progressively enhance.</li>
+        <li>The approach is most valuable for content and transactional pages, less so for inherently interactive tools like editors.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take a form you've built and verify it still submits somewhere sensible with your browser's JavaScript disabled.</p>
+      <p>Take a form you've built and verify it still submits somewhere sensible with your browser's JavaScript disabled. Then rebuild one JavaScript-dependent accordion or dropdown on your page using the native details/summary elements as the JS-free baseline, and layer a small enhancement (like a custom open/close icon) on top with CSS or JS.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">A full accessibility audit and remediation of an existing site</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

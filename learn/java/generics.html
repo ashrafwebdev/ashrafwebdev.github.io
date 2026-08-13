@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Generics</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="build-tools.html">Build tools: Maven or Gradle basics</a></p>
   </div>
 
   <article>
-    <p class="lead">Generics let a class or method be written once and work with any type, while still giving the compiler enough information to catch type errors. A generic class like <code>Box of T</code> declares a type parameter <code>T</code> that gets filled in when the class is used, such as <code>Box of String</code>.</p>
-    <p>Generic methods can declare their own type parameter independent of the class they live in, written before the return type, such as a method that swaps two elements in an array of any type.</p>
-    <p><b>Bounded type parameters</b>, written as <code>T extends Number</code>, restrict what a generic can be used with, letting you call methods defined on that bound (like <code>doubleValue()</code>) while still working across any matching subtype.</p>
+    <p class="lead">Generics let a class or method be written once and work with any type, while still giving the compiler enough information to catch type errors. A generic class like <code>Box&lt;T&gt;</code> declares a type parameter <code>T</code> that gets filled in when the class is used, such as <code>Box&lt;String&gt;</code>; by convention type parameters use single uppercase letters like <code>T</code> (type), <code>E</code> (element), <code>K</code>/<code>V</code> (key/value).</p>
+    <p>Generic methods can declare their own type parameter independent of the class they live in, written before the return type (<code>static &lt;E&gt; void printAll(...)</code>), such as a method that swaps two elements in an array of any type; the type parameter is often inferred from the arguments, so callers rarely need to specify it explicitly.</p>
+    <p><b>Bounded type parameters</b>, written as <code>T extends Number</code>, restrict what a generic can be used with, letting you call methods defined on that bound (like <code>doubleValue()</code>) while still working across any matching subtype such as <code>Integer</code> or <code>Double</code>. Multiple bounds are possible with <code>T extends Comparable&lt;T&gt; &amp; Serializable</code>.</p>
+    <p><b>Wildcards</b> handle situations where you don't need a specific type, only a relationship: <code>List&lt;? extends Number&gt;</code> accepts a List of any Number subtype for reading elements out (producer), while <code>List&lt;? super Integer&gt;</code> accepts any list that can hold an Integer or its supertypes for writing elements in (consumer) &mdash; this pattern is often summarized as PECS, "producer extends, consumer super".</p>
+    <p>Generics in Java are implemented via <b>type erasure</b>: the compiler checks and enforces generic types at compile time, but strips that information out of the compiled bytecode, so at runtime a <code>List&lt;String&gt;</code> and a raw <code>List</code> are the exact same class. This is why you cannot create an array of a generic type directly, cannot use <code>instanceof</code> against a parameterized type, and why generic type information is unavailable via reflection at runtime.</p>
+    <p>Using a <b>raw type</b> &mdash; a generic class without its type parameter, like plain <code>List</code> instead of <code>List&lt;String&gt;</code> &mdash; compiles (for backward compatibility with pre-Java-5 code) but disables the compiler's type checking for that variable, silently reintroducing the exact ClassCastException risk generics were designed to eliminate; modern code should essentially never use raw types deliberately.</p>
     <div class="code-block">
 <div class="cap">Box.java</div>      <pre><code>public class Box&lt;T&gt; {
     private T contents;
@@ -131,19 +147,56 @@
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Wildcards.java</div>      <pre><code>import java.util.*;
+
+public class Wildcards {
+    // Producer: we only read Numbers out, so 'extends' is safe
+    static double sumAll(List&lt;? extends Number&gt; numbers) {
+        double total = 0;
+        for (Number n : numbers) total += n.doubleValue();
+        return total;
+    }
+
+    // Consumer: we only write Integers in, so 'super' is safe
+    static void fillWithOnes(List&lt;? super Integer&gt; list, int count) {
+        for (int i = 0; i &lt; count; i++) list.add(1);
+    }
+
+    static &lt;T extends Comparable&lt;T&gt;&gt; T max(T a, T b) {
+        return a.compareTo(b) &gt;= 0 ? a : b;
+    }
+
+    public static void main(String[] args) {
+        List&lt;Integer&gt; ints = List.of(1, 2, 3);
+        List&lt;Double&gt; doubles = List.of(1.5, 2.5);
+        System.out.println(sumAll(ints) + sumAll(doubles));
+
+        List&lt;Number&gt; numberBucket = new ArrayList&lt;&gt;();
+        fillWithOnes(numberBucket, 3);
+        System.out.println(numberBucket);
+
+        System.out.println(max(3, 7));
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A type parameter such as T is a placeholder filled in with a real type when the generic is used.</li>
         <li>Generics move type-mismatch errors from runtime to compile time.</li>
-        <li>Bounded type parameters restrict a generic to types with certain capabilities.</li>
+        <li>Bounded type parameters (T extends Number) restrict a generic to types with certain capabilities.</li>
+        <li>Wildcards express producer/consumer relationships: extends for reading, super for writing (PECS).</li>
         <li>Generic methods can introduce their own type parameter separate from the enclosing class.</li>
+        <li>Type erasure means generic type information is discarded at compile time; you cannot create generic arrays or use instanceof against a parameterized type.</li>
+        <li>Raw types (a generic class used without its type argument) compile but disable compile-time type checking; avoid them in new code.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a generic Pair class holding two values of possibly different types, with a method swapped() that returns a new Pair with the values reversed.</p>
+      <p>Write a generic Pair class holding two values of possibly different types, with a method swapped() that returns a new Pair with the values reversed. Then write a generic method findMax that takes a List of a type bounded by Comparable and returns the largest element, and a second method that accepts a List of a wildcard extending Number to compute an average, explaining in a comment why extends rather than super is the correct wildcard there.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

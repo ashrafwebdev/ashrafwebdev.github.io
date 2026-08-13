@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Colors, units (px, %, em, rem), and typography basics</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="the-box-model.html">The box model: margin, border, padding, content</a></p>
   </div>
 
   <article>
-    <p class="lead">CSS colors can be named (<code>red</code>), hex (<code>#1F4E44</code>), or functional (<code>rgb(31,78,68)</code>, <code>hsl(...)</code>). For sizing, <code>px</code> is an absolute unit; <code>%</code> is relative to the parent; <code>em</code> is relative to the current element's font size; <code>rem</code> is relative to the root (<code>html</code>) font size.</p>
-    <p><code>rem</code> is usually the safer default for spacing and font sizes because it doesn't compound unpredictably the way nested <code>em</code> values can, and it respects a user's browser font-size preference.</p>
+    <p class="lead">CSS colors can be named (<code>red</code>), hex (<code>#1F4E44</code>), or functional: <code>rgb(31 78 68)</code>, <code>hsl(165deg 43% 21%)</code>, or the newer <code>oklch()</code>, which is designed so that changing lightness doesn't accidentally shift perceived hue the way HSL sometimes does. All of the functional forms also accept an alpha channel, e.g. <code>rgb(31 78 68 / 0.5)</code>, for transparency.</p>
+    <p>For sizing, <code>px</code> is an absolute unit (though it still scales if the user zooms); <code>%</code> is relative to some reference (usually the parent's size, though the exact reference varies by property); <code>em</code> is relative to the current element's own font size; <code>rem</code> is relative to the root (<code>html</code>) element's font size, wherever it's used in the document.</p>
+    <p><code>rem</code> is usually the safer default for spacing and font sizes because it doesn't compound unpredictably the way nested <code>em</code> values can — three nested elements each set to <code>1.2em</code> multiply on top of each other, while <code>rem</code> always resolves against the same root value no matter how deeply it's nested.</p>
+    <p>Viewport units (<code>vw</code>, <code>vh</code>) size relative to the browser window, useful for hero sections or full-bleed layouts, but risky for font sizes on their own since text can become unreadably small or huge at extreme widths — <code>clamp(1rem, 2vw + 1rem, 2rem)</code> combines a fixed floor, a fluid middle, and a fixed ceiling to get responsive type that never breaks.</p>
+    <p><code>line-height</code> deserves special care: a unitless value like <code>1.6</code> scales proportionally with the element's own font size and is inherited as that raw ratio, which is almost always what you want. A value with a unit (<code>24px</code>) is inherited as a fixed pixel value instead, which can produce cramped or excessive spacing on child elements with a different font size.</p>
+    <p>Accessible body text is rarely set smaller than 16px (<code>1rem</code> at the default root size) — browsers, screen magnification, and low-vision users all rely on that baseline, and shrinking it below there is one of the most common accessibility mistakes in real sites.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>html { font-size: 16px; } /* 1rem = 16px by default */
 
@@ -119,19 +136,43 @@ h1 { font-size: 2.5rem; }   /* 40px, scales with root */
 p  { font-size: 1rem; line-height: 1.6; color: #1A231F; }
 .badge { padding: 0.5em 1em; } /* relative to the badge's own font size */</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (fluid type with clamp)</div>      <pre><code>h1 {
+  /* min 1.75rem, ideal 4vw + 1rem, max 3rem — never too small or too huge */
+  font-size: clamp(1.75rem, 4vw + 1rem, 3rem);
+}
+
+.panel {
+  color: oklch(45% 0.08 165);          /* modern, perceptually uniform */
+  background: rgb(31 78 68 / 0.08);    /* rgb() with alpha, space-separated syntax */
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: nested em compounding</div>      <pre><code>/* Each level multiplies on top of the last: 1.2 * 1.2 * 1.2 ≈ 1.73× the base */
+ul { font-size: 1.2em; }
+ul ul { font-size: 1.2em; }
+ul ul ul { font-size: 1.2em; }
+
+/* Fix: use rem so every level resolves against the same root size */
+ul, ul ul, ul ul ul { font-size: 1.2rem; }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Prefer <code>rem</code> for font sizes and spacing; reach for <code>em</code> when you want sizing relative to the element itself.</li>
-        <li><code>line-height</code> without a unit (e.g. <code>1.6</code>) scales with font size and is usually what you want.</li>
+        <li>Prefer <code>rem</code> for font sizes and spacing; reach for <code>em</code> when you deliberately want sizing relative to the element itself (like padding on a badge).</li>
+        <li><code>line-height</code> without a unit (e.g. <code>1.6</code>) scales proportionally with font size and inherits cleanly — this is usually what you want.</li>
         <li>Accessible body text is rarely smaller than 16px (1rem) by default.</li>
-        <li>hsl() colors are often easier to reason about than hex when you need to tweak lightness or saturation.</li>
+        <li><code>clamp(min, ideal, max)</code> gives you fluid sizing that still has a safe floor and ceiling.</li>
+        <li>Nested <code>em</code> values compound multiplicatively with each nesting level, which is a common source of runaway font sizes.</li>
+        <li><code>oklch()</code> and <code>hsl()</code> colors are easier to reason about than hex when you need to tweak lightness or saturation predictably.</li>
+        <li>Functional color notations accept an alpha channel directly, e.g. <code>rgb(0 0 0 / 0.5)</code>, without needing a separate <code>opacity</code> property.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a small typographic scale (h1 through p) using only rem units, then change the root font-size and confirm everything scales together.</p>
+      <p>Build a small typographic scale (h1 through p) using only rem units, then change the root font-size and confirm everything scales together. Then convert the h1 to use clamp() for fluid sizing, and test it at three different viewport widths in DevTools' responsive mode.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

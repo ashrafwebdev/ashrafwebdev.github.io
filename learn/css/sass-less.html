@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Sass/Less: nesting, mixins, functions</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="css-architecture.html">CSS architecture: BEM, utility-first (Tailwind-style), or CSS Modules</a></p>
   </div>
 
   <article>
-    <p class="lead">Sass (and similarly, Less) is a CSS preprocessor — it compiles a more powerful syntax down to plain CSS before it reaches the browser. Nesting lets you write child selectors inside their parent, mirroring your HTML structure instead of repeating ancestor selectors.</p>
-    <p>Mixins are reusable blocks of declarations you can include wherever needed, optionally with parameters — genuinely useful before custom properties existed, and still handy for logic native CSS can't express, like loops and conditionals.</p>
+    <p class="lead">Sass (and similarly, Less) is a CSS preprocessor — it compiles a more powerful syntax down to plain CSS before it reaches the browser, so there's no runtime cost and no browser support to worry about, only a build step. Nesting lets you write child selectors inside their parent, mirroring your HTML structure instead of repeating ancestor selectors on every line.</p>
+    <p>Mixins are reusable blocks of declarations you can include wherever needed, optionally with parameters (including default values) — genuinely essential before custom properties existed, and still handy today for logic native CSS still can't express cleanly, like loops (<code>@each</code>, <code>@for</code>) and conditionals (<code>@if</code>/<code>@else</code>).</p>
+    <p>Sass functions compute a value and return it, distinct from mixins which output whole declarations. Built-in color functions like <code>darken()</code>, <code>lighten()</code>, and <code>mix()</code> were, for years, the standard way to derive a hover color from a base brand color — though native CSS's <code>color-mix()</code> now covers much of the same ground without any build step at all.</p>
+    <p>The <code>&amp;</code> (parent selector) reference inside a nested block is what makes patterns like <code>&amp;:hover</code> or <code>&amp;--modifier</code> (for BEM-style naming) work — it substitutes the full compiled selector of the enclosing rule, letting you write pseudo-classes and BEM modifiers without repeating the block name.</p>
+    <p>Partial files (named with a leading underscore, like <code>_buttons.scss</code>) and <code>@use</code>/<code>@forward</code> let a large stylesheet be split across many files without each one compiling to its own separate CSS output — this is essential for organizing a non-trivial project's Sass source, since a single monolithic file becomes unmanageable quickly.</p>
+    <p>Nesting mirrors your HTML structure but is easy to overuse: nesting more than 2–3 levels deep both increases the compiled selector's specificity (making it harder to override later) and tightly couples your CSS to one specific HTML structure, so refactoring the markup silently breaks styles that assumed a particular nesting depth.</p>
     <div class="code-block">
 <div class="cap">styles.scss</div>      <pre><code>@mixin button-variant($bg, $color: white) {
   background: $bg;
@@ -125,19 +142,50 @@
   .btn { @include button-variant(#1F4E44); }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.scss (loops, conditionals, and BEM with &amp;)</div>      <pre><code>$sizes: (sm: 8px, md: 16px, lg: 24px);
+
+@each $name, $value in $sizes {
+  .p-#{$name} { padding: $value; }
+}
+
+.card {
+  &amp;--featured { border-top: 3px solid #1F4E44; } // .card--featured
+
+  @if true {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">_buttons.scss imported via @use</div>      <pre><code>// _buttons.scss (a partial — leading underscore, not compiled standalone)
+@mixin button-variant($bg, $color: white) {
+  background: $bg;
+  color: $color;
+}
+
+// main.scss
+@use 'buttons';
+.btn { @include buttons.button-variant(#1F4E44); }</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Nesting mirrors your HTML but can be overused — avoid nesting more than 2-3 levels deep, it hurts specificity and readability.</li>
         <li>Mixins accept parameters (with defaults), making them reusable in ways plain CSS classes can't be.</li>
+        <li>The <code>&amp;</code> parent-selector reference is what powers <code>&amp;:hover</code> and BEM-style <code>&amp;--modifier</code> patterns.</li>
+        <li><code>@each</code>/<code>@for</code> and <code>@if</code>/<code>@else</code> let Sass express loops and conditionals that plain CSS still can't.</li>
+        <li>Partial files plus <code>@use</code>/<code>@forward</code> split a large stylesheet across files without each one emitting separate CSS.</li>
         <li>Modern native CSS (custom properties, nesting, <code>color-mix()</code>) has closed much of the gap that made Sass essential.</li>
-        <li>Sass still compiles down to plain CSS — there's no runtime cost, only a build step.</li>
+        <li>Sass compiles down to plain CSS ahead of time — there's no runtime cost, only a build step.</li>
+        <li>Functions return a computed value; mixins output whole declaration blocks — they solve different problems despite looking similar.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Convert a set of repetitive button color variants into a single Sass mixin that takes a background color as a parameter.</p>
+      <p>Convert a set of repetitive button color variants into a single Sass mixin that takes a background color as a parameter, using & for the hover state. Then extend it with an @each loop over a map of named sizes (small/medium/large) that generates a padding utility class for each one.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

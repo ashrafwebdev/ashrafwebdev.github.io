@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,29 +119,53 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Linking a stylesheet and basic cascading rules</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="display-block-inline-inline-block.html">display: block, inline, inline-block</a></p>
   </div>
 
   <article>
-    <p class="lead">CSS reaches a page one of three ways: a <code>&lt;link rel="stylesheet"&gt;</code> in the head (best practice — cacheable, keeps concerns separate), an inline <code>&lt;style&gt;</code> block, or a <code>style</code> attribute directly on an element (highest specificity, hardest to maintain, avoid it).</p>
-    <p>"Cascading" in CSS means multiple sources of styling — the browser's defaults, your stylesheet, and inline styles — are merged together, with later and more specific rules overriding earlier and less specific ones.</p>
+    <p class="lead">CSS reaches a page one of three ways: an external stylesheet via <code>&lt;link rel="stylesheet"&gt;</code> in the head (best practice — cacheable across pages, keeps markup and styling separate), an inline <code>&lt;style&gt;</code> block inside the document (fine for a single page or a quick prototype), or a <code>style</code> attribute directly on an element (highest specificity of the three, hardest to maintain at scale, generally avoided except for values computed dynamically by JavaScript).</p>
+    <p>"Cascading" describes how CSS resolves conflicting declarations for the same property on the same element, combining several factors in order: <b>origin and importance</b> (browser defaults vs. your styles vs. <code>!important</code> rules), then <b>specificity</b>, and finally <b>source order</b> as the tiebreaker when the previous two are equal.</p>
+    <p>Browsers ship with a built-in stylesheet (user-agent styles) that gives elements like <code>h1</code>, <code>ul</code>, and <code>button</code> default margins, sizes, and appearances before any of your CSS runs. This is why a fresh HTML page already has visible spacing and styled buttons — and why many projects start with a small 'reset' or 'normalize' stylesheet to flatten those inconsistent defaults before building on top.</p>
+    <p>Multiple <code>&lt;link&gt;</code> stylesheets are applied in the order they appear in the document, and a later stylesheet's rule beats an earlier stylesheet's rule of equal specificity — so the order you list your <code>&lt;link&gt;</code> tags in the head genuinely matters, not just the order of rules within a single file.</p>
+    <p>CSS also cascades based on <b>inheritance</b>, separate from the conflict-resolution cascade above: some properties (like <code>color</code>, <code>font-family</code>, <code>line-height</code>) are inherited by default from parent to child unless overridden, while others (like <code>margin</code>, <code>border</code>, <code>width</code>) are not, because inheriting box-model properties would make layout unpredictable.</p>
+    <p>The <code>@import</code> rule lets one stylesheet pull in another, but it blocks parallel downloading (the browser can't start fetching the imported file until it's parsed the importing one) and is generally slower in production than simply adding another <code>&lt;link&gt;</code> tag in the HTML head.</p>
     <div class="code-block">
 <div class="cap">index.html</div>      <pre><code>&lt;head&gt;
+  &lt;link rel="stylesheet" href="reset.css"&gt;
   &lt;link rel="stylesheet" href="styles.css"&gt;
 &lt;/head&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (inheritance vs. no inheritance)</div>      <pre><code>body {
+  color: #1A231F;      /* inherited: every descendant text uses this unless overridden */
+  font-family: sans-serif; /* inherited */
+  border: 1px solid #ccc;  /* NOT inherited: only body itself gets a border */
+}
+
+/* Force inheritance on a property that normally wouldn't be inherited */
+.themed-box * { border-color: inherit; }</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>External stylesheets (<code>&lt;link&gt;</code>) are cached by the browser and shared across pages — prefer this over inline styles.</li>
-        <li>The cascade order is roughly: browser defaults → external stylesheet → internal style block → inline style attribute.</li>
+        <li>External stylesheets (<code>&lt;link&gt;</code>) are cached by the browser and shared across pages — prefer this over inline styles or style blocks.</li>
+        <li>The cascade resolves conflicts in order: origin/importance, then specificity, then source order.</li>
+        <li>Browsers apply their own default (user-agent) stylesheet before yours — a CSS reset or normalize file flattens those inconsistencies.</li>
+        <li>Multiple <code>&lt;link&gt;</code> stylesheets apply in document order; a later one wins ties over an earlier one at equal specificity.</li>
+        <li>Some CSS properties (<code>color</code>, <code>font-family</code>) inherit from parent to child by default; box-model properties (<code>margin</code>, <code>border</code>, <code>width</code>) do not.</li>
+        <li><code>@import</code> blocks parallel downloads and is usually slower than an additional <code>&lt;link&gt;</code> tag in production.</li>
         <li>Rules lower in the same file override earlier rules of equal specificity.</li>
-        <li>Multiple <code>&lt;link&gt;</code> stylesheets are applied in the order they appear in the document.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a separate styles.css file, link it from an HTML page, and confirm changes to the CSS file are picked up on refresh.</p>
+      <p>Create a separate styles.css file, link it from an HTML page, and confirm changes to the CSS file are picked up on refresh. Then add a second stylesheet with a conflicting rule of equal specificity, link it after the first, and confirm the second one's rule wins.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">Your résumé page, styled by hand</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

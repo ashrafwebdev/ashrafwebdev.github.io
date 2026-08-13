@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Transactions and isolation levels</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="indexes-and-reading-query-execution-plans.html">Indexes and reading query execution plans</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>transaction</b> groups multiple statements so they succeed or fail as one atomic unit: <code>BEGIN</code> starts it, <code>COMMIT</code> makes all its changes permanent, and <code>ROLLBACK</code> undoes everything since <code>BEGIN</code> as if it never happened &mdash; essential for operations like transferring money between two accounts.</p>
-    <p>The <b>ACID</b> properties &mdash; Atomicity, Consistency, Isolation, Durability &mdash; describe the guarantees a transaction provides: either all its changes apply or none do, the database moves from one valid state to another, concurrent transactions don't interfere unexpectedly, and committed changes survive a crash.</p>
-    <p><b>Isolation levels</b> (READ COMMITTED, REPEATABLE READ, SERIALIZABLE, in increasing strictness) control exactly how much concurrent transactions can see of each other's uncommitted or in-progress changes, trading stricter consistency guarantees for reduced concurrency and throughput.</p>
+    <p class="lead">A <b>transaction</b> groups multiple statements so they succeed or fail as one atomic unit: <code>BEGIN</code> starts it, <code>COMMIT</code> makes all its changes permanent, and <code>ROLLBACK</code> undoes everything since <code>BEGIN</code> as if it never happened &mdash; essential for operations like transferring money between two accounts, where leaving the debit applied without the matching credit would corrupt the data.</p>
+    <p>The <b>ACID</b> properties &mdash; Atomicity, Consistency, Isolation, Durability &mdash; describe the guarantees a transaction provides: either all its changes apply or none do, the database moves from one valid state to another respecting all constraints, concurrent transactions don't interfere unexpectedly with each other, and committed changes survive a crash or power loss.</p>
+    <p>A <b>savepoint</b> marks a point inside a larger transaction that you can roll back to without abandoning the whole transaction, useful when a multi-step operation has an optional or risky sub-step: if that sub-step fails, rolling back to the savepoint undoes just that part while everything before it stays intact and ready to commit.</p>
+    <p><b>Isolation levels</b> (READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE, in increasing strictness) control exactly how much concurrent transactions can see of each other's uncommitted or in-progress changes, trading stricter consistency guarantees for reduced concurrency and throughput.</p>
+    <p>Each isolation level is defined by which anomalies it prevents: a <b>dirty read</b> sees another transaction's uncommitted changes; a <b>non-repeatable read</b> sees a value change between two reads within the same transaction because another transaction committed in between; a <b>phantom read</b> sees new rows appear in a repeated range query because another transaction inserted matching rows in between. READ COMMITTED (PostgreSQL's default) prevents dirty reads but allows the other two; SERIALIZABLE prevents all three at the cost of the most contention and occasional forced transaction retries.</p>
+    <p>PostgreSQL's default REPEATABLE READ-like behavior and MySQL's InnoDB defaults differ from the SQL standard's baseline expectations in subtle ways, so it's worth checking your specific engine's documentation rather than assuming isolation level behavior is identical everywhere &mdash; the same isolation level name doesn't always guarantee the same exact behavior across engines.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>BEGIN;
 
@@ -122,19 +138,45 @@ UPDATE accounts SET balance = balance + 100 WHERE id = 2;
 COMMIT;
 -- if anything failed above, ROLLBACK; would undo both updates</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">savepoint.sql</div>      <pre><code>BEGIN;
+
+UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 10;
+
+SAVEPOINT before_optional_step;
+
+UPDATE promotions SET redeemed = redeemed + 1 WHERE code = 'SUMMER10';
+-- if this optional step fails or should be skipped:
+ROLLBACK TO SAVEPOINT before_optional_step;
+
+COMMIT; -- the inventory update still commits</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">isolation_level.sql</div>      <pre><code>BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+SELECT balance FROM accounts WHERE id = 1;
+-- ... application logic decides how much to withdraw ...
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+
+COMMIT;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A transaction groups statements into one atomic unit via BEGIN, COMMIT, and ROLLBACK.</li>
         <li>ACID (Atomicity, Consistency, Isolation, Durability) describes what a transaction guarantees.</li>
+        <li>A SAVEPOINT lets you roll back part of a transaction without abandoning the whole thing.</li>
         <li>Isolation levels trade consistency strictness against concurrency and throughput.</li>
-        <li>Money transfers and any multi-step update needing all-or-nothing behavior belong in a transaction.</li>
+        <li>Dirty reads, non-repeatable reads, and phantom reads are the specific anomalies isolation levels prevent.</li>
+        <li>SERIALIZABLE prevents all three anomalies but increases contention and can force transaction retries.</li>
+        <li>The same isolation level name can behave slightly differently across database engines.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a transaction that transfers 50 units from one account's balance to another, and explain what ROLLBACK would do if the second UPDATE failed.</p>
+      <p>Write a transaction that transfers 50 units from one account's balance to another, and explain what ROLLBACK would do if the second UPDATE failed. Then rewrite it using a SAVEPOINT before an optional bonus-points step, and explain in one sentence the difference between a non-repeatable read and a phantom read.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

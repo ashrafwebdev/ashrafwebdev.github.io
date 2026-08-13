@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>async/await in depth</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="intro-to-asp-net-core.html">Intro to ASP.NET Core</a></p>
   </div>
 
   <article>
-    <p class="lead">C#'s <code>async</code>/<code>await</code> lets you write asynchronous code that reads like synchronous code. A method marked <code>async</code> and returning <code>Task</code> or <code>Task of T</code> can use <code>await</code> to pause at an asynchronous operation without blocking the calling thread while it waits.</p>
-    <p>Under the hood, <code>await</code>ing a <code>Task</code> generates a state machine: the method returns control to its caller immediately, and the rest of the method resumes automatically on a thread-pool thread once the awaited operation completes.</p>
-    <p>A common pitfall is blocking on async code with <code>.Result</code> or <code>.Wait()</code>, which can deadlock in UI or ASP.NET contexts with a synchronization context; the fix is to <code>await</code> consistently all the way up the call stack, often summarized as "async all the way".</p>
+    <p class="lead">C#'s <code>async</code>/<code>await</code> lets you write asynchronous code that reads like synchronous code. A method marked <code>async</code> and returning <code>Task</code> or <code>Task of T</code> can use <code>await</code> to pause at an asynchronous operation without blocking the calling thread while it waits, which is essential for scalability &mdash; a web server can handle thousands of concurrent requests waiting on I/O using a small pool of threads instead of one thread per request.</p>
+    <p>Under the hood, <code>await</code>ing a <code>Task</code> generates a state machine: the method returns control to its caller immediately, and the rest of the method resumes automatically once the awaited operation completes, typically on a thread-pool thread. This transformation is entirely compiler-generated &mdash; the readable, sequential-looking code you write is rewritten into callback-based continuations behind the scenes.</p>
+    <p>A common pitfall is blocking on async code with <code>.Result</code> or <code>.Wait()</code>, which can deadlock in UI or older ASP.NET (non-Core) contexts that have a synchronization context: the blocked thread is the very thread the continuation needs to resume on, so neither can proceed. The fix is to <code>await</code> consistently all the way up the call stack, often summarized as "async all the way", rather than mixing synchronous and asynchronous styles.</p>
+    <p><code>Task.WhenAll</code> runs several tasks concurrently and completes when they all finish, which is dramatically faster than awaiting each one sequentially when the operations are independent; <code>Task.WhenAny</code> instead completes as soon as the first of several tasks finishes, useful for timeout patterns or racing multiple sources for the fastest response.</p>
+    <p><code>ConfigureAwait(false)</code>, seen often in library code, tells the runtime not to try to resume the continuation on the original synchronization context, avoiding unnecessary context-switching overhead and certain deadlock scenarios; it's generally unnecessary (and the default is fine) in modern ASP.NET Core, which has no synchronization context to begin with, but still matters in UI apps and reusable library code that might be called from either.</p>
+    <p>Exceptions thrown inside an async method are captured on the returned <code>Task</code> rather than thrown immediately, and only surface when the task is awaited (or its <code>.Result</code>/<code>.Wait()</code> is accessed, wrapped in an <code>AggregateException</code> in that case); an async method that's never awaited, sometimes called "fire and forget", silently swallows any exception it throws, which is a common source of bugs that are hard to trace.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>static async Task&lt;string&gt; FetchDataAsync()
 {
@@ -127,19 +143,64 @@ static async Task Main()
     Console.WriteLine(result);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ConcurrentTasks.cs</div>      <pre><code>static async Task&lt;string&gt; FetchAsync(string name, int delayMs)
+{
+    await Task.Delay(delayMs);
+    return $"{name} done after {delayMs}ms";
+}
+
+static async Task Main()
+{
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+
+    var taskA = FetchAsync("A", 300);
+    var taskB = FetchAsync("B", 500);
+
+    // Runs A and B concurrently -- total time is ~500ms, not 800ms
+    string[] results = await Task.WhenAll(taskA, taskB);
+
+    foreach (var r in results) Console.WriteLine(r);
+    Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms");
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">DeadlockAndFireForget.cs</div>      <pre><code>// WRONG in a UI/classic-ASP.NET context: can deadlock
+// string data = FetchDataAsync().Result;
+
+// RIGHT: await all the way up
+// string data = await FetchDataAsync();
+
+// Fire-and-forget: exceptions here are silently lost!
+static async Task RiskyAsync() =&gt; throw new InvalidOperationException("oops");
+
+static void FireAndForget()
+{
+    _ = RiskyAsync(); // never awaited -- exception vanishes
+}
+
+static async Task Safe()
+{
+    await RiskyAsync(); // exception properly propagates and can be caught
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>async</code> methods return <code>Task</code> or <code>Task of T</code>, letting callers <code>await</code> them.</li>
         <li><code>await</code> frees the calling thread instead of blocking it while the operation completes.</li>
-        <li>Avoid blocking on async code with <code>.Result</code>/<code>.Wait()</code>; it can deadlock in some contexts.</li>
+        <li>Avoid blocking on async code with <code>.Result</code>/<code>.Wait()</code>; it can deadlock in contexts with a synchronization context.</li>
         <li>"Async all the way" &mdash; once a call is async, keep awaiting it up through every caller.</li>
+        <li><code>Task.WhenAll</code> runs independent tasks concurrently instead of one after another; <code>Task.WhenAny</code> reacts to the first to finish.</li>
+        <li><code>ConfigureAwait(false)</code> avoids unnecessary context-switching in library code, though it's largely moot in ASP.NET Core.</li>
+        <li>Exceptions in an async method live on the returned Task; an un-awaited "fire and forget" call can silently swallow them.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write two async methods that each simulate a delay with Task.Delay, run them concurrently with Task.WhenAll, and print how long the combined operation took.</p>
+      <p>Write two async methods that each simulate a delay with Task.Delay, run them concurrently with Task.WhenAll, and print how long the combined operation took using a Stopwatch. Then write a third async method that throws an exception, call it without awaiting it to observe the exception disappear, and then call it again properly awaited inside a try/catch to show the exception being caught correctly.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

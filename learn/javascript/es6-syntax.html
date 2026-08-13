@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>ES6+ syntax: arrow functions, template literals, spread/rest</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="fetching-data-with-fetch-and-working-with-json.html">Fetching data with fetch() and working with JSON</a></p>
   </div>
 
   <article>
-    <p class="lead">Template literals (backtick strings) let you embed expressions directly with <code>${...}</code> and write multi-line strings without concatenation. Arrow functions offer terser syntax and, importantly, don't create their own <code>this</code> binding.</p>
-    <p>The spread operator (<code>...</code>) expands an array or object into individual elements — for copying, merging, or passing as function arguments. The rest operator uses the same <code>...</code> syntax in the opposite direction, collecting multiple values into one.</p>
+    <p class="lead">Template literals (backtick-delimited strings) let you embed expressions directly inside a string using <code>${...}</code>, avoiding the awkward string concatenation of the past, and they support genuine multi-line strings without any special escape character — a plain newline inside the backticks becomes a newline in the resulting string.</p>
+    <p>Arrow functions offer terser syntax for short functions, and — more importantly than the brevity — they don't create their own <code>this</code>, <code>arguments</code>, or <code>super</code> binding, instead inheriting these from the surrounding lexical scope. This single property fixed one of the most common sources of bugs in pre-ES6 JavaScript: a callback losing track of the <code>this</code> its containing method expected.</p>
+    <p>The spread operator (<code>...</code>) expands an iterable (an array, a string, a Set, anything with an iterator) or the own enumerable properties of an object into individual elements, wherever a list of values or key-value pairs is expected — inside an array literal, an object literal, or a function call's argument list. It's the standard modern way to copy an array or object, merge several together, or turn a rest-collected set of arguments back into individual values for another call.</p>
+    <p>The rest parameter uses that exact same <code>...</code> syntax but in the opposite direction, in a binding context (a function parameter list, or a destructuring pattern) rather than a value context — instead of expanding a collection into individual items, it collects multiple individual items into a single array. Which behavior you get depends entirely on where the <code>...</code> appears, not on any different syntax.</p>
+    <p>Spread only performs a shallow copy: <code>{...original}</code> creates a genuinely new outer object, but any array or object nested inside as a property value is still the exact same reference as in the original — mutating that nested value through the copy also mutates it in the source, which is a routine source of subtle bugs when people assume spread gives a fully independent deep copy.</p>
+    <p>Tagged template literals are a lesser-known but powerful feature: prefixing a template literal with a function name (<code>myTag`Hello ${name}`</code>) calls that function with the literal's string pieces and interpolated values passed separately, which is exactly how libraries like styled-components implement CSS-in-JS, and how you'd build your own automatic HTML-escaping or internationalization helper.</p>
     <div class="code-block">
 <div class="cap">es6.js</div>      <pre><code>const name = "Amina";
 console.log(`Hello, ${name}! Today is ${new Date().toDateString()}.`);
@@ -122,19 +139,53 @@ const copy = { ...original, c: 3 }; // spread: merge + add
 const numbers = [1, 2, 3];
 const moreNumbers = [...numbers, 4, 5]; // spread into a new array</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">rest-vs-spread.js</div>      <pre><code>// Rest: collects individual arguments into an array (binding context)
+function logAll(first, ...rest) {
+  console.log("first:", first, "rest:", rest);
+}
+logAll(1, 2, 3, 4); // first: 1  rest: [2, 3, 4]
+
+// Spread: expands an array into individual arguments (value context)
+const nums = [5, 10, 15];
+console.log(Math.max(...nums)); // same as Math.max(5, 10, 15)
+
+// Destructuring with rest, on both arrays and objects
+const [head, ...tail] = [1, 2, 3, 4];
+const { id, ...otherFields } = { id: 1, name: "Mug", price: 12 };
+console.log(head, tail, otherFields); // 1 [2,3,4] {name:"Mug", price:12}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">shallow-copy-trap.js</div>      <pre><code>const settings = { theme: "dark", advanced: { retries: 3 } };
+const copy = { ...settings };
+
+copy.theme = "light";           // fine, top-level, independent
+copy.advanced.retries = 10;     // mutates the SHARED nested object
+
+console.log(settings.theme);           // "dark" — unaffected
+console.log(settings.advanced.retries); // 10 — affected! shallow copy</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Template literals (`...`) support embedded expressions and multi-line strings that plain quoted strings can't.</li>
-        <li>Spread (<code>...obj</code>) creates a shallow copy — nested objects/arrays are still shared references.</li>
-        <li>Spread on objects (<code>{...a, ...b}</code>) is the standard way to merge objects immutably.</li>
-        <li>Rest parameters collect remaining arguments into an array; spread does the reverse, expanding an array into arguments.</li>
+        <li>Template literals (backticks) support embedded expressions with <code>${}</code> and genuine multi-line strings that plain quoted strings can't.</li>
+        <li>Arrow functions inherit <code>this</code>, <code>arguments</code>, and <code>super</code> from where they're defined, not how they're called.</li>
+        <li>Spread (<code>...arr</code> or <code>...obj</code>) expands a collection into individual items; rest collects individual items into a collection — same syntax, opposite direction, distinguished by context.</li>
+        <li>Spread on objects (<code>{...a, ...b}</code>) is the standard way to merge objects immutably, with later spreads overriding earlier keys.</li>
+        <li>Spread and object/array destructuring both only copy one level deep — nested objects/arrays remain shared references between the original and the copy.</li>
+        <li>Rest parameters must be the last parameter in a function's argument list, and destructuring rest patterns must be the last item too.</li>
+        <li>Tagged template literals (<code>tag`...`</code>) pass the literal's pieces and interpolated values to a function separately, powering CSS-in-JS and escaping utilities.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that merges two settings objects using spread, with the second object's values overriding the first's.</p>
+      <p>Write a function that merges two settings objects using spread, with the second object's values overriding the first's. Then demonstrate the shallow-copy trap directly: spread an object containing a nested object, mutate the nested value through the copy, and show the original was affected too. Finally write a small tagged template function that uppercases every interpolated value while leaving the surrounding string text unchanged.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A live weather dashboard backed by a real public API</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

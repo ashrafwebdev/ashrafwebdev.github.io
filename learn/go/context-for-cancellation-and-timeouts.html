@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Context for cancellation and timeouts</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="working-with-databases-database-sql.html">Working with databases (database/sql)</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>context.Context</code> carries deadlines, cancellation signals, and request-scoped values across API boundaries and goroutines, and is the standard first parameter (<code>ctx context.Context</code>) for any function that does I/O or might run long.</p>
-    <p><code>context.WithTimeout</code> and <code>context.WithCancel</code> derive a child context that automatically cancels after a duration or when explicitly told to, and that cancellation propagates to every function the context was passed into.</p>
-    <p>Functions that respect a context check <code>ctx.Done()</code> (a channel that closes on cancellation) inside a <code>select</code>, letting long-running work stop promptly instead of running to completion after the caller has already given up.</p>
+    <p class="lead"><code>context.Context</code> carries deadlines, cancellation signals, and request-scoped values across API boundaries and goroutines, and is the standard first parameter (<code>ctx context.Context</code>) for any function that does I/O or might run long &mdash; the Go convention is that it's always the first parameter and is never stored inside a struct for later use.</p>
+    <p><code>context.WithTimeout</code> and <code>context.WithCancel</code> derive a child context that automatically cancels after a duration or when explicitly told to, and that cancellation propagates to every function the context was passed into; <code>context.WithDeadline</code> is the same idea but takes an absolute <code>time.Time</code> instead of a relative duration, useful when several independent operations should all respect one shared wall-clock deadline.</p>
+    <p>Every <code>WithCancel</code>, <code>WithTimeout</code>, and <code>WithDeadline</code> call returns a cancel function that <b>must</b> be called, typically via <code>defer cancel()</code> right after creating the context, even if the operation finishes normally well before the deadline &mdash; skipping this leaks the small amount of internal timer and goroutine state associated with the context until the deadline eventually fires on its own.</p>
+    <p>Functions that respect a context check <code>ctx.Done()</code> (a channel that closes on cancellation) inside a <code>select</code>, letting long-running work stop promptly instead of running to completion after the caller has already given up; after <code>Done()</code> closes, <code>ctx.Err()</code> reports why &mdash; <code>context.Canceled</code> for explicit cancellation or <code>context.DeadlineExceeded</code> for a timeout.</p>
+    <p><code>context.WithValue</code> attaches request-scoped data (like a request ID or an authenticated user) that needs to flow through layers of unrelated code, but it's deliberately awkward to use and meant sparingly &mdash; it's not a substitute for passing explicit function parameters, and storing anything resembling optional configuration or dependencies in it is generally considered a misuse.</p>
+    <p><code>context.Background()</code> is the root context used at the top of a program or an incoming request (for instance, <code>net/http</code> automatically attaches a request-scoped context accessible via <code>r.Context()</code>, which is cancelled if the client disconnects); <code>context.TODO()</code> signals a placeholder for code being migrated to use context that doesn't have a real one wired through yet.</p>
     <div class="code-block">
 <div class="cap">main.go</div>      <pre><code>package main
 
@@ -140,19 +156,77 @@ func main() {
 	}
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">http_context.go</div>      <pre><code>package main
+
+import (
+	"context"
+	"net/http"
+	"time"
+)
+
+func handler(w http.ResponseWriter, r *http.Request) {
+	// r.Context() is cancelled automatically if the client disconnects
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	if err := doDatabaseQuery(ctx); err != nil {
+		http.Error(w, err.Error(), http.StatusGatewayTimeout)
+		return
+	}
+	w.Write([]byte("ok"))
+}
+
+func doDatabaseQuery(ctx context.Context) error {
+	// a real driver call would take ctx and respect it internally,
+	// e.g. db.QueryContext(ctx, "SELECT ...")
+	return nil
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">cancel_leak_gotcha.go</div>      <pre><code>package main
+
+import (
+	"context"
+	"time"
+)
+
+// BAD: cancel is never called, leaking the context's internal timer
+// state until the 5-minute deadline eventually fires on its own.
+func leaky() {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Minute)
+	_ = ctx
+}
+
+// GOOD: defer cancel() immediately, even though the deadline would
+// eventually clean up on its own.
+func correct() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	_ = ctx
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>context.Context</code> is conventionally the first parameter of functions doing I/O or long work.</li>
-        <li><code>WithTimeout</code>/<code>WithCancel</code> derive a context that cancels automatically or on demand.</li>
+        <li><code>context.Context</code> is conventionally the first parameter of functions doing I/O or long work, never stored in a struct.</li>
+        <li><code>WithTimeout</code>/<code>WithCancel</code>/<code>WithDeadline</code> derive a context that cancels automatically or on demand.</li>
+        <li>Every cancel function returned alongside a derived context must be called (typically via <code>defer cancel()</code>) to avoid leaking internal state.</li>
         <li>Cancellation propagates: cancelling a parent context cancels every context derived from it.</li>
-        <li>Long-running work should <code>select</code> on <code>ctx.Done()</code> to stop promptly when cancelled.</li>
+        <li>Long-running work should <code>select</code> on <code>ctx.Done()</code> to stop promptly when cancelled; <code>ctx.Err()</code> explains why afterward.</li>
+        <li><code>context.WithValue</code> carries request-scoped data sparingly &mdash; it's not a substitute for explicit function parameters.</li>
+        <li><code>net/http</code> attaches a per-request context via <code>r.Context()</code> that's cancelled automatically if the client disconnects.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that simulates a slow task with time.After, wrap its caller with a context.WithTimeout of 500ms, and print whether it completed or was cancelled.</p>
+      <p>Write a function that simulates a slow task with time.After, wrap its caller with a context.WithTimeout of 500ms, and print whether it completed or was cancelled, checking ctx.Err() to distinguish context.DeadlineExceeded from other outcomes. Then write an HTTP handler that derives a request-scoped context with its own timeout from r.Context() and returns a 504 status if the downstream work doesn't finish in time.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">linkcheck: a concurrent URL health-checking service, backed by a real database</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

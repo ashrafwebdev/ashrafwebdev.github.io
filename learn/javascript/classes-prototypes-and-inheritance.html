@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Classes, prototypes, and inheritance</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="closures-scope-and-the-this-keyword.html">Closures, scope, and the 'this' keyword</a></p>
   </div>
 
   <article>
-    <p class="lead">JavaScript's <code>class</code> syntax is a cleaner way to write what the language has always done under the hood with prototypes — every object has a hidden link to another object it inherits methods from.</p>
-    <p><code>extends</code> lets one class inherit from another, and <code>super()</code> calls the parent class's constructor — necessary before you can use <code>this</code> in a subclass constructor.</p>
+    <p class="lead">JavaScript's <code>class</code> syntax is a cleaner, more familiar-looking way to write what the language has always done under the hood through prototypes: every object carries a hidden internal link to another object (its prototype), and looking up a property or method that isn't found directly on the object falls back to searching that linked prototype, and so on up what's called the prototype chain, until it either finds a match or reaches the end.</p>
+    <p>A class's regular methods (anything defined without special syntax inside the class body) live on the class's <code>prototype</code> object, not copied individually onto every instance — this is memory-efficient, since a thousand instances of the same class share one single copy of each method rather than each carrying its own duplicate. Instance fields set inside the constructor with <code>this.name = ...</code>, by contrast, do live directly on each individual instance, since they hold data that's genuinely different per object.</p>
+    <p><code>extends</code> sets up inheritance between two classes, and inside a subclass constructor, <code>super(...)</code> must be called — and called before any use of <code>this</code> — because it's what actually runs the parent class's constructor and initializes the inherited part of the instance; using <code>this</code> before calling <code>super()</code> throws a ReferenceError. Outside the constructor, <code>super.methodName()</code> calls the parent class's version of an overridden method, useful when a subclass wants to extend rather than completely replace the parent's behavior.</p>
+    <p>Overriding a method in a subclass — giving it a method with the same name as one on the parent, so the subclass's version takes precedence — is called method overriding. JavaScript does not support method overloading (defining multiple versions of the same method name that differ only by parameter types or count, as some other languages allow); a class can only have one method of a given name, and any parameter-count flexibility has to be handled manually inside that single method.</p>
+    <p>Modern JavaScript classes also support private fields and methods, written with a <code>#</code> prefix (<code>#balance</code>), which are genuinely inaccessible from outside the class — not just discouraged by convention, but enforced by the language itself, unlike a regular property that anyone can still reach even if you name it with a leading underscore as a hint not to touch it. Static members (<code>static</code> keyword) belong to the class itself rather than to instances, useful for utility methods or shared configuration that doesn't need a specific instance to make sense.</p>
+    <p><code>instanceof</code> checks whether an object's prototype chain includes a given class's prototype, which is useful for runtime type checks, though it has real limits — it can give surprising answers across different execution contexts (like different iframes or worker threads, where each has technically distinct built-in prototypes), and it says nothing about an object's actual shape beyond that inheritance chain.</p>
     <div class="code-block">
 <div class="cap">classes.js</div>      <pre><code>class Animal {
   constructor(name) { this.name = name; }
@@ -125,19 +142,67 @@ class Dog extends Animal {
 const rex = new Dog("Rex");
 console.log(rex.speak());</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">private-fields-and-super.js</div>      <pre><code>class BankAccount {
+  #balance; // truly private, not reachable from outside the class
+
+  constructor(openingBalance) {
+    this.#balance = openingBalance;
+  }
+
+  deposit(amount) {
+    this.#balance += amount;
+    return this.#balance;
+  }
+
+  get balance() { return this.#balance; } // read-only public view
+}
+
+class SavingsAccount extends BankAccount {
+  constructor(openingBalance, rate) {
+    super(openingBalance); // must run before using `this`
+    this.rate = rate;
+  }
+  applyInterest() {
+    return this.deposit(this.balance * this.rate); // extends parent behavior
+  }
+}
+
+const acct = new SavingsAccount(1000, 0.05);
+console.log(acct.applyInterest()); // 1050
+// console.log(acct.#balance); // SyntaxError: private field, inaccessible here</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">prototype-chain-under-the-hood.js</div>      <pre><code>// What `class` is doing under the hood, roughly, with plain prototypes
+function Animal(name) {
+  this.name = name;
+}
+Animal.prototype.speak = function () {
+  return `${this.name} makes a sound.`;
+};
+
+const cat = new Animal("Whiskers");
+console.log(cat.speak());                     // found via the prototype chain
+console.log(cat.hasOwnProperty("speak"));      // false — it's on the prototype
+console.log(Object.getPrototypeOf(cat) === Animal.prototype); // true</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Under the hood, class methods live on the prototype, shared across all instances — not copied onto each object.</li>
         <li><code>extends</code> sets up inheritance; <code>super()</code> must be called before using <code>this</code> in a subclass constructor.</li>
         <li>Overriding a method in a subclass (like <code>speak()</code> above) is called method overriding, not overloading — JS doesn't support true overloading.</li>
-        <li><code>instanceof</code> checks whether an object's prototype chain includes a given class.</li>
+        <li>Private fields (<code>#balance</code>) are genuinely inaccessible from outside the class, unlike a conventionally-named-but-still-public underscore property.</li>
+        <li><code>static</code> members belong to the class itself, not to instances — useful for utility methods that don't need instance data.</li>
+        <li><code>instanceof</code> checks whether an object's prototype chain includes a given class, but gives unreliable answers across different execution contexts like iframes.</li>
+        <li>Instance fields set with <code>this.field = ...</code> in the constructor live on each individual instance; regular methods live once on the shared prototype.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a base Shape class with an area() method returning 0, then Circle and Rectangle subclasses that override it correctly.</p>
+      <p>Create a base Shape class with an area() method returning 0, then Circle and Rectangle subclasses that override it correctly. Add a private #id field to the base class that increments for every new shape and expose it through a read-only getter, then write a subclass that calls super() in its constructor and extends (rather than replaces) one of the parent's methods using super.methodName().</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

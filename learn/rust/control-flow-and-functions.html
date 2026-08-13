@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Control flow and functions</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="ownership-basics-the-core-rust-idea.html">Ownership basics (the core Rust idea)</a></p>
   </div>
 
   <article>
     <p class="lead">Rust's <code>if</code>, <code>loop</code>, <code>while</code>, and <code>for</code> work much like other C-family languages, with one key difference: <code>if</code> is an <b>expression</b>, so <code>let x = if cond { 1 } else { 2 };</code> is valid and idiomatic Rust.</p>
-    <p>Functions are declared with <code>fn</code>, and the last expression in a block (without a trailing semicolon) is implicitly returned &mdash; writing <code>return</code> explicitly is only needed for early returns.</p>
+    <p>Functions are declared with <code>fn</code>, and the last expression in a block (without a trailing semicolon) is implicitly returned &mdash; writing <code>return</code> explicitly is only needed for early returns. Unlike local variables, function parameters and return types must always be written out explicitly; Rust never infers them across a function signature.</p>
     <p><code>match</code> is Rust's powerful pattern-matching control-flow construct, and the compiler enforces <b>exhaustiveness</b>: every possible case must be handled, or the code simply won't compile, catching a whole class of "forgot a case" bugs.</p>
+    <p><code>loop</code> is itself an expression that can produce a value: <code>break value;</code> exits the loop and yields <code>value</code> as the result of the whole loop expression, which is handy for retry-until-success logic. <code>while let</code> and <code>if let</code> are shorthand for matching a single pattern without writing a full <code>match</code> just to handle one case and ignore the rest &mdash; a later lesson's <code>Some(x)</code>/<code>None</code> pattern is the most common example, but <code>if let</code> works with any pattern, including a plain tuple.</p>
+    <p>Nested loops can be given labels, written <code>'outer: loop { ... }</code>, so that <code>break 'outer;</code> or <code>continue 'outer;</code> can target a specific enclosing loop instead of only the innermost one &mdash; essential once loops nest two or three levels deep.</p>
+    <p>A common beginner mistake is an accidental trailing semicolon: adding <code>;</code> after what was meant to be a function's final returned expression silently turns it into a statement that evaluates to <code>()</code>, which then fails to type-check against the function's declared return type. The compiler's error message in this case is one of the more famous "gotcha" errors for newcomers to Rust.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>fn categorize(score: i32) -&gt; &amp;'static str {
     match score {
@@ -129,19 +145,70 @@ fn main() {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">loop_and_labels.rs</div>      <pre><code>// (r, c) coordinates are found once `found` is true; a later
+// lesson's Option type is a cleaner way to express "maybe found"
+fn find_pair(grid: &amp;[[i32; 3]; 2], target: i32) -&gt; (bool, usize, usize) {
+    let mut found = (false, 0, 0);
+    'outer: for (r, row) in grid.iter().enumerate() {
+        for (c, &amp;value) in row.iter().enumerate() {
+            if value == target {
+                found = (true, r, c);
+                break 'outer;
+            }
+        }
+    }
+    found
+}
+
+fn main() {
+    let grid = [[1, 2, 3], [4, 5, 6]];
+    let (was_found, r, c) = find_pair(&amp;grid, 5);
+    if let (true, r, c) = (was_found, r, c) {
+        println!("found at ({}, {})", r, c);
+    } else {
+        println!("not found");
+    }
+
+    // loop as an expression that yields a value
+    let mut attempts = 0;
+    let result = loop {
+        attempts += 1;
+        if attempts == 3 {
+            break attempts * 10;
+        }
+    };
+    println!("result: {}", result);
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">semicolon_mistake.rs</div>      <pre><code>fn double(n: i32) -&gt; i32 {
+    n * 2; // BUG: trailing semicolon makes this a statement returning ()
+    // ERROR: expected `i32`, found `()`
+}
+
+fn double_fixed(n: i32) -&gt; i32 {
+    n * 2 // no semicolon: this is the returned expression
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>if</code> is an expression in Rust and can be used directly on the right side of a <code>let</code>.</li>
         <li>The final expression of a function body (no semicolon) is its implicit return value.</li>
+        <li>Function parameters and return types must always be explicitly typed, unlike local variables.</li>
         <li><code>match</code> must be exhaustive; the compiler rejects code that misses a possible case.</li>
         <li>Range patterns (<code>90..=100</code>) match inclusive ranges concisely inside a match arm.</li>
+        <li><code>loop</code> can produce a value via <code>break value;</code>; <code>while let</code>/<code>if let</code> match a single pattern concisely.</li>
+        <li>Labeled loops (<code>'outer: loop</code>) let <code>break</code>/<code>continue</code> target a specific nested loop.</li>
+        <li>A stray trailing semicolon silently turns a returned expression into a <code>()</code> statement, a classic beginner error.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function grade(score: i32) using match with range patterns to return a letter grade, and call it in a for loop over an array of sample scores.</p>
+      <p>Write a function using a labeled loop to search a 2D grid (a fixed-size array of arrays) for a target value, breaking out of both loops immediately once found and returning whether it was found together with its coordinates as a tuple. Then use if let to match only the case where that tuple's first element is true and print the coordinates, and separately write a loop expression that increments a counter until it reaches a target value, using break with a value to return and print the final result.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

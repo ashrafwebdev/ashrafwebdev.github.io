@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing and documentation</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="async-rust-tokio-basics.html">Async Rust (tokio basics)</a></p>
   </div>
 
   <article>
     <p class="lead">Rust tests are ordinary functions annotated <code>#[test]</code>, typically kept in a <code>#[cfg(test)] mod tests</code> block in the same file as the code they test, and run with <code>cargo test</code> with zero extra configuration or external test framework needed.</p>
     <p>Assertions use <code>assert!</code>, <code>assert_eq!</code>, and <code>assert_ne!</code> macros, and a test panicking (including via a failed assertion) is what marks it as failed &mdash; there's no separate assertion library to install.</p>
     <p>Doc comments (<code>///</code>) support runnable code examples inside triple-backtick blocks, and <code>cargo test</code> actually compiles and executes those examples as <b>doctests</b>, which keeps documentation from silently going stale as the code changes.</p>
+    <p>Beyond unit tests kept alongside the code, files placed under a top-level <code>tests/</code> directory are compiled as separate <b>integration tests</b>: each file becomes its own crate that can only see the library's public API, exercising it the same way an external consumer would, which nicely complements unit tests that have access to private items too.</p>
+    <p>The <code>#[should_panic]</code> attribute marks a test as passing specifically when the annotated function panics (optionally requiring the panic message to contain a given substring), which is how you assert that invalid input is correctly rejected. The <code>#[ignore]</code> attribute marks a slow or expensive test that's skipped by default and only runs when explicitly requested with <code>cargo test -- --ignored</code>.</p>
+    <p>By default, <code>cargo test</code> runs tests in parallel across multiple threads and lets you filter which ones run by passing a substring of their name (<code>cargo test parse</code> runs only tests whose name contains "parse"). This parallelism means tests that share mutable global state (like a shared file or environment variable) need extra care, or should be run single-threaded with <code>cargo test -- --test-threads=1</code>.</p>
     <div class="code-block">
 <div class="cap">lib.rs</div>      <pre><code>/// Adds two numbers together.
 ///
@@ -133,6 +149,43 @@ mod tests {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">lib.rs (should_panic + ignore)</div>      <pre><code>pub fn divide(a: i32, b: i32) -&gt; i32 {
+    if b == 0 {
+        panic!("division by zero");
+    }
+    a / b
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "division by zero")]
+    fn divide_by_zero_panics() {
+        divide(10, 0);
+    }
+
+    #[test]
+    #[ignore] // slow; run explicitly with `cargo test -- --ignored`
+    fn expensive_regression_check() {
+        for i in 1..1_000_000 {
+            assert_eq!(divide(i, 1), i);
+        }
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">tests/integration.rs</div>      <pre><code>// files under tests/ only see the crate's public API, like an
+// external consumer would
+use my_crate::add;
+
+#[test]
+fn public_add_works() {
+    assert_eq!(add(10, 5), 15);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -140,12 +193,17 @@ mod tests {
         <li><code>assert_eq!</code> and friends panic on failure, which is what marks a test as failed.</li>
         <li>Doc comments (<code>///</code>) can include runnable code examples, executed as doctests.</li>
         <li>Doctests keep documentation accurate, since stale examples fail the build.</li>
+        <li>Files under <code>tests/</code> are integration tests that see only the crate's public API.</li>
+        <li><code>#[should_panic]</code> asserts a function panics; <code>#[ignore]</code> skips slow tests unless explicitly requested.</li>
+        <li><code>cargo test</code> runs in parallel by default; filter with a name substring or force single-threading if needed.</li>
+        <li>Unit tests inside <code>src/</code> can see private items; integration tests under <code>tests/</code> cannot.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function is_even(n: i32) -> bool with a doc comment containing a runnable example, plus a #[test] function covering both true and false cases, and run cargo test.</p>
+      <p>Write a function is_even(n: i32) -> bool with a doc comment containing a runnable example, plus a #[test] function covering both true and false cases, and run cargo test. Then add a #[should_panic] test for a divide function that panics on a zero divisor, mark one slow test with #[ignore], and create a tests/integration.rs file exercising the crate's public API from outside.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

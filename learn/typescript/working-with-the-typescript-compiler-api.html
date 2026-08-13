@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Working with the TypeScript Compiler API</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="contributing-types-to-definitelytyped.html">Contributing types to DefinitelyTyped</a></p>
   </div>
 
   <article>
-    <p class="lead">The TypeScript compiler itself is available as a programmatic API (<code>typescript</code> on npm), letting you parse source code into an Abstract Syntax Tree (AST), analyze it, and even generate or transform TypeScript/JavaScript code — this is how linters, codemods, and tools like ts-morph are built.</p>
-    <p>Working directly with the Compiler API is low-level and verbose; libraries like <code>ts-morph</code> wrap it with a friendlier interface for common tasks like 'find every usage of this function and rename it'.</p>
+    <p class="lead">The TypeScript compiler itself is available as a programmatic API, published as the <code>typescript</code> package on npm, letting you parse source code into an Abstract Syntax Tree (AST), analyze it, and even generate or transform TypeScript and JavaScript code directly — this is how linters, formatters, codemods, and higher-level tools like ts-morph are actually built underneath.</p>
+    <p>An AST represents source code as a tree of nodes, each one describing a specific syntactic construct (a variable declaration, a function call, a binary expression) and its position in the original source — walking that tree with a function like <code>forEachChild</code>, recursively, is the fundamental operation nearly every tool built on the Compiler API performs in some form.</p>
+    <p>Beyond just parsing syntax, the Compiler API also exposes the actual type checker used internally by <code>tsc</code> and by your editor's IntelliSense — creating a <code>Program</code> from a set of source files and asking its type checker for the type of a given node gives you the exact same type information the compiler itself would use to report an error, which is a meaningfully more powerful (and more involved) capability than syntax-only AST analysis alone.</p>
+    <p>Working directly with the Compiler API is genuinely low-level and verbose: navigating raw AST nodes by hand for anything beyond a simple read-only analysis quickly becomes tedious, and outputting correctly-formatted modified code from a mutated AST requires its own dedicated printer step, since the AST alone doesn't preserve exact original formatting like whitespace and comments the way a naive text-based approach would.</p>
+    <p>Libraries like <code>ts-morph</code> wrap the raw Compiler API with a much friendlier, more object-oriented interface for common tasks — 'find every usage of this function across a project and rename it', 'add a new method to every class implementing this interface' — trading some of the Compiler API's raw flexibility for an interface that's dramatically faster to actually get real refactoring work done in.</p>
+    <p>This is genuinely advanced tooling work, and most day-to-day application TypeScript never touches the Compiler API directly at all — it's the domain of people building linters, codemods, editor extensions, or framework-specific build tooling, rather than something an application developer reaches for while building ordinary product features.</p>
     <div class="code-block">
 <div class="cap">A minimal AST walk</div>      <pre><code>import ts from "typescript";
 
@@ -122,19 +139,56 @@ ts.forEachChild(sourceFile, (node) =&gt; {
   console.log(ts.SyntaxKind[node.kind]);
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">using-the-real-type-checker.ts</div>      <pre><code>import ts from "typescript";
+
+const program = ts.createProgram(["src/index.ts"], {});
+const checker = program.getTypeChecker();
+const sourceFile = program.getSourceFile("src/index.ts");
+
+ts.forEachChild(sourceFile!, (node) =&gt; {
+  if (ts.isVariableDeclaration(node) &amp;&amp; node.name) {
+    const type = checker.getTypeAtLocation(node);
+    console.log(node.name.getText(), "-&gt;", checker.typeToString(type));
+  }
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">ts-morph-for-a-simple-refactor.ts</div>      <pre><code>import { Project } from "ts-morph";
+
+const project = new Project();
+project.addSourceFilesAtPaths("src/**/*.ts");
+
+for (const sourceFile of project.getSourceFiles()) {
+  for (const fn of sourceFile.getFunctions()) {
+    if (fn.getName() === "oldFunctionName") {
+      fn.rename("newFunctionName"); // updates every usage too
+    }
+  }
+}
+project.saveSync();</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>The Compiler API exposes the same parser and type checker that powers <code>tsc</code> itself and your editor's IntelliSense.</li>
         <li>An AST (Abstract Syntax Tree) represents code as a tree of nodes — the foundation of linters, formatters, and codemods.</li>
-        <li><code>ts-morph</code> wraps the raw Compiler API with a much friendlier interface for common refactoring tasks.</li>
-        <li>This is genuinely advanced tooling work — most day-to-day TypeScript never touches the Compiler API directly.</li>
+        <li>Beyond parsing, a <code>Program</code>'s type checker gives you the exact type information the real compiler would use, not just syntax structure.</li>
+        <li>Modifying an AST directly and getting correctly-formatted output back typically requires a dedicated printer step, since raw ASTs don't preserve original formatting.</li>
+        <li><code>ts-morph</code> wraps the raw Compiler API with a much friendlier interface for common refactoring tasks, like project-wide renames.</li>
+        <li>This is genuinely advanced tooling work — most day-to-day application TypeScript never touches the Compiler API directly.</li>
+        <li>The Compiler API is the foundation most editor extensions, codemods, and framework-specific build tools are actually built on top of.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Use the TypeScript Compiler API to parse a small code snippet and log the SyntaxKind of every top-level node in the file.</p>
+      <p>Use the TypeScript Compiler API to parse a small code snippet and log the SyntaxKind of every top-level node in the file. Then extend the example to create a full Program and use its type checker to print the inferred type of each top-level variable declaration, rather than just its syntax kind.</p>
     </div>
+    <a class="capstone-banner" href="project-hero.html">
+      <span class="cb-label">You've finished the Hero stage &mdash; capstone project</span>
+      <span class="cb-title">Publish a fully-typed npm package with zero any types</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

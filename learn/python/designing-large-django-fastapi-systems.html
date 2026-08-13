@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Designing large Django/FastAPI systems: architecture, caching, queues</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="packaging-and-publishing-to-pypi.html">Packaging and publishing to PyPI</a></p>
   </div>
 
   <article>
-    <p class="lead">At scale, a web application's architecture matters as much as any individual line of code: separating concerns into services, caching expensive or frequently-accessed data (often with Redis), and offloading slow work to background task queues (Celery, or FastAPI's built-in background tasks for simpler cases) so requests stay fast.</p>
-    <p>Database access patterns become critical too — N+1 query problems, connection pooling, and read replicas all start to matter in ways they simply don't at small scale.</p>
+    <p class="lead">At scale, a web application's architecture matters as much as any individual line of code: separating concerns into services, caching expensive or frequently-accessed data (often with Redis), and offloading slow work to background task queues (Celery, RQ, or FastAPI's built-in background tasks for simpler cases) so incoming requests stay fast and the web server thread isn't blocked doing something the user isn't actually waiting to see.</p>
+    <p>Cache expensive, frequently-read data rather than recomputing it on every request — but caching introduces its own hard problem: invalidation. A cache that's never updated when the underlying data changes serves stale results, so every cache needs an explicit strategy (a time-to-live, an explicit invalidation on write, or both) for when its entries stop being trustworthy.</p>
+    <p>Background task queues move slow work — sending an email, processing an uploaded file, generating a report — out of the request/response cycle so users aren't left waiting on something that could just as easily happen a few seconds later. The trade-off is added complexity: now you need a message broker (commonly Redis or RabbitMQ) and worker processes running separately from your web server, plus a way to track and report a background job's eventual success or failure back to the user.</p>
+    <p>Database access patterns become critical at scale in ways they simply don't with a handful of users. The N+1 query problem — issuing one query to fetch a list, then one more query per item to fetch each item's related data — silently turns a single page load into hundreds of database round-trips; Django's <code>select_related</code>/<code>prefetch_related</code> and SQLAlchemy's eager loading both exist specifically to collapse that into one or two queries.</p>
+    <p>Connection pooling reuses a fixed number of database connections across many requests instead of opening a brand-new one per request, which is both faster and keeps the database from being overwhelmed by connection churn under load; read replicas let read-heavy traffic (which is most traffic, for most apps) be served from a copy of the database that isn't competing with writes on the primary.</p>
+    <p>Horizontal scaling — running more copies of the app server behind a load balancer instead of making one server bigger — requires the app itself to be stateless between requests: session data, uploaded-file staging, and anything else that used to live safely in one process's memory needs to move to a shared store (Redis, the database, object storage) that every instance of the app can reach identically.</p>
     <div class="code-block">
 <div class="cap">A background task in FastAPI</div>      <pre><code>from fastapi import FastAPI, BackgroundTasks
 
@@ -126,19 +143,48 @@ def signup(email: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(send_welcome_email, email)
     return {"message": "Signed up!"}</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Caching a slow query with Redis</div>      <pre><code>import json
+import redis
+
+cache = redis.Redis()
+
+def get_dashboard_stats(user_id):
+    cache_key = f"dashboard:{user_id}"
+    cached = cache.get(cache_key)
+    if cached:
+        return json.loads(cached)
+
+    stats = compute_expensive_stats(user_id)   # slow DB aggregation
+    cache.setex(cache_key, 300, json.dumps(stats))  # 5 minute TTL
+    return stats</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">N+1 query problem, Django ORM</div>      <pre><code># BAD: 1 query for authors, then N more, one per book, to fetch each author
+for book in Book.objects.all():
+    print(book.title, book.author.name)
+
+# GOOD: select_related does a SQL JOIN, fetching everything in 1 query
+for book in Book.objects.select_related("author").all():
+    print(book.title, book.author.name)</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Cache expensive, frequently-read data (Redis is the common choice) rather than recomputing it on every request.</li>
+        <li>Cache expensive, frequently-read data (Redis is the common choice) rather than recomputing it on every request, but always pair it with an invalidation strategy.</li>
         <li>Background task queues (Celery, RQ) move slow work out of the request/response cycle so users aren't left waiting.</li>
         <li>Watch for N+1 query problems — Django's <code>select_related</code>/<code>prefetch_related</code> and SQLAlchemy's eager loading both exist specifically to fix this.</li>
+        <li>Connection pooling reuses database connections across requests instead of opening a new one each time.</li>
+        <li>Read replicas let read-heavy traffic be served without competing with writes on the primary database.</li>
         <li>Horizontal scaling (more app server instances) requires the app itself to be stateless — session data belongs in a shared store, not local memory.</li>
+        <li>A background job needs a way to report its eventual success or failure back to the user, since the original request has already returned.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take an endpoint that does slow work (like sending an email or processing a file) and move that work to a background task so the response returns immediately.</p>
+      <p>Take an endpoint that does slow work (like sending an email or processing a file) and move that work to a background task so the response returns immediately. Then add a simple in-memory or Redis-backed cache in front of an expensive computed value with a short time-to-live, and write a short explanation of what would go stale, and for how long, if the underlying data changed right after it was cached.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

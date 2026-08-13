@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,21 +119,75 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Architecting large, multi-team Laravel/Symfony applications</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="building-and-maintaining-a-framework-or-reusable.html">Building and maintaining a framework or reusable package</a></p>
   </div>
 
   <article>
-    <p class="lead">At large scale, a single Laravel or Symfony app serving many teams benefits from clear internal boundaries — organizing code by domain/feature rather than only by technical layer (all models together, all controllers together), so teams can work on their area with minimal collision.</p>
-    <p>Techniques like modular service providers, well-defined internal APIs between domains, and strict code ownership boundaries (enforced by CI, not just convention) keep a large monolithic codebase maintainable as team size grows.</p>
+    <p class="lead">At large scale, a single Laravel or Symfony app serving many teams benefits from clear internal boundaries — organizing code by domain/feature rather than only by technical layer (all models together, all controllers together), so teams can work on their area with minimal collision. A folder structure grouped by domain (Billing, Shipping, Catalog) makes it obvious which team owns which code, whereas a purely layer-based structure (all Models/, all Controllers/) scatters one team's feature across several unrelated top-level folders.</p>
+    <p>Techniques like modular service providers, well-defined internal APIs between domains, and strict code ownership boundaries (enforced by CI, not just convention) keep a large monolithic codebase maintainable as team size grows. A service provider scoped to one domain can register only that domain's routes, config, and bindings, keeping the framework's bootstrapping process itself organized along the same domain lines as the code.</p>
+    <p>Clear internal APIs between domains prevent every team's code from becoming tightly, invisibly coupled to every other team's — instead of the Billing domain reaching directly into Shipping's internal classes and database tables, it calls a small, deliberate interface (a service class or an internal event) that Shipping controls and can change its own internals behind. This is the same discipline microservices enforce via network boundaries, just applied inside one codebase.</p>
+    <p>A 'modular monolith' often captures microservices' organizational benefits — clear ownership, enforced boundaries, independent internal evolution — without their operational complexity, since there's still just one deployment, one database connection pool, and no network calls between domains. Many teams find this the right stopping point, splitting a domain out into a real separate service only once it has a genuinely distinct scaling, deployment, or team-ownership need that the monolith can no longer accommodate gracefully.</p>
+    <p>Domain events are a useful pattern for reducing coupling further: instead of the Billing domain calling directly into Shipping's code when an order is paid, it dispatches an <code>OrderPaid</code> event, and Shipping (along with anything else that cares — email notifications, analytics) listens for that event independently. Neither domain needs to know the other exists at the call-site level, only that a shared event contract exists.</p>
+    <p>CI checks — not just code review — can enforce architectural boundaries automatically, for example failing a build if static analysis detects one domain's code importing another domain's internal (non-public) classes directly. Relying on code review alone to catch this consistently across a large, fast-moving team tends to fail eventually; an automated check makes the boundary a fact about the codebase rather than a matter of individual reviewer diligence.</p>
     <div class="code-block">
 <div class="cap">A domain-oriented folder structure</div>      <pre><code>src/
   Billing/
     Models/
     Services/
     Http/Controllers/
+    BillingServiceProvider.php
   Shipping/
     Models/
     Services/
-    Http/Controllers/</code></pre>
+    Http/Controllers/
+    ShippingServiceProvider.php</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Billing/BillingServiceProvider.php (a domain-scoped service provider)</div>      <pre><code>&lt;?php
+
+namespace App\Billing;
+
+use Illuminate\Support\ServiceProvider;
+
+class BillingServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        $this-&gt;loadRoutesFrom(__DIR__ . '/routes.php');
+        $this-&gt;loadMigrationsFrom(__DIR__ . '/Migrations');
+    }
+}
+// Registering this in config/app.php keeps Billing's bootstrapping
+// self-contained instead of scattered across shared global files.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Decoupling two domains with a domain event</div>      <pre><code>&lt;?php
+// Billing/Services/PaymentService.php
+namespace App\Billing\Services;
+
+use App\Billing\Events\OrderPaid;
+
+class PaymentService
+{
+    public function markPaid(int $orderId): void
+    {
+        // ...update the order's payment status...
+        event(new OrderPaid($orderId)); // Billing has no idea who's listening
+    }
+}
+
+// Shipping/Listeners/StartFulfillment.php
+namespace App\Shipping\Listeners;
+
+use App\Billing\Events\OrderPaid;
+
+class StartFulfillment
+{
+    public function handle(OrderPaid $event): void
+    {
+        // Shipping reacts independently, with no direct call from Billing
+    }
+}</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -130,12 +196,17 @@
         <li>Clear internal APIs between domains prevent every team's code from becoming tightly, invisibly coupled to every other team's.</li>
         <li>A 'modular monolith' often captures microservices' organizational benefits without their operational complexity — worth considering before splitting into real services.</li>
         <li>CI checks (not just code review) can enforce architectural boundaries, like preventing one domain from importing another's internals directly.</li>
+        <li>Domain-scoped service providers keep each domain's routes, config, and bindings self-contained rather than scattered through shared global files.</li>
+        <li>Domain events (like an <code>OrderPaid</code> event) let one domain react to another's changes without either domain calling into the other's code directly.</li>
+        <li>Split a domain into a genuinely separate service only once it has a distinct scaling, deployment, or ownership need the monolith can no longer serve well.</li>
+        <li>Relying only on code review to enforce a boundary tends to erode over time on a large, fast-moving team — automated static analysis in CI makes the rule durable.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take an existing Laravel/Symfony app organized by technical layer and reorganize one feature into a self-contained domain folder (models, services, controllers together).</p>
+      <p>Take an existing Laravel/Symfony app organized by technical layer and reorganize one feature into a self-contained domain folder (models, services, controllers together). Then add a domain-scoped service provider for that folder, and replace one direct cross-domain method call with a dispatched domain event and a listener in the other domain, so the two domains no longer call each other's classes directly.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

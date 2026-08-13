@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,16 +119,39 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Performance tuning: OPcache, query profiling</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="caching-and-query-optimization.html">Caching and query optimization</a></p>
   </div>
 
   <article>
-    <p class="lead">OPcache is a built-in PHP extension that caches compiled bytecode in memory, skipping the parse-and-compile step on every request — enabling it in production is one of the single highest-leverage PHP performance changes you can make.</p>
-    <p>Query profiling goes beyond a single <code>EXPLAIN</code> — tools like MySQL's slow query log, or application-level profilers (Blackfire, Xdebug's profiler) reveal which specific queries or functions consume the most time across real traffic, not just one hand-picked query.</p>
+    <p class="lead">OPcache is a built-in PHP extension that caches compiled bytecode in memory, skipping the parse-and-compile step on every request — enabling it in production is one of the single highest-leverage PHP performance changes you can make, often improving throughput dramatically for essentially no code changes.</p>
+    <p><code>opcache.memory_consumption</code> sets how much memory OPcache can use for cached bytecode, and <code>opcache.max_accelerated_files</code> caps how many distinct PHP files it will cache — if either limit is set too low for the size of your codebase, OPcache starts evicting and recompiling files, which quietly erases most of the benefit. Monitoring OPcache's hit rate (via <code>opcache_get_status()</code>) reveals whether these limits are actually large enough.</p>
+    <p><code>opcache.validate_timestamps=0</code> in production means PHP stops checking whether a source file has changed since it was cached, squeezing out a bit more performance — but the tradeoff is that a code deploy afterward has no effect until the cache is manually cleared or the PHP-FPM/web server process is reloaded, which is why this setting should only be used alongside a deploy process that clears OPcache automatically.</p>
+    <p>Query profiling goes beyond a single <code>EXPLAIN</code> — MySQL's slow query log records every query that exceeds a configured time threshold from real production traffic, which surfaces problems you'd never think to test manually, since real usage patterns and data volumes are often very different from what you exercise locally.</p>
+    <p>Application-level profilers like Blackfire or Xdebug's built-in profiler go further than the database layer, showing exactly which PHP function calls consume the most wall-clock time and memory across a real request — this is what reveals bottlenecks that have nothing to do with the database at all, like an inefficient loop, excessive object creation, or a slow third-party library call.</p>
+    <p>The right general approach is to profile before optimizing, since the actual bottleneck is often not where intuition points — it's easy to spend hours hand-optimizing a piece of code that turns out to account for a tiny fraction of total request time, while the real cost (an N+1 query, a missing index, a synchronous call to a slow external API) sits somewhere else entirely. PHP 7.4+ also supports opcode preloading (<code>opcache.preload</code>), which loads specific frequently-used files into shared memory once at server startup rather than on first request, useful for framework core files that are always needed.</p>
     <div class="code-block">
 <div class="cap">php.ini</div>      <pre><code>opcache.enable=1
 opcache.memory_consumption=128
 opcache.max_accelerated_files=10000
 opcache.validate_timestamps=0  ; disable in production, requires manual cache clear on deploy</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">my.cnf (enabling MySQL's slow query log)</div>      <pre><code>[mysqld]
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 1  ; log any query taking longer than 1 second
+log_queries_not_using_indexes = 1</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Checking OPcache's hit rate at runtime</div>      <pre><code>&lt;?php
+$status = opcache_get_status();
+
+printf("Hit rate: %.2f%%\n", $status['opcache_statistics']['opcache_hit_rate']);
+printf("Cached scripts: %d\n", $status['opcache_statistics']['num_cached_scripts']);
+printf("Memory used: %.1f MB\n", $status['memory_usage']['used_memory'] / 1024 / 1024);
+// A low hit rate or frequent restarts usually means memory_consumption
+// or max_accelerated_files is set too low for this codebase.
+?&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -125,12 +160,17 @@ opcache.validate_timestamps=0  ; disable in production, requires manual cache cl
         <li><code>opcache.validate_timestamps=0</code> in production means you must clear the cache manually on every deploy.</li>
         <li>MySQL's slow query log surfaces genuinely slow queries from real production traffic, not just what you think to test manually.</li>
         <li>Profile before optimizing — the actual bottleneck is often not where intuition points.</li>
+        <li><code>opcache.memory_consumption</code> and <code>opcache.max_accelerated_files</code> set too low will cause silent cache evictions that erase most of OPcache's benefit.</li>
+        <li><code>opcache_get_status()</code> exposes the current hit rate at runtime, the most direct way to tell if OPcache is actually configured well.</li>
+        <li>Application profilers (Blackfire, Xdebug) reveal PHP-level bottlenecks — like inefficient loops or slow external calls — that a database-only view like EXPLAIN can't show.</li>
+        <li>Opcode preloading (<code>opcache.preload</code>, PHP 7.4+) loads frequently-used files into shared memory once at server startup rather than per-request.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Enable OPcache in a local PHP environment and compare request response times for a moderately complex script before and after.</p>
+      <p>Enable OPcache in a local PHP environment and compare request response times for a moderately complex script before and after. Then enable MySQL's slow query log with a low long_query_time threshold, run your application for a bit, and inspect the log for any surprisingly slow queries you wouldn't have found just by reading the code.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

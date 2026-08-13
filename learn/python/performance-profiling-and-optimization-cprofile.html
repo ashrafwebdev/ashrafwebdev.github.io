@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Performance profiling and optimization (cProfile, Cython, PyPy)</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="web-frameworks.html">Web frameworks: Flask/FastAPI (or Django) fundamentals</a></p>
   </div>
 
   <article>
-    <p class="lead">Before optimizing anything, measure. <code>cProfile</code> (built into Python) shows exactly which functions consume the most time, turning guesswork into data — optimizing the wrong part of a program wastes effort and adds complexity for nothing.</p>
-    <p>For genuinely CPU-bound bottlenecks pure Python can't solve, Cython compiles Python-like code to C for a serious speedup on hot loops, while PyPy is an alternative Python interpreter with a JIT compiler that can run unmodified Python code significantly faster.</p>
+    <p class="lead">Before optimizing anything, measure. <code>cProfile</code> (built into Python, no extra install needed) shows exactly which functions consume the most time, turning guesswork into data — optimizing the wrong part of a program wastes effort and adds complexity for nothing, and intuition about where time is spent is wrong more often than experienced developers expect.</p>
+    <p>Running <code>python -m cProfile -s cumulative my_script.py</code> ranks functions by cumulative time (including time spent in functions they call), which is usually the more useful sort order for finding the real bottleneck, versus 'total time' which only counts time spent directly inside that function's own code.</p>
+    <p>cProfile's raw output can be dense; tools like <code>snakeviz</code> or <code>pstats.Stats</code> visualize or filter the same profiling data more usefully, and for line-by-line detail inside a single suspect function, <code>line_profiler</code> shows exactly which individual lines are slow, which cProfile's function-level granularity can't tell you on its own.</p>
+    <p>A large share of real-world Python slowness comes from algorithmic choices, not the language itself — an O(n²) approach using repeated linear scans through a list will lose badly to an O(n) approach using a set or dict for lookups, and no amount of interpreter tricks will make the worse algorithm competitive once the input gets large.</p>
+    <p>For genuinely CPU-bound bottlenecks pure Python can't solve after the algorithm is already right, Cython compiles Python-like code (with optional static type annotations) down to C for a serious speedup on hot loops — but it's worth reaching for only after a specific, profiled hot path can't be sped up any other way in pure Python, since it adds a compiled build step to your project.</p>
+    <p>PyPy is an alternative Python interpreter with a JIT (just-in-time) compiler that can run unmodified pure-Python programs significantly faster, especially long-running, CPU-heavy workloads — but it has compatibility caveats with some C-extension libraries (like certain NumPy or pandas versions) that were written against CPython's specific internals, so it's not a drop-in win for every project.</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>python -m cProfile -s cumulative my_script.py
 
@@ -119,19 +136,57 @@
 import cProfile
 cProfile.run('my_function()')</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">profile_and_inspect.py</div>      <pre><code>import cProfile
+import pstats
+
+def slow_fib(n):
+    return n if n &lt; 2 else slow_fib(n - 1) + slow_fib(n - 2)
+
+profiler = cProfile.Profile()
+profiler.enable()
+slow_fib(28)
+profiler.disable()
+
+stats = pstats.Stats(profiler).sort_stats("cumulative")
+stats.print_stats(5)   # top 5 functions by cumulative time</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">algorithm_beats_microopt.py</div>      <pre><code># O(n^2): checking membership in a LIST is a linear scan, done n times
+def has_duplicate_slow(items):
+    seen = []
+    for x in items:
+        if x in seen:   # O(n) lookup, every single time
+            return True
+        seen.append(x)
+    return False
+
+# O(n): checking membership in a SET is O(1) on average
+def has_duplicate_fast(items):
+    seen = set()
+    for x in items:
+        if x in seen:   # O(1) lookup
+            return True
+        seen.add(x)
+    return False</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Always profile before optimizing — intuition about where time is spent is wrong more often than experienced developers expect.</li>
         <li><code>cProfile</code> ships with Python; no extra install needed to get started.</li>
+        <li>Sort profiling output by cumulative time to find real bottlenecks, since it includes time spent in functions a slow function calls.</li>
+        <li>Algorithmic complexity usually matters more than micro-optimizations — switching a list membership check to a set often beats any amount of line-level tuning.</li>
+        <li>Tools like <code>line_profiler</code> give line-by-line timing inside a specific function once cProfile has pointed you at it.</li>
         <li>Cython is worth reaching for only after a specific, profiled hot path can't be sped up any other way in pure Python.</li>
         <li>PyPy can offer large speedups for long-running, CPU-heavy pure-Python programs, but has compatibility caveats with some C-extension libraries.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Profile a script with a deliberately slow function (e.g. a naive Fibonacci) using cProfile and identify exactly which function consumes the most cumulative time.</p>
+      <p>Profile a script with a deliberately slow function (e.g. a naive recursive Fibonacci) using cProfile and identify exactly which function consumes the most cumulative time. Then rewrite the slow function to fix the underlying algorithmic problem (e.g. add memoization), re-profile it, and compare the total time and call counts before and after.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

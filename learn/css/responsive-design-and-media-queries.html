@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Responsive design and media queries</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="css-grid-for-two-dimensional-layout.html">CSS Grid for two-dimensional layout</a></p>
   </div>
 
   <article>
-    <p class="lead">Responsive design means a layout adapts to whatever screen it's viewed on, from a phone to a large monitor. Media queries are conditional CSS blocks that apply only when the viewport matches certain conditions, most commonly a maximum or minimum width.</p>
-    <p>The best practice is <b>mobile-first</b>: write your base styles for small screens, then use <code>min-width</code> media queries to add complexity as the screen grows — this tends to produce simpler, more maintainable CSS than starting desktop-first.</p>
+    <p class="lead">Responsive design means a layout adapts to whatever screen it's viewed on, from a phone to a large monitor, using a mix of fluid layout techniques (Flexbox, Grid, relative units) and media queries for the cases that genuinely need different rules at different sizes rather than just different amounts of space.</p>
+    <p>Media queries are conditional CSS blocks that apply only when the viewport matches certain conditions, most commonly a maximum or minimum width, but also things like orientation, hover capability, or a user's reduced-motion preference — media queries aren't only about screen size.</p>
+    <p>The best practice is <b>mobile-first</b>: write your base styles for small screens, then use <code>min-width</code> media queries to add complexity as the screen grows. This tends to produce simpler CSS than desktop-first (<code>max-width</code>-based) because small-screen styles are usually the simpler baseline, and you're only adding rules, not constantly overriding a more complex starting point.</p>
+    <p>Common breakpoints (600px, 768px, 1024px) are guidelines borrowed from typical device sizes, not rules — the right place to break a layout is wherever your specific content starts to look cramped or overly sparse, which you find by actually resizing the browser and watching, not by copying someone else's numbers.</p>
+    <p>Always include <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code> in the HTML head. Without it, mobile browsers render the page at a desktop-width virtual viewport (typically 980px) and then zoom out to fit, which makes your media queries fire at the wrong effective widths and your text appear tiny.</p>
+    <p>Beyond media queries, modern responsive CSS increasingly relies on fluid techniques that need no breakpoints at all: <code>clamp()</code> for fluid type, <code>minmax()</code> and <code>auto-fit</code> in Grid, and <code>flex-wrap</code> in Flexbox — reach for a media query once those fluid tools genuinely can't express the change you need (e.g. hiding a whole section on small screens).</p>
     <div class="code-block">
 <div class="cap">styles.css (mobile-first)</div>      <pre><code>.cards { display: flex; flex-direction: column; gap: 16px; }
 
@@ -119,19 +136,42 @@
   .cards { flex-direction: row; }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (non-size media features)</div>      <pre><code>/* Only apply hover styles on devices that actually support hovering */
+@media (hover: hover) {
+  .card:hover { background: #E7F0EA; }
+}
+
+/* Respect a user's OS-level reduced-motion preference. transition and
+   animation (previewed here — both get their own lesson soon) are the
+   two properties that create motion, so turning them off covers almost
+   every case. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: missing viewport meta tag</div>      <pre><code>&lt;!-- Without this, mobile browsers render at ~980px and zoom out,
+     so a 768px min-width media query never fires on a real phone --&gt;
+&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Mobile-first: base styles for small screens, min-width queries add complexity for larger ones.</li>
         <li>Common breakpoints (600px, 768px, 1024px) are guidelines, not rules — let your content decide where it breaks.</li>
-        <li>Always include <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code> in the HTML head, or media queries won't behave correctly on mobile.</li>
-        <li>Test with real device widths in DevTools, not just by shrinking your desktop browser window.</li>
+        <li>Always include the viewport meta tag, or media queries won't behave correctly on real mobile devices.</li>
+        <li>Media queries can test more than width: <code>hover</code>, <code>orientation</code>, and <code>prefers-reduced-motion</code> are all valid features.</li>
+        <li>Prefer fluid techniques (clamp, auto-fit, flex-wrap) over breakpoints when the tool can express the change without one.</li>
+        <li>Test with real device widths in DevTools' responsive mode, not just by shrinking your desktop browser window freehand.</li>
+        <li>Desktop-first (max-width) media queries tend to produce more override-heavy CSS than mobile-first (min-width) ones.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take a layout you've built and add a mobile-first media query that changes it from a single column to a multi-column row at 768px.</p>
+      <p>Take a layout you've built and add a mobile-first media query that changes it from a single column to a multi-column row at 768px. Then add a second media query using prefers-reduced-motion that disables any transitions or animations on the page, and verify it by enabling 'reduce motion' in DevTools' rendering emulation panel.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Views and stored procedures</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="window-functions.html">Window functions</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>view</b> is a saved query that behaves like a virtual table: <code>CREATE VIEW active_customers AS SELECT ...</code> lets you query <code>active_customers</code> directly afterward, hiding a complex join or filter behind a simple, reusable name.</p>
-    <p>A <b>materialized view</b> physically stores its result set and must be explicitly refreshed, trading a small amount of staleness for query speed, unlike a regular view which re-runs its underlying query on every access.</p>
-    <p>A <b>stored procedure</b> bundles procedural logic &mdash; loops, conditionals, multiple statements &mdash; directly inside the database, useful for encapsulating a multi-step operation, though many teams today prefer keeping business logic in application code and using the database primarily for storage and queries.</p>
+    <p class="lead">A <b>view</b> is a saved query that behaves like a virtual table: <code>CREATE VIEW active_customers AS SELECT ...</code> lets you query <code>active_customers</code> directly afterward, hiding a complex join or filter behind a simple, reusable name, and re-running the underlying query fresh every time it's referenced so it always reflects current data.</p>
+    <p>A view can also simplify permissions: granting access to a view that exposes only certain columns (say, excluding a sensitive salary column) lets you give a user broader table-like access without exposing the full underlying table, which is a common pattern for restricting what different application roles can see.</p>
+    <p>A <b>materialized view</b> physically stores its result set and must be explicitly refreshed with something like <code>REFRESH MATERIALIZED VIEW</code>, trading a small amount of staleness for query speed, unlike a regular view which re-runs its underlying query on every access &mdash; a good fit for an expensive aggregate report that doesn't need to reflect the absolute latest write.</p>
+    <p>An <b>updatable view</b>, one simple enough (typically based on a single table with no aggregation) that the database can translate an INSERT or UPDATE against it back into the underlying table, exists in most engines, but many views &mdash; anything involving a JOIN, GROUP BY, or DISTINCT &mdash; are read-only by nature since there's no unambiguous way to reverse-map a write.</p>
+    <p>A <b>stored procedure</b> bundles procedural logic &mdash; loops, conditionals, multiple statements, even its own local variables &mdash; directly inside the database, useful for encapsulating a multi-step operation so it runs as a single atomic unit close to the data, avoiding several separate round trips from the application.</p>
+    <p>Many teams today prefer keeping business logic in application code rather than stored procedures, since procedural database code is harder to version alongside the application, harder to unit test with ordinary tooling, and ties the logic tightly to one specific database engine's procedural dialect; stored procedures still see heavy use for performance-critical batch operations and in environments where the database itself is the shared integration point across multiple applications.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>CREATE VIEW active_customers AS
 SELECT id, name, email
@@ -121,19 +137,45 @@ WHERE last_order_date &gt; now() - INTERVAL '90 days';
 
 SELECT * FROM active_customers WHERE name LIKE 'A%';</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">materialized_view.sql</div>      <pre><code>CREATE MATERIALIZED VIEW category_sales_summary AS
+SELECT category, SUM(total) AS total_sales, COUNT(*) AS order_count
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.id
+JOIN products p ON p.id = oi.product_id
+GROUP BY category;
+
+-- Must be refreshed explicitly to pick up new data
+REFRESH MATERIALIZED VIEW category_sales_summary;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">stored_procedure.sql</div>      <pre><code>CREATE PROCEDURE place_order(customer INTEGER, product INTEGER, qty INTEGER)
+LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE inventory SET quantity = quantity - qty WHERE product_id = product;
+    INSERT INTO orders (customer_id, product_id, quantity)
+    VALUES (customer, product, qty);
+END;
+$$;
+
+CALL place_order(1, 42, 3);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>A view is a saved, reusable query that behaves like a virtual table.</li>
+        <li>A view is a saved, reusable query that behaves like a virtual table and always reflects live data.</li>
+        <li>Views can restrict access by exposing only certain columns or rows without touching table permissions.</li>
         <li>A materialized view stores results physically and needs explicit refreshing for freshness.</li>
-        <li>Stored procedures bundle procedural logic directly inside the database.</li>
-        <li>Many teams keep business logic in application code, using the database for storage and querying.</li>
+        <li>Updatable views work for simple single-table views; joins, GROUP BY, and DISTINCT usually make a view read-only.</li>
+        <li>Stored procedures bundle procedural logic directly inside the database, running as one atomic unit near the data.</li>
+        <li>Many teams keep business logic in application code for testability and portability, reserving procedures for performance-critical or shared-integration cases.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a view named recent_orders showing orders placed in the last 30 days, then write a SELECT against that view filtering by a minimum total.</p>
+      <p>Write a view named recent_orders showing orders placed in the last 30 days, then write a SELECT against that view filtering by a minimum total. Then explain, in a sentence each, when you'd reach for a materialized view instead of a regular view, and one reason a team might avoid stored procedures for typical application logic.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

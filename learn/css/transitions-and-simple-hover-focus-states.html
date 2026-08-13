@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Transitions and simple hover/focus states</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="positioning.html">Positioning: relative, absolute, fixed, sticky</a></p>
   </div>
 
   <article>
-    <p class="lead">Transitions animate a property smoothly from one value to another over time, instead of jumping instantly — the difference between a button that feels responsive and one that feels dead.</p>
-    <p>Pair transitions with interaction states: <code>:hover</code> for mouse users, and always <code>:focus-visible</code> for keyboard users too — a button that only responds to hover is invisible to anyone tabbing through the page.</p>
+    <p class="lead">Transitions animate a property smoothly from one value to another over time, instead of jumping instantly — the difference between a button that feels responsive and one that feels dead. They only run when the property's value actually changes, whether from a state change like <code>:hover</code>, a class toggled by JavaScript, or even a media-query switch.</p>
+    <p>The full shorthand is <code>transition: property duration timing-function delay;</code>. Always name the specific property (or a comma-separated list of them) rather than the keyword <code>all</code> — <code>all</code> forces the browser to watch every animatable property for changes, which is measurably slower and can accidentally animate properties you never intended to.</p>
+    <p>Pair transitions with interaction states: <code>:hover</code> for mouse users, and always <code>:focus-visible</code> too — a button that only responds to <code>:hover</code> is completely invisible to anyone navigating by keyboard. <code>:focus-visible</code> (rather than plain <code>:focus</code>) is preferred because it lets the browser suppress the focus ring for mouse clicks while still showing it for keyboard tabbing, matching what users expect from each input method.</p>
+    <p>Not every property animates equally cheaply. Transitioning <code>transform</code> and <code>opacity</code> is cheap because the browser can often handle them on the GPU compositor without recalculating layout; transitioning <code>width</code>, <code>height</code>, <code>top</code>, or <code>margin</code> forces the browser to recompute layout on every frame, which is measurably more expensive and can visibly stutter on lower-end devices.</p>
+    <p>The <code>timing-function</code> shapes how the transition accelerates: <code>ease</code> (the default) starts and ends gently; <code>linear</code> moves at a constant rate and often feels mechanical for UI; <code>cubic-bezier()</code> lets you define a fully custom curve. Small UI feedback (hover, focus) usually reads best with a short duration, roughly 150–250ms — much longer starts to feel sluggish rather than smooth.</p>
+    <p>Always account for <code>prefers-reduced-motion</code>: some users have explicitly told their OS they get discomfort or distraction from motion, and CSS lets you respect that preference by disabling or shortening transitions inside a matching media query rather than ignoring it.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.btn {
   background: #1F4E44;
@@ -122,19 +139,54 @@
   transform: translateY(-1px);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (respecting reduced motion)</div>      <pre><code>.btn { transition: background 0.2s ease, transform 0.2s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition-duration: 0.01ms; }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: transitioning 'all' and layout properties</div>      <pre><code>/* Slow: watches every property, and animates width/margin which
+   triggers layout recalculation on every single frame */
+.card {
+  transition: all 0.3s ease;
+}
+.card:hover {
+  width: 320px;
+  margin-top: -4px;
+}
+
+/* Fix: animate only transform/opacity, name properties explicitly */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>transition: property duration easing;</code> — always name the property, don't rely on <code>all</code> for performance.</li>
         <li>Pair <code>:hover</code> with <code>:focus-visible</code> so keyboard users get the same feedback mouse users do.</li>
-        <li>Transitioning <code>transform</code> and <code>opacity</code> is cheap for the browser; transitioning <code>width</code>/<code>height</code> is expensive.</li>
-        <li>Respect <code>prefers-reduced-motion</code> for users who've asked for less animation.</li>
+        <li>Transitioning <code>transform</code> and <code>opacity</code> is cheap for the browser; transitioning <code>width</code>/<code>height</code>/<code>margin</code> is expensive because it triggers layout.</li>
+        <li>Respect <code>prefers-reduced-motion</code> for users who've asked their OS for less animation.</li>
+        <li>Short durations (roughly 150–250ms) read as responsive; much longer starts to feel sluggish for simple UI feedback.</li>
+        <li>Transitions only fire when a watched property's value actually changes — a state change, a JS-toggled class, or a media query switch.</li>
+        <li><code>:focus-visible</code> shows the ring for keyboard navigation while suppressing it for mouse clicks, matching user expectations for each input type.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a smooth background-color and slight upward transform transition to a button on both hover and keyboard focus.</p>
+      <p>Add a smooth background-color and slight upward transform transition to a button on both hover and keyboard focus, keeping the duration under 250ms. Then wrap the transition in a prefers-reduced-motion media query that shortens it to near-zero, and verify the effect by toggling 'reduce motion' in DevTools' rendering emulation.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A fully responsive landing page, 320px to 1920px</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

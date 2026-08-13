@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Running code with the .NET CLI</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="arrays-and-lists.html">Arrays and lists</a></p>
   </div>
 
   <article>
-    <p class="lead">The <code>dotnet</code> command-line tool is the primary way to create, build, run, and publish .NET projects, independent of any IDE. <code>dotnet new console -o MyApp</code> scaffolds a new console project with a <code>.csproj</code> file describing its dependencies and target framework.</p>
-    <p><code>dotnet run</code> compiles and runs a project in one step during development, while <code>dotnet build</code> just compiles, and <code>dotnet publish</code> produces a self-contained, deployable output for a target platform.</p>
-    <p>Dependencies are added with <code>dotnet add package</code>, which updates the <code>.csproj</code> file and restores the package from NuGet, .NET's central package repository, similar to npm for JavaScript or pip for Python.</p>
+    <p class="lead">The <code>dotnet</code> command-line tool is the primary way to create, build, run, and publish .NET projects, independent of any IDE. <code>dotnet new console -o MyApp</code> scaffolds a new console project with a <code>.csproj</code> file describing its dependencies and target framework; <code>dotnet new list</code> shows every template installed, and there are templates for web APIs, class libraries, test projects, and more.</p>
+    <p><code>dotnet run</code> compiles and runs a project in one step during development, while <code>dotnet build</code> just compiles (producing DLLs in <code>bin/Debug/...</code>), and <code>dotnet publish</code> produces a self-contained, deployable output for a target platform &mdash; optionally bundling the .NET runtime itself so the target machine doesn't need it preinstalled.</p>
+    <p>Dependencies are added with <code>dotnet add package</code>, which updates the <code>.csproj</code> file and restores the package from NuGet, .NET's central package repository, similar to npm for JavaScript or pip for Python. <code>dotnet restore</code> re-downloads all listed dependencies, which is useful after cloning a repository or when packages are missing.</p>
+    <p>Multiple related projects (a web API, a class library, a test project) are typically grouped in a <b>solution</b> file (<code>.sln</code>), created with <code>dotnet new sln</code> and populated with <code>dotnet sln add</code>; commands like <code>dotnet build</code> and <code>dotnet test</code> run against every project in the solution when invoked from its directory.</p>
+    <p>The <code>.csproj</code> file is plain XML and is meant to be hand-edited when needed &mdash; changing the target framework, adding a project reference, or excluding files from compilation are all just XML edits, unlike the heavier project file formats .NET used before the SDK-style projects introduced in .NET Core.</p>
+    <p>Configuration commonly lives in <code>appsettings.json</code> plus environment-specific overrides like <code>appsettings.Development.json</code>, and the environment is selected via the <code>DOTNET_ENVIRONMENT</code> or <code>ASPNETCORE_ENVIRONMENT</code> variable, letting the same published binary behave differently in development, staging, and production without a rebuild.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>$ dotnet new console -o MyApp
 $ cd MyApp
@@ -123,19 +139,53 @@ $ dotnet add package Newtonsoft.Json
 $ dotnet build
 $ dotnet publish -c Release -o ./out</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">terminal-solution.sh</div>      <pre><code>$ dotnet new sln -o MyBank
+$ cd MyBank
+$ dotnet new classlib -o MyBank.Domain
+$ dotnet new xunit -o MyBank.Tests
+$ dotnet sln add MyBank.Domain MyBank.Tests
+$ dotnet add MyBank.Tests reference MyBank.Domain
+$ dotnet test              # runs every test project in the solution
+$ dotnet restore           # re-fetches all NuGet packages</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">MyApp.csproj</div>      <pre><code>&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+
+  &lt;PropertyGroup&gt;
+    &lt;OutputType&gt;Exe&lt;/OutputType&gt;
+    &lt;TargetFramework&gt;net8.0&lt;/TargetFramework&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;ItemGroup&gt;
+    &lt;PackageReference Include="Newtonsoft.Json" Version="13.0.3" /&gt;
+  &lt;/ItemGroup&gt;
+
+&lt;/Project&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>dotnet new</code> scaffolds new projects from built-in or installed templates.</li>
         <li><code>dotnet run</code> builds and runs; <code>dotnet build</code> only compiles; <code>dotnet publish</code> produces deployable output.</li>
-        <li>Project dependencies and metadata live in the <code>.csproj</code> XML file.</li>
-        <li>NuGet is the standard package repository, managed via <code>dotnet add package</code>.</li>
+        <li>Project dependencies and metadata live in the plain-XML <code>.csproj</code> file, which is safe to hand-edit.</li>
+        <li>NuGet is the standard package repository, managed via <code>dotnet add package</code> and <code>dotnet restore</code>.</li>
+        <li>A <code>.sln</code> solution file groups related projects so build and test commands can run across all of them at once.</li>
+        <li><code>dotnet add ... reference ...</code> wires up a project-to-project dependency inside a solution.</li>
+        <li>The active environment (<code>appsettings.Development.json</code> vs production) is selected via an environment variable, not a rebuild.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Scaffold a new console project with dotnet new console, add a package of your choice with dotnet add package, and run the project with dotnet run.</p>
+      <p>Scaffold a new console project with dotnet new console, add a package of your choice with dotnet add package, and run the project with dotnet run. Then create a solution file, add both your console project and a new class library project to it, add a project reference from the console app to the library, and confirm dotnet build succeeds for the whole solution.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">A console expense tracker with its own tiny query language</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

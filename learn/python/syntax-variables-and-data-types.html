@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,32 +119,66 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Syntax, variables, and data types</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">Python uses indentation, not curly braces, to mark blocks of code — this isn't just a style choice, it's part of the language's syntax, so consistent indentation (4 spaces is the convention) actually matters for your code to run at all.</p>
-    <p>Variables need no type declaration; Python figures the type out from the value assigned. The core built-in types are <code>int</code>, <code>float</code>, <code>str</code>, and <code>bool</code>, plus the collection types covered in a later lesson.</p>
+    <p class="lead">Python uses indentation, not curly braces, to mark blocks of code — this isn't just a style choice, it's part of the language's syntax, so consistent indentation (4 spaces is the convention, per PEP 8) actually matters for your code to run at all. Mixing tabs and spaces in the same file raises a <code>TabError</code> in Python 3, which is why almost every editor is configured to insert spaces when you press Tab.</p>
+    <p>Variables need no type declaration; Python figures the type out from the value assigned, and a variable name is really just a label pointing at an object in memory rather than a fixed box that holds it. The core built-in types are <code>int</code>, <code>float</code>, <code>str</code>, and <code>bool</code>, plus the collection types (<code>list</code>, <code>dict</code>, <code>tuple</code>, <code>set</code>) covered in a later lesson.</p>
+    <p>Naming matters: the convention is <code>snake_case</code> for variables and functions, <code>PascalCase</code> for classes, and <code>UPPER_SNAKE_CASE</code> for constants. Python won't enforce any of this — it's a style convention (PEP 8), not a rule the interpreter checks — but breaking it makes code harder for other Python developers, including future you, to read at a glance.</p>
+    <p>Python's <code>int</code> type has arbitrary precision — it grows as large as memory allows, with no silent overflow the way fixed-width integers in C or Java have. Floats, by contrast, are standard 64-bit binary floating point, so a number like 0.1 can't be represented exactly: <code>0.1 + 0.2</code> evaluates to <code>0.30000000000000004</code>, not <code>0.3</code>. For money or anywhere exactness matters, reach for the <code>decimal</code> module instead of plain floats.</p>
+    <p>Python distinguishes three division-related operators: <code>/</code> (true division) always returns a float, <code>//</code> (floor division) rounds down to the nearest whole number, and <code>%</code> (modulo) returns the remainder. Strings, meanwhile, are immutable — every operation that looks like it 'changes' a string, such as <code>.upper()</code>, actually returns a brand-new string object and leaves the original untouched.</p>
+    <p><code>None</code> represents the deliberate absence of a value and is the sole value of type <code>NoneType</code> — it is not the same thing as <code>0</code>, an empty string, or <code>False</code>, even though all of those, along with empty collections, are considered 'falsy' when used inside an <code>if</code> condition. Comments start with <code>#</code> and run to the end of the line; triple-quoted strings are commonly used both for multi-line text and for docstrings that document a function or class.</p>
     <div class="code-block">
 <div class="cap">basics.py</div>      <pre><code>name = "Amina"
 age = 27
 height = 1.68
 is_admin = False
+middle_name = None
 
-print(type(name), type(age), type(height), type(is_admin))</code></pre>
+print(type(name), type(age), type(height), type(is_admin), type(middle_name))</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">numeric_quirks.py</div>      <pre><code>big = 2 ** 100                # ints never overflow
+print(big)
+
+print(0.1 + 0.2)               # 0.30000000000000004 -- binary float imprecision
+print(round(0.1 + 0.2, 2))     # 0.3 -- round for display
+
+print(7 / 2)                   # 3.5   -- true division, always float
+print(7 // 2)                  # 3     -- floor division
+print(7 % 2)                   # 1     -- remainder
+print(-7 // 2)                 # -4    -- floors toward negative infinity, not zero</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">strings.py</div>      <pre><code>title = "Learn Python"
+
+print(title[:5])          # 'Learn' -- slicing, end index excluded
+print(title[-6:])         # 'Python' -- negative index counts from the end
+print(title.lower())      # returns a new string, title is unchanged
+print(title)              # still 'Learn Python'
+
+price = 19.9
+print(f"${price:.2f}")   # '$19.90' -- format spec inside an f-string</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Indentation defines code blocks — mixing tabs and spaces will cause errors, so pick spaces (4 is standard) and stay consistent.</li>
         <li>Variables are dynamically typed: the same name could later be reassigned to a different type, though doing so on purpose is usually a code smell.</li>
+        <li><code>int</code> has arbitrary precision and never overflows; <code>float</code> is binary floating point and can't represent numbers like 0.1 exactly.</li>
+        <li><code>/</code> always returns a float, <code>//</code> floors to an integer, and <code>%</code> gives the remainder — mixing them up is a common source of off-by-one bugs.</li>
+        <li>Strings are immutable: methods like <code>.upper()</code> or <code>.replace()</code> return new strings rather than modifying the original in place.</li>
         <li><code>type()</code> tells you exactly what type a value currently is, useful when debugging.</li>
+        <li><code>None</code> is not the same as <code>0</code>, <code>""</code>, or <code>False</code>, even though all of them evaluate as falsy in a boolean context.</li>
         <li>Python is case-sensitive: <code>name</code> and <code>Name</code> are different variables.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create variables for your name, age, and a boolean for whether you're currently learning Python, then print a sentence combining all three using an f-string.</p>
+      <p>Create variables for your name, age, and a boolean for whether you're currently learning Python, then print a sentence combining all three using an f-string. Afterward, in a second script, compute and print the result of 0.1 + 0.2, then print it again rounded to 2 decimal places, and write a one-line comment explaining why the two outputs differ.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

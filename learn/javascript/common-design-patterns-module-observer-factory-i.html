@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Common design patterns (module, observer, factory) in JS</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="memory-management-and-performance-profiling.html">Memory management and performance profiling</a></p>
   </div>
 
   <article>
-    <p class="lead">Design patterns are named, reusable solutions to recurring problems. The module pattern uses closures to create private state with a controlled public interface — the same idea ES Modules formalized at the language level.</p>
-    <p>The observer pattern (also called pub/sub) decouples code that produces an event from code that reacts to it — the foundation of DOM events, and of many state-management libraries. The factory pattern centralizes object creation logic behind a function instead of scattering <code>new ClassName()</code> calls everywhere.</p>
+    <p class="lead">Design patterns are named, reusable solutions to problems that come up again and again in software — learning their names is less important than recognizing the underlying shape of the problem they solve, since you'll often reach for one instinctively before ever having a name for it. The module pattern, observer pattern, and factory pattern are three of the most common in everyday JavaScript, each solving a genuinely different kind of problem.</p>
+    <p>The module pattern uses a closure to create private internal state alongside a small, deliberately exposed public interface — an immediately-invoked function expression (IIFE) that returns an object containing only the methods meant to be public, with everything else trapped inside the closure and permanently unreachable from outside. This predates ES Modules by years and was, for a long time, the primary way JavaScript simulated privacy and encapsulation before the language had real modules or private class fields; it's largely superseded now for organizing whole files, but the same closure-based technique is still genuinely useful for creating a single self-contained object with private internal state.</p>
+    <p>The observer pattern (also called publish/subscribe, or pub/sub) decouples the code that produces an event from the code that reacts to it — a subject maintains a list of subscriber functions and calls every one of them whenever something notable happens, without needing to know anything about what those subscribers actually do with that information. This is the foundational idea behind DOM events, Node's built-in EventEmitter class, and the internal mechanics of most reactive UI frameworks and state-management libraries, even when they don't use the word 'observer' anywhere in their own documentation.</p>
+    <p>The factory pattern centralizes object-creation logic behind a single function instead of scattering <code>new ClassName(...)</code> calls with construction logic all over a codebase. This is especially valuable when the exact type of object to create depends on some input (returning different subclasses based on a config value, say), when construction genuinely involves nontrivial setup logic worth naming and isolating, or simply when you want every call site to go through one place so that changing how objects get built later only requires editing one function instead of hunting down every scattered constructor call.</p>
+    <p>These three patterns compose naturally rather than competing with each other — it's entirely normal for a factory function to internally use the module pattern to give each created object its own private state, and for that created object to itself be an observer-pattern emitter that other code subscribes to. Recognizing the shape of the problem in front of you (need to hide state? reach for closures. need to decouple producers from consumers of an event? reach for observer. need centralized, flexible creation logic? reach for a factory) matters far more than memorizing pattern names.</p>
+    <p>Patterns are tools for solving a real problem you actually have in front of you, not a checklist to apply for its own sake — reaching for the observer pattern to decouple two pieces of code that will only ever have one fixed relationship, for instance, adds a layer of indirection that makes the code harder to trace for no real benefit. The best guide is need, not novelty.</p>
     <div class="code-block">
 <div class="cap">observer.js</div>      <pre><code>function createEmitter() {
   const listeners = [];
@@ -125,19 +142,70 @@ const events = createEmitter();
 events.on((data) =&gt; console.log("Got:", data));
 events.emit("hello");</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">module-pattern-and-factory.js</div>      <pre><code>// Module pattern: closure-based private state, public interface only
+function createCounter(start = 0) {
+  let count = start; // private, unreachable from outside
+  return {
+    increment() { return ++count; },
+    reset() { count = start; },
+    get value() { return count; },
+  };
+}
+
+// Factory pattern: centralizes creation logic that varies by input
+function createShape(type, size) {
+  switch (type) {
+    case "circle":
+      return { type, area: () =&gt; Math.PI * size ** 2 };
+    case "square":
+      return { type, area: () =&gt; size ** 2 };
+    default:
+      throw new Error(`Unknown shape type: ${type}`);
+  }
+}
+
+const counter = createCounter(10);
+console.log(counter.increment(), counter.value); // 11 11
+console.log(createShape("circle", 2).area().toFixed(2)); // 12.57</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">decoupling-with-observer.js</div>      <pre><code>// A form and a notification banner, decoupled through an emitter,
+// instead of the form directly calling banner-specific code.
+const events = createEmitter();
+
+function setupForm(formEl) {
+  formEl.addEventListener("submit", (e) =&gt; {
+    e.preventDefault();
+    events.emit({ type: "success", message: "Saved successfully" });
+  });
+}
+
+function setupNotificationBanner(bannerEl) {
+  events.on(({ message }) =&gt; {
+    bannerEl.textContent = message;
+    bannerEl.classList.add("visible");
+  });
+}
+// Neither function knows the other exists — both only know about `events`.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>The module pattern predates ES Modules and uses closures to fake private state — largely superseded now, but still worth recognizing in older code.</li>
+        <li>The module pattern predates ES Modules and uses a closure to fake private state — largely superseded for organizing whole files, but still useful for a single object with private internals.</li>
         <li>The observer pattern is everywhere: DOM events, Node's EventEmitter, and most reactive UI frameworks under the hood.</li>
-        <li>A factory function centralizes and hides object-creation complexity, useful when creation logic might change or vary by input.</li>
-        <li>Patterns are tools, not requirements — reach for one because it solves a real problem you have, not for its own sake.</li>
+        <li>A factory function centralizes and hides object-creation complexity, especially useful when the type or setup of the created object varies by input.</li>
+        <li>These patterns compose naturally — a factory can internally use a closure for private state, and produce objects that are themselves observer-pattern emitters.</li>
+        <li>Design patterns are named recognitions of a recurring problem shape, not a checklist to apply on principle — reach for one because it solves a real problem in front of you.</li>
+        <li>Recognize the underlying need (hide state -> closures; decouple producer from consumer -> observer; centralize flexible creation -> factory) rather than memorizing pattern names.</li>
+        <li>Adding a pattern where a simpler, direct call would do just adds indirection without benefit — need should drive the choice, not novelty.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a small createEmitter-style pub/sub utility from scratch and use it to decouple two unrelated pieces of code (e.g. a form and a notification banner).</p>
+      <p>Build a small createEmitter-style pub/sub utility from scratch and use it to decouple two unrelated pieces of code (e.g. a form and a notification banner). Then write a createCounter factory function using the module pattern for private state, and a separate createShape factory function that returns a differently-shaped object depending on a type argument, throwing a clear error for an unrecognized type.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

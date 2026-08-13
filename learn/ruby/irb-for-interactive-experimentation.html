@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>irb for interactive experimentation</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="string-manipulation.html">String manipulation</a></p>
   </div>
 
   <article>
-    <p class="lead">irb (Interactive Ruby) is a REPL that comes bundled with Ruby — type an expression, see the result immediately, without writing or running a file. It's the fastest way to check how a method behaves or test a small idea.</p>
-    <p>irb is genuinely part of the Ruby learning workflow, not just a curiosity — many Rubyists reach for it constantly to check API behavior before writing it into real code.</p>
+    <p class="lead">irb (Interactive Ruby) is a REPL that comes bundled with every Ruby install — type an expression, see the result immediately, without writing or running a file. It's the fastest way to check how a method behaves or test a small idea before committing it to real code.</p>
+    <p>Modern irb (Ruby 3.x) includes multi-line editing, syntax highlighting, and a built-in autocomplete that shows available methods as you type, which makes it noticeably friendlier than the bare-bones REPL Ruby shipped with in older versions. It also keeps a history across sessions, so pressing the up arrow can recall commands from a previous irb session, not just the current one.</p>
+    <p>irb evaluates each line as a full Ruby expression and echoes its return value prefixed with <code>=&gt;</code>, which is genuinely useful for building intuition about return values — many Ruby methods have return values that are surprising until you've actually seen them printed, like the fact that <code>puts</code> itself always returns <code>nil</code>.</p>
+    <p>Beyond one-off checks, irb is a real part of the Ruby learning workflow: loading an existing file's code into a session with <code>irb -r ./myfile.rb</code> lets you poke at your own methods interactively, calling them with different arguments and inspecting return values, without adding temporary <code>puts</code> statements to the file itself. (The next stage introduces classes -- once you've written one, this same trick works just as well for instantiating it and calling its methods interactively.)</p>
+    <p><code>pry</code> is a popular, more feature-rich alternative REPL that many Ruby developers install as their default, offering better introspection (like <code>show-method</code> to view a method's source, or <code>cd</code> to step into an object's context) and, critically, a <code>binding.pry</code> call you can drop directly into running code to pause execution and inspect the exact state at that point — genuinely one of the most useful Ruby debugging techniques there is.</p>
+    <p>Because irb evaluates arbitrary Ruby, it doubles as a lightweight calculator, a place to sanity-check a regular expression against sample strings, or a scratchpad for sketching out an algorithm's logic in small pieces before writing the final version in a file — all without the overhead of setting up a project or a test file.</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>$ irb
 irb(main):001&gt; [1, 2, 3].sum
@@ -119,19 +136,47 @@ irb(main):001&gt; [1, 2, 3].sum
 irb(main):002&gt; "hello".reverse
 =&gt; "olleh"</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Terminal -- loading your own file</div>      <pre><code>$ irb -r ./calculator.rb
+irb(main):001&gt; add(2, 3)
+=&gt; 5
+irb(main):002&gt; add(10, -4)
+=&gt; 6
+irb(main):003&gt; history
+=&gt; [[2, 3, 5], [10, -4, 6]]</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal -- pry's binding.pry in context</div>      <pre><code># somewhere in your code:
+def process(order)
+  binding.pry  # execution pauses here, drops into a live session
+  total = order[:price] * order[:qty]
+  total
+end
+
+# in the paused session you can inspect `order` exactly as it
+# exists at that point in the real running program</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>irb evaluates each line immediately and prints its return value with <code>=&gt;</code>.</li>
         <li>It's the fastest way to check exactly how an unfamiliar method behaves before committing to it in real code.</li>
+        <li>Modern irb supports multi-line editing, syntax highlighting, and autocomplete, and its history persists across sessions.</li>
         <li><code>pry</code> is a popular, more feature-rich alternative REPL many Ruby developers install as their default.</li>
+        <li><code>binding.pry</code> pauses a real running program at that exact line, letting you inspect live state -- a core debugging technique in the Ruby ecosystem.</li>
         <li>You can load a whole file's code into an irb session for interactive exploration with <code>irb -r ./myfile.rb</code>.</li>
+        <li>Remember that <code>puts</code> always returns <code>nil</code> -- irb makes surprises like this visible immediately.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Open irb and experiment with five different Array methods you haven't used before (like rotate, sample, or each_slice), reading each result.</p>
+      <p>Open irb and experiment with five different Array methods you haven't used before (like rotate, sample, or each_slice), reading each result. Then write a couple of small methods in a file, load it into irb with the -r flag, and call them interactively with different arguments to observe how the return values change.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">A command-line trivia quiz that keeps score</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

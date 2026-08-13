@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>PSR standards and modern PHP conventions</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="basic-mvc-structure.html">Basic MVC structure</a></p>
   </div>
 
   <article>
-    <p class="lead">PSRs (PHP Standards Recommendations) are community-agreed conventions maintained by the PHP-FIG group — PSR-1/PSR-12 cover coding style, PSR-4 covers autoloading, and PSR-7 covers HTTP message interfaces, among others.</p>
-    <p>Following PSR standards means your code looks familiar to any PHP developer, and your classes autoload correctly with Composer and interoperate cleanly with other PSR-compliant libraries.</p>
+    <p class="lead">PSRs (PHP Standards Recommendations) are community-agreed conventions maintained by the PHP-FIG group — PSR-1/PSR-12 cover coding style, PSR-4 covers autoloading, and PSR-7 covers HTTP message interfaces, among others. They exist because PHP's ecosystem is made of thousands of independently authored packages, and without shared conventions those packages would have no reliable way to interoperate.</p>
+    <p>Following PSR standards means your code looks familiar to any PHP developer, and your classes autoload correctly with Composer and interoperate cleanly with other PSR-compliant libraries. This matters most when you're publishing a package for others to use, but it pays off even on a private project simply by making the code predictable to anyone who joins later.</p>
+    <p>PSR-12 defines coding style specifics in detail: four spaces for indentation (never tabs), opening braces for classes and methods on their own line while control structure braces stay on the same line as the keyword, one blank line after the namespace declaration, and consistent rules for import ordering and visibility keywords. None of this affects how the code runs — it exists purely so PHP code from different authors reads the same way.</p>
+    <p>Tools like PHP_CodeSniffer (which checks and reports style violations) and PHP-CS-Fixer (which automatically rewrites code to match a standard) enforce PSR-12 automatically, typically wired into a pre-commit hook or CI pipeline so the whole team's code stays consistent without manual review effort spent on formatting nitpicks.</p>
+    <p>PSR-4 maps namespaces to directory structure using a prefix rule: declaring <code>"App\\": "src/"</code> in composer.json means the class <code>App\Models\User</code> must live at <code>src/Models/User.php</code>. Get the mapping wrong — mismatched casing, wrong folder — and Composer's autoloader simply won't find the class, producing a "class not found" error that can be confusing if you don't know to check the PSR-4 mapping first.</p>
+    <p>Beyond style and autoloading, several other PSRs standardize common interfaces so libraries can plug into each other without depending on a specific implementation: PSR-3 standardizes a logger interface (which is why Monolog and other logging libraries can be swapped without changing calling code), PSR-11 standardizes dependency injection containers, and PSR-7/PSR-15/PSR-17 together standardize HTTP request/response objects and middleware, which is what lets HTTP middleware from different vendors work together in the same application.</p>
     <div class="code-block">
 <div class="cap">PSR-4 autoloading in composer.json</div>      <pre><code>{
   "autoload": {
@@ -121,6 +138,43 @@
   }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">src/Models/User.php (matches the PSR-4 mapping above)</div>      <pre><code>&lt;?php
+declare(strict_types=1);
+
+namespace App\Models;
+
+class User
+{
+    public function __construct(
+        private int $id,
+        private string $name,
+    ) {
+    }
+
+    public function getName(): string
+    {
+        return $this-&gt;name;
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Using a PSR-3 logger interface</div>      <pre><code>&lt;?php
+use Psr\Log\LoggerInterface;
+
+class OrderService
+{
+    public function __construct(private LoggerInterface $logger) {}
+
+    public function place(array $order): void
+    {
+        // ...place the order...
+        $this-&gt;logger-&gt;info('Order placed', ['orderId' =&gt; $order['id']]);
+    }
+}
+// Because this depends on PSR-3's interface, not a concrete class,
+// any PSR-3-compatible logger (Monolog or otherwise) can be injected.</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -128,12 +182,17 @@
         <li>PSR-4 maps namespaces to directory structure, which is what makes Composer's autoloader able to find your classes.</li>
         <li>Following PSRs makes it far easier for libraries and frameworks from different authors to work together.</li>
         <li>Most modern frameworks (Laravel, Symfony) are themselves PSR-compliant by default.</li>
+        <li>PSR-3 standardizes a logger interface, which is why many different logging libraries can be swapped without changing the code that uses them.</li>
+        <li>A mismatched PSR-4 folder or namespace casing is a common cause of confusing "class not found" autoloading errors.</li>
+        <li>PSR-7/PSR-15/PSR-17 together standardize HTTP messages and middleware, letting HTTP middleware from different packages interoperate.</li>
+        <li>Enforcing PSR-12 with an automated tool in CI removes formatting debates from code review entirely.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Set up PSR-4 autoloading in a composer.json for a src/ folder, create a namespaced class inside it, and instantiate it from an entry file using only the autoloader.</p>
+      <p>Set up PSR-4 autoloading in a composer.json for a src/ folder, create a namespaced class inside it, and instantiate it from an entry file using only the autoloader. Then deliberately break the PSR-4 mapping (rename the folder or mismatch the namespace casing) to see the resulting autoload error, fix it, and run PHP_CodeSniffer or PHP-CS-Fixer against your class to check it against PSR-12.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

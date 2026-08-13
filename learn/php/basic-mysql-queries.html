@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,34 +119,76 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Basic MySQL queries</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="embedding-php-in-html.html">Embedding PHP in HTML</a></p>
   </div>
 
   <article>
-    <p class="lead">PHP and MySQL have historically gone hand in hand — the <code>mysqli</code> extension (or, better, PDO covered in the next lesson) connects to a MySQL database and runs SQL queries directly from PHP code.</p>
-    <p>The single most important rule: never build a SQL query by concatenating raw user input into a string. Always use prepared statements with placeholders, which separate the query structure from the data and prevent SQL injection entirely.</p>
+    <p class="lead">PHP and MySQL have historically gone hand in hand — the <code>mysqli</code> extension (or, better, PDO covered in a later lesson) connects to a MySQL database and runs SQL queries directly from PHP code. Both extensions support prepared statements, and both are actively maintained, but mysqli is MySQL-specific while PDO works with multiple database engines through one API. mysqli also has an object-oriented interface built on classes and <code>-&gt;</code> method calls, which reads naturally once you've covered PHP's OOP features in the next lesson — the examples here instead use mysqli's plain function-based interface, which needs nothing beyond what you already know.</p>
+    <p>The single most important rule: never build a SQL query by concatenating raw user input into a string. Always use prepared statements with placeholders, which separate the query structure from the data and prevent SQL injection entirely, because the database driver sends the query and the values as two separate pieces rather than one interpolated string the database has to parse.</p>
+    <p>Connecting with mysqli can either throw exceptions on failure or fail silently depending on configuration — calling <code>mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT)</code> near the top of a script makes connection and query errors throw catchable exceptions instead of requiring you to manually check a return value after every single call.</p>
+    <p><code>mysqli_stmt_bind_param()</code> takes the statement, then a type string, then the values to bind — one character in the type string per bound value: <code>i</code> for integer, <code>d</code> for double/float, <code>s</code> for string, and <code>b</code> for binary blob data. Getting the type character wrong doesn't usually cause an error, but MySQL will coerce the value, which can silently produce subtly wrong results.</p>
+    <p>Beyond SELECT, the same prepared-statement pattern applies to INSERT, UPDATE, and DELETE — after an INSERT, <code>mysqli_insert_id($mysqli)</code> gives you the auto-incremented primary key of the row you just created, useful for immediately referencing the new record without a second query.</p>
+    <p>Each web request typically opens its own short-lived database connection and lets PHP close it automatically at the end of the request (or does so explicitly with <code>mysqli_stmt_close()</code> and <code>mysqli_close()</code>) — PHP does not keep a long-running connection pool between requests the way some server-based languages do, though persistent connections (<code>mysqli_pconnect</code>) exist for specific use cases.</p>
     <div class="code-block">
 <div class="cap">query.php (mysqli, prepared statement)</div>      <pre><code>&lt;?php
-$mysqli = new mysqli("localhost", "user", "password", "mydb");
+$mysqli = mysqli_connect("localhost", "user", "password", "mydb");
 
-$stmt = $mysqli-&gt;prepare("SELECT * FROM users WHERE id = ?");
-$stmt-&gt;bind_param("i", $userId);
-$stmt-&gt;execute();
-$result = $stmt-&gt;get_result();
+$stmt = mysqli_prepare($mysqli, "SELECT * FROM users WHERE id = ?");
+mysqli_stmt_bind_param($stmt, "i", $userId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">insert.php (mysqli, prepared INSERT)</div>      <pre><code>&lt;?php
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$mysqli = mysqli_connect("localhost", "user", "password", "mydb");
+
+$stmt = mysqli_prepare($mysqli, "INSERT INTO users (name, email) VALUES (?, ?)");
+mysqli_stmt_bind_param($stmt, "ss", $name, $email);
+mysqli_stmt_execute($stmt);
+
+echo "New user id: " . mysqli_insert_id($mysqli);
+mysqli_stmt_close($stmt);
+mysqli_close($mysqli);
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">vulnerable_vs_fixed.php (a real SQL injection mistake)</div>      <pre><code>&lt;?php
+// DANGEROUS: never do this — raw string concatenation of user input
+$id = $_GET['id'];
+$result = mysqli_query($mysqli, "SELECT * FROM users WHERE id = $id");
+// An attacker could pass ?id=1 OR 1=1 to dump every row,
+// or ?id=1; DROP TABLE users to destroy data.
+
+// SAFE: same query with a prepared statement
+$stmt = mysqli_prepare($mysqli, "SELECT * FROM users WHERE id = ?");
+mysqli_stmt_bind_param($stmt, "i", $_GET['id']);
+mysqli_stmt_execute($stmt);
 ?&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Prepared statements with placeholders (<code>?</code>) are non-negotiable — never concatenate user input into a raw SQL string.</li>
-        <li><code>bind_param("i", $userId)</code> tells mysqli the parameter's type (<code>i</code> for integer, <code>s</code> for string).</li>
+        <li><code>mysqli_stmt_bind_param($stmt, "i", $userId)</code> tells mysqli the parameter's type (<code>i</code> for integer, <code>s</code> for string).</li>
         <li>Always close database connections/statements or let PHP's garbage collection handle it — don't leave them open across requests.</li>
-        <li>PDO (next lesson) is generally preferred over mysqli today for its more consistent, database-agnostic API.</li>
+        <li>PDO (a later lesson) is generally preferred over mysqli today for its more consistent, database-agnostic API.</li>
+        <li><code>mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT)</code> turns silent failures into catchable exceptions, which is far easier to debug.</li>
+        <li>After an INSERT, <code>mysqli_insert_id($mysqli)</code> gives you the new row's auto-increment primary key without a second query.</li>
+        <li>String concatenation of user input directly into SQL is the classic SQL injection vulnerability — prepared statements exist specifically to eliminate this risk.</li>
+        <li>Getting a <code>mysqli_stmt_bind_param</code> type character wrong usually doesn't error loudly; MySQL coerces the value instead, which can produce quietly wrong results.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a PHP script using mysqli prepared statements to fetch a single user row from a database by ID.</p>
+      <p>Write a PHP script using mysqli's function-based prepared statements (mysqli_prepare, mysqli_stmt_bind_param, mysqli_stmt_execute) to fetch a single user row from a database by ID. Then add a second prepared statement that inserts a new user and prints the new row's auto-generated ID, and finally write a short comment in the same file showing what the equivalent unsafe, concatenated version of the SELECT query would look like and why it's dangerous.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">A guestbook that actually remembers your name</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

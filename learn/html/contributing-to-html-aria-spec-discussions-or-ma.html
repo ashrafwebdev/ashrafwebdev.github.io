@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Contributing to HTML/ARIA spec discussions or major open-source UI kits</h1>
     <p class="lang-line"><b>HTML</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="building-and-documenting-a-component-library.html">Building and documenting a component library</a></p>
   </div>
 
   <article>
     <p class="lead">This is less a coding topic than a career milestone: engaging with the standards process itself. The HTML and ARIA specs are developed in the open on GitHub (WHATWG for HTML, the W3C ARIA Working Group for ARIA) — anyone can file issues, join discussions, and propose changes.</p>
     <p>A more approachable entry point for most developers is contributing to a major open-source UI kit (Radix, shadcn/ui, Material, Bootstrap) — fixing an accessibility bug, improving documentation, or adding a missing keyboard interaction teaches you exactly how production-grade component libraries are actually built and maintained.</p>
+    <p>Understanding how a spec proposal actually moves forward removes a lot of the mystery: a new feature typically starts as a GitHub issue or an "explainer" document describing the problem and use cases, gets discussed and refined by the working group (often over months, sometimes years), needs at least one browser vendor committed to implementing it before it's taken seriously, and only then advances through formal spec-editing stages. Reading a few of these threads end to end, even for features you'll never personally propose, teaches more about <i>why</i> HTML behaves the way it does than any tutorial.</p>
+    <p>In an open-source UI kit, the most valuable and most approachable contributions are rarely large new features. A precise, minimal reproduction of a real bug; a documentation fix that clarifies a genuinely confusing prop; an accessibility fix that closes a specific WCAG gap with tests — these get merged far more often and far faster than an ambitious redesign proposal from a first-time contributor, because maintainers can review and trust them quickly.</p>
+    <p>Before opening a pull request against any project of meaningful size, read its CONTRIBUTING guide and skim recent merged PRs for the expected format — commit message conventions, whether tests are required, whether a linked issue is expected first. Skipping this step is the single most common reason a technically correct contribution gets stuck in review limbo instead of merged.</p>
+    <p>This stage is genuinely about community and depth rather than a brand-new technical skill — by this point in the roadmap you already have the HTML, accessibility, and component-design knowledge needed to contribute meaningfully. What's different now is learning to work asynchronously with maintainers you've never met, defend a technical decision in writing, and accept feedback (or rejection) on a proposal gracefully.</p>
 
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -119,13 +136,21 @@
         <li>Reading spec discussions (even without commenting) is one of the fastest ways to understand <i>why</i> HTML works the way it does.</li>
         <li>Open-source UI kits almost always have a "good first issue" label — a natural starting point.</li>
         <li>A well-written bug report with a minimal reproduction is itself a valuable contribution, not just code.</li>
+        <li>New spec features need at least one browser vendor committed to implementing before they're taken seriously.</li>
+        <li>Small, precise fixes (docs, bugs, accessibility gaps) get merged far more reliably than large first-time redesign proposals.</li>
+        <li>Always read a project's CONTRIBUTING guide and recent merged PRs before opening your own.</li>
         <li>This stage is about community and depth, not a new technical skill — you already have the skills by this point.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Pick one open-source component library you use, browse its open issues for something labeled 'good first issue' or 'accessibility', and submit a fix or a detailed bug report.</p>
+      <p>Pick one open-source component library you use, browse its open issues for something labeled 'good first issue' or 'accessibility', and submit a fix or a detailed bug report with a minimal reproduction. Separately, find one open HTML or ARIA spec issue on GitHub related to a feature you're curious about, and read the discussion thread from start to end to understand the tradeoffs being debated.</p>
     </div>
+    <a class="capstone-banner" href="project-hero.html">
+      <span class="cb-label">You've finished the Hero stage &mdash; capstone project</span>
+      <span class="cb-title">A small, installable component library other developers can use</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

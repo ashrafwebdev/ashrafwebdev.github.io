@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,29 +119,60 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Selectors and specificity</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">A CSS rule pairs a <b>selector</b> (what to style) with a block of declarations (how to style it). The simplest selectors target a tag name (<code>p</code>), a class (<code>.card</code>), or an id (<code>#header</code>) — and you can combine them to be as specific as you need.</p>
-    <p>When two rules target the same element with conflicting values, <b>specificity</b> decides the winner. Roughly: inline styles beat ids, ids beat classes, classes beat tag names. Equal specificity falls back to whichever rule comes later in the file.</p>
+    <p class="lead">A CSS rule pairs a <b>selector</b> (what to style) with a block of declarations (how to style it). The simplest selectors target a tag name (<code>p</code>), a class (<code>.card</code>), or an id (<code>#header</code>) — and combinators let you narrow further: a descendant selector (<code>nav a</code>), a direct child (<code>nav > a</code>), or a sibling relationship (<code>h2 + p</code> for 'immediately after', <code>h2 ~ p</code> for 'any later sibling').</p>
+    <p>When two rules target the same element with conflicting values, <b>specificity</b> decides the winner. It's calculated as a four-part tuple: inline styles, then ID selectors, then class/attribute/pseudo-class selectors, then type selectors and pseudo-elements. Each column outranks every combination of the columns to its right, no matter how many of them there are.</p>
+    <p>Pseudo-classes like <code>:hover</code> and <code>:nth-child()</code> count in the same column as classes. Pseudo-elements like <code>::before</code> and <code>::after</code> count as type selectors, the lowest tier. The universal selector <code>*</code> and combinators like <code>></code> or <code>+</code> contribute nothing to specificity at all.</p>
+    <p>The modern selectors <code>:is()</code> and <code>:where()</code> handle grouping differently: <code>:is()</code> takes on the specificity of whichever argument inside it is most specific, while <code>:where()</code> always contributes zero specificity regardless of what's inside it — which makes <code>:where()</code> ideal for writing low-priority defaults that any later, ordinary rule can override without a fight.</p>
+    <p>When specificity ties exactly, the cascade falls back to source order: whichever rule was declared last (or was loaded last, for separate stylesheets) wins. This is why the order of your <code>&lt;link&gt;</code> tags and the order of rules within a file both matter.</p>
+    <p>In practice, the healthiest approach is to keep specificity as flat as possible: style almost everything with single classes, avoid ID selectors for styling entirely (ids are for JavaScript hooks and anchors), and treat <code>!important</code> as something you reach for only when overriding CSS you truly cannot edit, like third-party widget styles.</p>
     <div class="code-block">
-<div class="cap">styles.css</div>      <pre><code>p { color: black; }              /* specificity: 0-0-1 */
-.highlight { color: orange; }    /* specificity: 0-1-0, wins over p */
-#hero p.highlight { color: red; } /* specificity: 1-1-1, wins over both */</code></pre>
+<div class="cap">styles.css</div>      <pre><code>p { color: black; }               /* specificity: 0-0-0-1 */
+.highlight { color: orange; }     /* specificity: 0-0-1-0, wins over p */
+#hero p.highlight { color: red; } /* specificity: 0-1-1-1, wins over both */</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (is vs where)</div>      <pre><code>/* :is() takes the specificity of its most specific argument */
+:is(#sidebar, .panel) p { color: navy; }   /* behaves like #sidebar p → 0-1-0-1 */
+
+/* :where() always contributes zero specificity */
+:where(#sidebar, .panel) p { color: navy; } /* behaves like p → 0-0-0-1, trivially overridable */
+
+/* a later, ordinary rule can now beat the :where() version without !important */
+.panel p { color: teal; }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: fighting specificity with !important</div>      <pre><code>/* Someone reached for !important instead of fixing the real problem */
+#main .content .card p { color: gray !important; }
+
+/* Now every future override needs its own !important, and the war escalates */
+.card p.note { color: red !important; }
+
+/* Better: lower the original selector's specificity so normal rules can override it */
+.card p { color: gray; }
+.card p.note { color: red; }</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Specificity is often written as (inline, id, class, tag) — higher wins, regardless of source order.</li>
-        <li>Reach for <code>!important</code> only as an absolute last resort — it breaks the normal cascade for everyone after you.</li>
-        <li>Overly specific selectors (deeply nested, id-based) make a stylesheet harder to override later.</li>
-        <li>When specificity ties, the rule appearing later in the cascade wins.</li>
+        <li>Specificity is a four-part tuple (inline, id, class/attribute/pseudo-class, type/pseudo-element) — higher columns always beat lower ones, regardless of source order.</li>
+        <li>Reach for <code>!important</code> only as an absolute last resort — it breaks the normal cascade for everyone who edits the file after you.</li>
+        <li>Overly specific selectors (deeply nested, id-based) make a stylesheet harder to override later and often lead to specificity wars.</li>
+        <li>When specificity ties exactly, the rule appearing later in the cascade (or later in load order) wins.</li>
+        <li><code>:where()</code> always contributes zero specificity; <code>:is()</code> takes on the specificity of its most specific argument — pick the one that fits your intent.</li>
+        <li>Pseudo-elements (<code>::before</code>) count as type selectors; pseudo-classes (<code>:hover</code>) count as classes.</li>
+        <li>Combinators (<code>></code>, <code>+</code>, <code>~</code>) and the universal selector <code>*</code> add zero specificity by themselves.</li>
+        <li>Use the browser DevTools' 'Computed' panel to see exactly which declared rule won and why when styles don't apply as expected.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write three CSS rules of increasing specificity that all target the same paragraph, and predict (then verify) which color actually applies.</p>
+      <p>Write three CSS rules of increasing specificity that all target the same paragraph, predict which color wins, then verify it in DevTools. Afterward, rewrite the most specific rule using :where() so an ordinary class selector can override it, and confirm the winner changes.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

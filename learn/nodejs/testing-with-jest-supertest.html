@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with Jest/Supertest</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="middleware-architecture-and-error-handling-patte.html">Middleware architecture and error-handling patterns</a></p>
   </div>
 
   <article>
     <p class="lead">Jest is a full-featured JavaScript testing framework — test runner, assertion library, and mocking tools all in one. Supertest builds on top of it specifically for testing HTTP servers, letting you make requests against your Express app directly in tests without starting a real server on a port.</p>
-    <p>Testing routes this way catches integration-level issues (wrong status codes, malformed responses) that isolated unit tests of individual functions would miss entirely.</p>
+    <p>Testing routes this way catches integration-level issues (wrong status codes, malformed responses, middleware ordering bugs) that isolated unit tests of individual functions would miss entirely, since those functions might work correctly on their own but be wired together incorrectly.</p>
+    <p>Jest's <code>beforeEach</code>/<code>afterEach</code> (and <code>beforeAll</code>/<code>afterAll</code>) hooks are useful for resetting a test database between tests — each test should ideally start from a known, clean state, so tests don't accidentally depend on the order they happen to run in, which is a common source of flaky test suites.</p>
+    <p>Mock external services (third-party APIs, email sending, payment processors) in tests with <code>jest.mock()</code> so they run fast, deterministically, and don't depend on network access or real side effects like actually sending an email or charging a card every time the test suite runs.</p>
+    <p>Test both the success path and realistic failure paths for every route — missing required fields, a resource that doesn't exist, invalid authentication — not just the happy path where everything goes right. A route that only has one passing test for valid input often has untested, broken behavior for the inputs it will actually see in production.</p>
+    <p>Snapshot testing (asserting a response matches a previously saved snapshot) is convenient but easy to misuse — a snapshot that includes something that legitimately changes often, like a timestamp, will fail on every run for no real reason, and developers who get used to blindly running <code>--updateSnapshot</code> stop actually reviewing what changed.</p>
     <div class="code-block">
 <div class="cap">server.test.js</div>      <pre><code>const request = require("supertest");
 const app = require("./app"); // exported Express app, not yet listening
@@ -122,6 +139,42 @@ test("GET /users/:id returns a user", async () =&gt; {
   expect(response.body).toHaveProperty("id", "1");
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">items.test.js (success and failure paths, with setup/teardown)</div>      <pre><code>const request = require("supertest");
+const app = require("./app");
+const db = require("./db");
+
+beforeEach(async () =&gt; {
+  await db.reset(); // start each test from a clean, known state
+});
+
+test("POST /items creates an item", async () =&gt; {
+  const res = await request(app).post("/items").send({ name: "Widget" });
+  expect(res.status).toBe(201);
+  expect(res.body.name).toBe("Widget");
+});
+
+test("POST /items without a name returns 400", async () =&gt; {
+  const res = await request(app).post("/items").send({});
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBeDefined();
+});</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">email.test.js (mocking an external service)</div>      <pre><code>jest.mock("./emailService"); // auto-mocks every exported function
+const emailService = require("./emailService");
+const request = require("supertest");
+const app = require("./app");
+
+test("registering a user sends a welcome email", async () =&gt; {
+  emailService.sendWelcomeEmail.mockResolvedValue(true);
+
+  await request(app).post("/register").send({ email: "a@example.com" });
+
+  expect(emailService.sendWelcomeEmail).toHaveBeenCalledWith("a@example.com");
+  // no real email was sent — fast, deterministic, no network needed
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -129,12 +182,16 @@ test("GET /users/:id returns a user", async () =&gt; {
         <li>Test both the success path and realistic failure paths (missing resource, invalid input) for every route.</li>
         <li>Jest's <code>beforeEach</code>/<code>afterEach</code> hooks are useful for resetting a test database between tests.</li>
         <li>Mock external services (third-party APIs, email sending) in tests so they run fast and don't depend on network access.</li>
+        <li>Each test should start from a known, clean state — order-dependent tests are a common source of flaky suites.</li>
+        <li>Snapshot tests are convenient but can rot silently if developers get used to blindly running <code>--updateSnapshot</code>.</li>
+        <li>Integration-level tests (a full route through Supertest) catch wiring/middleware-ordering bugs unit tests of individual functions would miss.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a Supertest test for one of your Express routes, checking both the status code and the shape of the returned JSON.</p>
+      <p>Write Supertest tests for one of your Express routes, checking both the success path (correct status code and response shape) and at least one realistic failure path (bad input or missing resource). Then add a beforeEach hook that resets your test data, and mock any external service the route calls so the whole suite runs without real network access.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

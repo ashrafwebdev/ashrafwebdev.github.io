@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Contributing to .NET or a major open-source .NET project</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="cross-platform-development-with-net-maui.html">Cross-platform development with .NET MAUI</a></p>
   </div>
 
   <article>
-    <p class="lead">The .NET runtime, ASP.NET Core, and many popular libraries are fully open source on GitHub, and Microsoft actively documents contribution guidelines for the runtime itself, making it one of the more approachable major language ecosystems to contribute to.</p>
-    <p>As with any large project, start by reading <code>CONTRIBUTING.md</code>, the coding style guidelines, and "good first issue" labeled tickets, which maintainers curate specifically to be approachable for newcomers.</p>
-    <p>A strong first pull request is small, includes tests, and clearly explains the problem it solves; running the project's full test suite locally before submitting avoids the most common source of review friction.</p>
+    <p class="lead">The .NET runtime, ASP.NET Core, and many popular libraries are fully open source on GitHub, and Microsoft actively documents contribution guidelines for the runtime itself, making it one of the more approachable major language ecosystems to contribute to; the <code>dotnet/runtime</code>, <code>dotnet/aspnetcore</code>, and <code>dotnet/roslyn</code> (the C# compiler itself) repositories are all publicly developed with the same pull request workflow anyone can use.</p>
+    <p>As with any large project, start by reading <code>CONTRIBUTING.md</code>, the coding style guidelines (often an <code>.editorconfig</code> file enforced automatically by the build), and "good first issue" or "help wanted" labeled tickets, which maintainers curate specifically to be approachable for newcomers without requiring deep familiarity with the whole codebase.</p>
+    <p>Before writing any code, it's worth searching existing issues and pull requests for the problem you're about to solve &mdash; large projects often already have a discussion, a rejected prior attempt with useful context on why it didn't work, or an in-progress fix, and duplicating that effort wastes both your time and a reviewer's.</p>
+    <p>A strong first pull request is small, includes tests, and clearly explains the problem it solves and how the fix addresses it; running the project's full test suite locally before submitting avoids the most common source of review friction, since CI failures on a first-time contribution often get far less patient attention than a green build with a clear description.</p>
+    <p>Code review on large .NET projects is typically thorough and can involve several rounds of feedback even for a small change &mdash; this is normal, not a sign the contribution is unwelcome, and responding promptly and respectfully to review comments (rather than getting defensive) is what turns a first contribution into an ongoing relationship with the project.</p>
+    <p>Beyond code, open-source .NET projects also need help with documentation, triaging issues (reproducing a reported bug, asking clarifying questions, labeling), and reviewing other people's pull requests &mdash; often a lower-friction way to build context and trust with a project's maintainers before attempting a larger code change yourself.</p>
     <div class="code-block">
 <div class="cap">workflow</div>      <pre><code>$ git clone https://github.com/you/runtime-fork.git
 $ cd runtime-fork
@@ -125,19 +141,51 @@ $ git commit -m "Fix edge case in string formatting for negative zero"
 $ git push origin fix-string-format-edge-case
 # open a pull request against the upstream repository</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">pr-checklist.md</div>      <pre><code>## Before opening the PR
+- [ ] Searched existing issues/PRs for duplicates or prior context
+- [ ] Read CONTRIBUTING.md and matched the project's coding style
+- [ ] Added or updated tests covering the change
+- [ ] Ran the full relevant local test suite -- not just the new test
+- [ ] Wrote a PR description explaining the problem AND the fix
+- [ ] Linked the PR to the issue it resolves, if one exists
+
+## After opening the PR
+- [ ] Responded to review feedback within a reasonable time
+- [ ] Rebased/updated the branch if CI flags a merge conflict</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">upstream-sync.sh</div>      <pre><code># Keeping a fork in sync before starting new work
+$ git remote add upstream https://github.com/dotnet/runtime.git
+$ git fetch upstream
+$ git checkout main
+$ git merge upstream/main
+$ git push origin main
+
+# Now branch from an up-to-date main for the next contribution
+$ git checkout -b my-next-fix</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Most core .NET projects are open source with documented contribution guidelines.</li>
         <li>"Good first issue" labels are curated entry points for new contributors.</li>
+        <li>Search existing issues and PRs before starting work to avoid duplicating effort.</li>
         <li>Small, well-tested pull requests with a clear problem statement are easiest to review.</li>
         <li>Run the relevant local test suite before submitting to avoid obvious review friction.</li>
+        <li>Multiple rounds of code review are normal on large projects, not a rejection signal.</li>
+        <li>Triage, documentation, and reviewing others' PRs are lower-friction ways to build trust with maintainers.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Find a .NET open-source repository on GitHub, locate its CONTRIBUTING.md, and list three specific expectations it sets for contributors.</p>
+      <p>Find a .NET open-source repository on GitHub, locate its CONTRIBUTING.md, and list three specific expectations it sets for contributors. Then find one issue labeled "good first issue" or "help wanted" in that repository, summarize what it's asking for in your own words, and outline the steps you would take (branch, test, PR description) before opening a pull request for it.</p>
     </div>
+    <a class="capstone-banner" href="project-hero.html">
+      <span class="cb-label">You've finished the Hero stage &mdash; capstone project</span>
+      <span class="cb-title">A production-grade order-processing API with CI/CD and live monitoring</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

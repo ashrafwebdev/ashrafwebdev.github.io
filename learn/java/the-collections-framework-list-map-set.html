@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>The Collections framework (List, Map, Set)</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="oop-principles.html">OOP principles: inheritance, polymorphism, interfaces</a></p>
   </div>
 
   <article>
-    <p class="lead">The <code>java.util</code> Collections framework provides ready-made, resizable data structures. <code>List</code> (usually <code>ArrayList</code>) preserves insertion order and allows duplicates; <code>Set</code> (usually <code>HashSet</code>) stores unique elements with no defined order; <code>Map</code> (usually <code>HashMap</code>) stores key-value pairs with fast lookup by key.</p>
-    <p>Since Java 5, <b>generics</b> let you parameterize a collection with the type it holds, such as <code>List of String</code>, so the compiler catches type mistakes at compile time instead of throwing a <code>ClassCastException</code> later.</p>
-    <p>Each interface has multiple implementations with different performance trade-offs: <code>ArrayList</code> is fast for indexed access, <code>LinkedList</code> is fast for insertion at the ends, <code>TreeMap</code> keeps keys sorted, and so on &mdash; choosing the right one depends on how the data will be used.</p>
+    <p class="lead">The <code>java.util</code> Collections framework provides ready-made, resizable data structures. <code>List</code> (usually <code>ArrayList</code>) preserves insertion order and allows duplicates; <code>Set</code> (usually <code>HashSet</code>) stores unique elements with no defined order; <code>Map</code> (usually <code>HashMap</code>) stores key-value pairs with fast average-case lookup by key.</p>
+    <p>Since Java 5, <b>generics</b> let you parameterize a collection with the type it holds, such as a List of String, so the compiler catches type mistakes at compile time instead of throwing a <code>ClassCastException</code> later when you pull an element back out and cast it to the wrong type.</p>
+    <p>Each interface has multiple implementations with different performance trade-offs. <code>ArrayList</code> gives constant-time indexed access but linear-time insertion/removal in the middle; <code>LinkedList</code> gives constant-time insertion at the ends but linear-time indexed access; <code>HashMap</code> and <code>HashSet</code> average constant-time operations but give no ordering guarantee; <code>TreeMap</code> and <code>TreeSet</code> keep keys sorted at the cost of logarithmic-time operations; <code>LinkedHashMap</code> preserves insertion order while keeping hash-map-like performance.</p>
+    <p>For <code>HashMap</code> and <code>HashSet</code> to work correctly, keys must have consistent <code>equals</code> and <code>hashCode</code> implementations &mdash; using a mutable object as a key and then changing a field that <code>hashCode</code> depends on will effectively "lose" the entry, since the map can no longer find the bucket it was originally stored in.</p>
+    <p>Since Java 9, the factory methods <code>List.of(...)</code>, <code>Set.of(...)</code>, and <code>Map.of(...)</code> create small, convenient <b>immutable</b> collections; calling <code>add</code>, <code>remove</code>, or <code>put</code> on one of these throws <code>UnsupportedOperationException</code>, which is a useful safety net when you want to guarantee a collection never changes after creation.</p>
+    <p>Iterating a <code>Map</code> is most efficient through <code>entrySet()</code> when you need both the key and the value together, since <code>keySet()</code> followed by a separate <code>get(key)</code> call per entry does a second lookup for every element.</p>
     <div class="code-block">
 <div class="cap">Inventory.java</div>      <pre><code>import java.util.*;
 
@@ -132,19 +148,48 @@ public class Inventory {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">EntrySetVsKeySet.java</div>      <pre><code>import java.util.*;
+
+public class EntrySetVsKeySet {
+    public static void main(String[] args) {
+        Map&lt;String, Double&gt; prices = new LinkedHashMap&lt;&gt;(); // preserves insertion order
+        prices.put("apples", 1.20);
+        prices.put("bananas", 0.60);
+        prices.put("cherries", 4.50);
+
+        // Preferred: one lookup per entry via entrySet()
+        for (Map.Entry&lt;String, Double&gt; entry : prices.entrySet()) {
+            System.out.printf("%s: $%.2f%n", entry.getKey(), entry.getValue());
+        }
+
+        // Immutable collection: mutating it throws UnsupportedOperationException
+        List&lt;String&gt; fixed = List.of("a", "b", "c");
+        try {
+            fixed.add("d");
+        } catch (UnsupportedOperationException e) {
+            System.out.println("Cannot modify an immutable List.of(...) result");
+        }
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>List</code> keeps order and duplicates; <code>Set</code> guarantees uniqueness; <code>Map</code> pairs keys with values.</li>
-        <li>Generics like <code>List of String</code> catch type errors at compile time.</li>
-        <li><code>ArrayList</code>, <code>LinkedList</code>, <code>HashMap</code>, and <code>TreeMap</code> trade off speed differently by operation.</li>
-        <li>Iterating a <code>Map</code> usually means iterating its <code>keySet()</code>, <code>values()</code>, or <code>entrySet()</code>.</li>
+        <li>Generics like a List of String catch type errors at compile time instead of a runtime ClassCastException.</li>
+        <li><code>ArrayList</code>, <code>LinkedList</code>, <code>HashMap</code>, <code>TreeMap</code>, and <code>LinkedHashMap</code> trade off speed and ordering differently by operation.</li>
+        <li>Hash-based collections require consistent equals/hashCode; mutating a key's hash-relevant fields after insertion can make an entry unreachable.</li>
+        <li><code>List.of</code>, <code>Set.of</code>, and <code>Map.of</code> create small immutable collections that throw on any modification attempt.</li>
+        <li>Prefer iterating <code>entrySet()</code> over <code>keySet()</code> plus <code>get()</code> when you need both key and value, to avoid a redundant lookup.</li>
+        <li>Choosing the right collection depends on how the data will be accessed: indexed, sorted, unique, or insertion-ordered.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a HashMap of product name to price, use a List to keep the names sorted, and print each product with its price formatted to two decimal places.</p>
+      <p>Build a HashMap of product name to price, use a List to keep the names sorted, and print each product with its price formatted to two decimal places. Then convert the map to a TreeMap to get keys automatically sorted, wrap the final result with Map.of or Collections.unmodifiableMap, and confirm attempting to modify it throws UnsupportedOperationException.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

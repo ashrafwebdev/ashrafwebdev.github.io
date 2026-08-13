@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>API-only Rails apps</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="background-jobs-sidekiq-activejob.html">Background jobs (Sidekiq/ActiveJob)</a></p>
   </div>
 
   <article>
-    <p class="lead">Rails can run in API-only mode (<code>rails new myapp --api</code>), stripping out view-rendering, asset pipeline, and other browser-facing middleware not needed when the app only returns JSON to a separate frontend or mobile app.</p>
-    <p>Controllers in API mode render JSON directly rather than HTML views, often paired with a serializer gem (like <code>active_model_serializers</code> or <code>jsonapi-serializer</code>) to control exactly what shape of JSON each model produces.</p>
+    <p class="lead">Rails can run in API-only mode (<code>rails new myapp --api</code>), stripping out view-rendering, the asset pipeline, and other browser-facing middleware not needed when the app only returns JSON to a separate frontend, mobile app, or other service — the result is a smaller, leaner middleware stack tailored specifically to serving an API rather than rendering HTML pages.</p>
+    <p>Controllers in API mode render JSON directly rather than HTML views. <code>render json: object</code> serializes an ActiveRecord object (or a whole collection) to JSON automatically using its column names as keys, which is convenient to start with but gives you little explicit control over exactly which fields end up in the response — every column gets included by default, including ones you may not want exposed, like internal timestamps or a password digest.</p>
+    <p>A serializer gem — commonly <code>active_model_serializers</code> or the more actively maintained <code>jsonapi-serializer</code> (formerly fast_jsonapi) — gives explicit, deliberate control over exactly which fields appear in the JSON output and how associated records are nested or linked, rather than dumping every database column by default. This matters for both security (not leaking internal fields) and API stability (the JSON shape doesn't silently change whenever someone adds a new database column).</p>
+    <p>CORS (Cross-Origin Resource Sharing) configuration, typically via the <code>rack-cors</code> gem, is usually necessary the moment the API is consumed by a frontend running on a different domain or port than the API itself — without it, a browser will block the frontend's JavaScript from actually reading the API's response, even though the request itself succeeds at the network level, which is a confusing failure mode the first time you hit it.</p>
+    <p>Authentication in an API-only app typically differs from a traditional server-rendered Rails app, since there's no browser session or CSRF-protected form to rely on in the same way — token-based approaches (a JWT, or an opaque API token stored and checked against the database) sent in an <code>Authorization</code> header are the common pattern, verified on each request rather than relying on a server-side session.</p>
+    <p>Versioning an API early — even something as simple as namespacing routes and controllers under <code>/api/v1/</code> — pays off once the API has real external consumers, since it gives you a clean way to introduce a breaking change in a new version without immediately forcing every existing client to update at the same time.</p>
     <div class="code-block">
 <div class="cap">app/controllers/books_controller.rb (API mode)</div>      <pre><code>class BooksController &lt; ApplicationController
   def index
@@ -123,19 +140,58 @@
   end
 end</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">serializer + namespaced routes</div>      <pre><code># app/serializers/book_serializer.rb
+class BookSerializer
+  include JSONAPI::Serializer
+  attributes :title, :author
+end
+
+# app/controllers/api/v1/books_controller.rb
+class Api::V1::BooksController &lt; ApplicationController
+  def index
+    render json: BookSerializer.new(Book.all).serializable_hash
+  end
+end
+
+# config/routes.rb
+namespace :api do
+  namespace :v1 do
+    resources :books, only: [:index, :show]
+  end
+end</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">config/initializers/cors.rb</div>      <pre><code>Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins "https://myfrontend.example.com"
+    resource "/api/*",
+      headers: :any,
+      methods: [:get, :post, :patch, :delete]
+  end
+end</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>rails new --api</code> configures a leaner middleware stack tailored specifically for JSON APIs.</li>
-        <li><code>render json: object</code> serializes an ActiveRecord object (or array) to JSON automatically.</li>
+        <li><code>render json: object</code> serializes an ActiveRecord object (or array) to JSON automatically, including every column by default.</li>
         <li>A serializer gem gives explicit, deliberate control over exactly which fields appear in the JSON output, rather than dumping every column.</li>
         <li>CORS configuration (via the <code>rack-cors</code> gem) is usually necessary when the API is consumed by a separate frontend on a different domain.</li>
+        <li>Token-based authentication (JWT or an API token in an Authorization header) is the common pattern for API-only apps, in place of session cookies.</li>
+        <li>Namespacing routes and controllers under <code>/api/v1/</code> early makes it much easier to introduce a breaking change later without disrupting existing clients.</li>
+        <li>Without correct CORS headers, a browser blocks the frontend from reading the response even though the request itself reaches the server successfully.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Generate an API-only Rails app with one resourceful controller, and confirm index and show actions return correctly formatted JSON.</p>
+      <p>Generate an API-only Rails app with one resourceful controller, and confirm index and show actions return correctly formatted JSON. Then add a serializer gem to explicitly control the returned fields, namespace the routes and controller under api/v1, and configure rack-cors to allow requests from a specific frontend origin.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">Turn RecipeBox into a tested, job-backed, API-ready service</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

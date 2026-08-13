@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with PHPUnit</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="a-framework-in-depth.html">A framework in depth: Laravel or Symfony fundamentals</a></p>
   </div>
 
   <article>
-    <p class="lead">PHPUnit is the standard PHP testing framework — test classes extend <code>TestCase</code>, and test methods (prefixed <code>test</code>) use assertion methods like <code>assertEquals()</code> and <code>assertTrue()</code> to check expected behavior.</p>
-    <p>Good tests are isolated and repeatable — a test shouldn't depend on another test's side effects, and database-touching tests typically run against a separate test database that gets reset between runs.</p>
+    <p class="lead">PHPUnit is the standard PHP testing framework — test classes extend <code>TestCase</code>, and test methods (prefixed <code>test</code>, or marked with a <code>#[Test]</code> attribute in modern versions) use assertion methods like <code>assertEquals()</code> and <code>assertTrue()</code> to check expected behavior. Running <code>vendor/bin/phpunit</code> discovers and runs every test class in the configured test directory, reporting pass/fail per test and a summary at the end.</p>
+    <p>Good tests are isolated and repeatable — a test shouldn't depend on another test's side effects, and database-touching tests typically run against a separate test database that gets reset between runs (often wrapped in a transaction that's rolled back after each test, so nothing persists between test methods).</p>
+    <p><code>setUp()</code> runs before every test method in a class, and <code>tearDown()</code> runs after — a natural place to create shared test fixtures (like a fresh object under test) and clean them up, so each test method starts from the same known state rather than depending on execution order.</p>
+    <p>Real-world code often depends on things you don't want a unit test to actually invoke — an external API call, sending an email, or a slow database query. PHPUnit's mocking support (<code>$this->createMock(SomeInterface::class)</code>) lets you create a fake stand-in object that returns configured values for specific method calls, so you can test your code's logic in isolation without its real dependencies actually running.</p>
+    <p>Data providers let one test method run against many different input/expected-output pairs without duplicating the test body: a method marked <code>#[DataProvider('provider')]</code> (or the older <code>@dataProvider</code> annotation) pulls its arguments from another method that returns an array of argument sets, so adding a new case is just adding a new row rather than writing a whole new test method.</p>
+    <p>PHPUnit distinguishes <code>assertEquals()</code> (loose comparison, similar to <code>==</code>) from <code>assertSame()</code> (strict comparison, similar to <code>===</code>) — using the wrong one can let a test pass when it actually shouldn't, for example when comparing <code>0</code> and <code>""</code> with assertEquals in older PHPUnit versions. Code coverage reports (generated with Xdebug or PCOV enabled) show which lines your test suite actually exercises, which is useful for finding untested logic but is not by itself proof the tests are meaningful.</p>
     <div class="code-block">
 <div class="cap">CalculatorTest.php</div>      <pre><code>&lt;?php
 use PHPUnit\Framework\TestCase;
@@ -123,6 +140,43 @@ class CalculatorTest extends TestCase {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">DiscountTest.php (a data provider)</div>      <pre><code>&lt;?php
+use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
+
+class DiscountTest extends TestCase {
+    #[DataProvider('priceProvider')]
+    public function testDiscountApplies(float $price, float $expected): void {
+        $this-&gt;assertSame($expected, applyDiscount($price));
+    }
+
+    public static function priceProvider(): array {
+        return [
+            'below threshold' =&gt; [40.0, 40.0],
+            'at threshold'    =&gt; [50.0, 45.0],
+            'above threshold' =&gt; [100.0, 90.0],
+        ];
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">OrderServiceTest.php (mocking a dependency)</div>      <pre><code>&lt;?php
+use PHPUnit\Framework\TestCase;
+
+class OrderServiceTest extends TestCase {
+    public function testPlaceOrderSendsConfirmationEmail(): void {
+        $mailer = $this-&gt;createMock(MailerInterface::class);
+        $mailer-&gt;expects($this-&gt;once())
+               -&gt;method('send')
+               -&gt;with($this-&gt;stringContains('Order confirmed'));
+
+        $service = new OrderService($mailer);
+        $service-&gt;place(['id' =&gt; 1, 'email' =&gt; 'a@example.com']);
+        // No real email is sent — we only verify send() was called correctly.
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -130,12 +184,17 @@ class CalculatorTest extends TestCase {
         <li><code>setUp()</code> runs before every test method in a class — a natural place for shared test fixtures.</li>
         <li>Laravel and Symfony both provide testing helpers on top of PHPUnit for testing routes, database state, and HTTP responses directly.</li>
         <li>Aim to test behavior and edge cases, not just the obvious happy path.</li>
+        <li>Data providers let one test method cover many input/output cases without duplicating test code.</li>
+        <li>Mocking (<code>createMock()</code>) isolates the code under test from slow or external real dependencies like APIs, email, or the filesystem.</li>
+        <li><code>assertSame()</code> is strict (like <code>===</code>); <code>assertEquals()</code> is loose (like <code>==</code>) — picking the wrong one can hide a real bug.</li>
+        <li>Tests that touch a database should run against an isolated test database, often reset via a rolled-back transaction after each test.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a PHPUnit test class with three test methods for a function you've written, covering a normal case, an edge case, and an invalid-input case.</p>
+      <p>Write a PHPUnit test class with three test methods for a function you've written, covering a normal case, an edge case, and an invalid-input case. Then convert those three cases into a single test method driven by a data provider, and add one test that mocks a dependency (like a mailer or logger interface) to verify your code calls it correctly without invoking the real thing.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

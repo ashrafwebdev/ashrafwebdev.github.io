@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Database architecture and schema design at scale</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="query-optimization-for-slow-queries.html">Query optimization for slow queries</a></p>
   </div>
 
   <article>
     <p class="lead">At scale, schema design decisions ripple outward: choosing surrogate keys (auto-generated IDs) versus natural keys (like an email address), deciding which relationships to fully normalize versus deliberately denormalize for read performance, and planning for schema migrations that can run safely against a live, high-traffic table without long locks.</p>
-    <p>Large systems often split a single conceptual database into <b>bounded contexts</b> that each own their own schema or database entirely, aligned with service boundaries in a microservice architecture, rather than one shared database everything reads and writes to directly.</p>
-    <p>Schema migrations at scale favor small, backward-compatible steps &mdash; add a nullable column, backfill it, then make it required in a later migration &mdash; over one large blocking change, so the application can keep running throughout the rollout without downtime.</p>
+    <p>Surrogate keys are generally preferred at scale because natural keys can change (a customer changes their email), can be composite and awkward to reference from other tables, and sometimes contain sensitive data that shouldn't be duplicated into every foreign key relationship; the tradeoff is one extra join or lookup to translate a surrogate ID back into something human-meaningful when needed.</p>
+    <p>Large systems often split a single conceptual database into <b>bounded contexts</b> that each own their own schema or database entirely, aligned with service boundaries in a microservice architecture, rather than one shared database everything reads and writes to directly &mdash; this avoids one service's schema change breaking another service unexpectedly, at the cost of needing some other mechanism (an API call, an event, a periodic sync) to share data across contexts.</p>
+    <p>Schema migrations at scale favor small, backward-compatible steps &mdash; add a nullable column, deploy code that writes to it, backfill existing rows, then make it required in a later migration &mdash; over one large blocking change, so the application can keep running throughout the rollout without downtime and so each step can be verified and rolled back independently if something goes wrong.</p>
+    <p>Adding a column is usually cheap, but altering an existing column's type, adding a NOT NULL constraint to an existing column, or adding certain kinds of indexes can lock a table for the duration of the operation on some engines &mdash; understanding which specific DDL operations your engine can perform online (without blocking reads and writes) versus which ones require a maintenance window is a core skill for schema work on a live production system.</p>
+    <p>Read replicas, connection pooling, and caching layers all sit adjacent to schema design proper, but the schema itself still shapes how well those layers can help: a schema with clear, stable access patterns and appropriately indexed foreign keys is far easier to scale horizontally than one that requires ad-hoc, unpredictable queries across many tables.</p>
     <div class="code-block">
 <div class="cap">migration.sql</div>      <pre><code>-- Step 1: add nullable column, deploy code that writes to it
 ALTER TABLE orders ADD COLUMN currency VARCHAR(3);
@@ -120,19 +136,30 @@ ALTER TABLE orders ADD COLUMN currency VARCHAR(3);
 -- Step 2 (later migration, after backfilling existing rows):
 ALTER TABLE orders ALTER COLUMN currency SET NOT NULL;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">backfill.sql</div>      <pre><code>-- Backfill in batches to avoid one huge blocking transaction
+UPDATE orders SET currency = 'USD'
+WHERE currency IS NULL
+  AND id IN (SELECT id FROM orders WHERE currency IS NULL LIMIT 1000);
+-- repeat until zero rows are affected, then apply the NOT NULL constraint</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Surrogate versus natural keys is a real design tradeoff worth deciding deliberately, not by default.</li>
         <li>Bounded contexts let services own their own schema instead of sharing one large database.</li>
         <li>Backward-compatible, staged migrations avoid downtime on high-traffic tables.</li>
+        <li>Not all DDL operations are equally safe online; some lock a table for their full duration.</li>
+        <li>Backfilling in small batches avoids one huge blocking transaction on a live table.</li>
         <li>Denormalization for read performance should follow measurement, not precede it.</li>
+        <li>A well-indexed, predictable schema makes read replicas and caching layers far more effective.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch a two-step, backward-compatible migration plan for adding a required 'status' column to a large, actively-written orders table without downtime.</p>
+      <p>Sketch a two-step, backward-compatible migration plan for adding a required 'status' column to a large, actively-written orders table without downtime. Then explain in a couple of sentences why batching a backfill into small chunks is safer than a single large UPDATE against millions of rows.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

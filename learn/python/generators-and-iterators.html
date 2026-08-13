@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Generators and iterators</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="decorators-and-context-managers.html">Decorators and context managers</a></p>
   </div>
 
   <article>
-    <p class="lead">A generator function uses <code>yield</code> instead of <code>return</code>, producing values one at a time, lazily, instead of building an entire list in memory upfront — essential when processing something too large to hold in memory at once.</p>
-    <p>Any object with a <code>__next__</code> method (and typically <code>__iter__</code>) is an iterator; generators are the easiest way to create one without writing that boilerplate yourself.</p>
+    <p class="lead">A generator function uses <code>yield</code> instead of <code>return</code>, producing values one at a time, lazily, instead of building an entire list in memory upfront — essential when processing something too large to hold in memory at once, like reading through a multi-gigabyte log file line by line.</p>
+    <p><code>yield</code> pauses the function exactly where it is, returning a value to whoever is iterating, and resumes right there — with all local variables intact — the next time a value is requested. This is fundamentally different from a normal function call, which restarts from the top and forgets everything every time.</p>
+    <p>Any object with a <code>__next__</code> method (and typically <code>__iter__</code>, which returns the iterator itself) satisfies Python's iterator protocol; generators are simply the easiest way to create a working iterator without writing that boilerplate by hand. Calling <code>next()</code> on an exhausted iterator raises <code>StopIteration</code>, which is exactly the signal a <code>for</code> loop relies on internally to know when to stop.</p>
+    <p>A generator can only be iterated once — once exhausted, it doesn't reset. To loop over the same sequence of values again, you need to call the generator function again to get a brand-new generator object, which is a common source of confusion when a generator is accidentally reused as if it were a list.</p>
+    <p>Generator expressions (<code>(x*2 for x in range(10))</code>) are the lazy counterpart to list comprehensions — same syntax with parentheses instead of square brackets, but nothing is computed until you actually iterate. Passing a generator expression directly into a function like <code>sum(x*x for x in nums)</code> avoids building an intermediate list entirely.</p>
+    <p><code>yield from</code> delegates to another generator or iterable, effectively flattening its values into the outer generator's output — genuinely useful for composing generators together, such as one generator that reads several files and yields from each one's line generator in turn.</p>
     <div class="code-block">
 <div class="cap">generators.py</div>      <pre><code>def count_up_to(n):
     i = 1
@@ -122,19 +139,48 @@
 for number in count_up_to(5):
     print(number)  # prints 1 through 5, one at a time</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">lazy_pipeline.py</div>      <pre><code>def read_lines(path):
+    with open(path) as f:
+        for line in f:
+            yield line.rstrip("\n")
+
+def only_errors(lines):
+    for line in lines:
+        if "ERROR" in line:
+            yield line
+
+# nothing is read into memory until this loop actually runs
+for line in only_errors(read_lines("app.log")):
+    print(line)
+
+total = sum(x * x for x in range(1_000_000))  # no intermediate list built</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">exhausted_generator.py</div>      <pre><code>gen = count_up_to(3)
+print(list(gen))   # [1, 2, 3]
+print(list(gen))   # [] -- already exhausted, this is NOT a fresh copy
+
+# to iterate again, call the function again:
+print(list(count_up_to(3)))  # [1, 2, 3]</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>yield</code> pauses the function, returning a value, and resumes exactly where it left off on the next call.</li>
+        <li><code>yield</code> pauses the function, returning a value, and resumes exactly where it left off — with local state intact — on the next call.</li>
         <li>Generators compute values lazily — nothing runs until you actually iterate over the generator.</li>
         <li>A generator can only be iterated once; to loop over it again, you need to call the function again to get a fresh generator.</li>
         <li>Generator expressions (<code>(x*2 for x in range(10))</code>) are the lazy counterpart to list comprehensions.</li>
+        <li>Passing a generator expression straight into a function like <code>sum()</code> or <code>max()</code> avoids building an intermediate list in memory.</li>
+        <li>The iterator protocol relies on <code>__next__</code> raising <code>StopIteration</code> when there's nothing left — this is how a <code>for</code> loop knows to stop.</li>
+        <li><code>yield from</code> delegates to another generator or iterable, flattening its output into the current generator.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a generator function that yields Fibonacci numbers up to a given limit, and print them with a for loop.</p>
+      <p>Write a generator function that yields Fibonacci numbers up to a given limit, and print them with a for loop. Then write a second generator that reads a text file line by line and yields only the lines containing a given keyword, and confirm with a quick test that calling list() on the same generator object twice returns an empty list the second time.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

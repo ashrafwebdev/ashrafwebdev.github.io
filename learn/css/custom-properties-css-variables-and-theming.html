@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,33 +119,65 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Custom properties (CSS variables) and theming</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="transitions-and-simple-hover-focus-states.html">Transitions and simple hover/focus states</a></p>
   </div>
 
   <article>
-    <p class="lead">Custom properties (commonly called CSS variables) let you name a value once and reuse it everywhere, defined with a <code>--</code> prefix and read with <code>var()</code>. Unlike Sass variables, they're live in the browser and can change at runtime — including per-component or via JavaScript.</p>
-    <p>Defining a palette of custom properties on <code>:root</code> is the foundation of theming: swap a handful of variable values (for dark mode, a rebrand, or a per-tenant theme) and the entire site updates without touching a single other rule.</p>
+    <p class="lead">Custom properties (commonly called CSS variables) let you name a value once and reuse it everywhere, defined with a <code>--</code> prefix and read with <code>var()</code>. Unlike Sass variables, which are resolved once at build time and vanish from the compiled output, custom properties are live in the browser — they can change at runtime via media queries, JavaScript, or even per-component overrides, without recompiling anything.</p>
+    <p>Custom properties cascade and inherit like any other CSS property: a variable defined on <code>:root</code> is available everywhere, but redefining that same variable name on a more specific selector overrides it only within that subtree — which is exactly how per-component theming (like a 'danger' variant of a card) works without a completely separate set of classes.</p>
+    <p><code>var(--name, fallback)</code> supplies a fallback value used whenever the variable is undefined or invalid, which makes components more resilient to being dropped into a page that hasn't defined every token yet. Note that an <b>invalid value</b> for a variable (not just a missing one) causes the property using it to fall back to its own initial value, not silently ignore the whole declaration — a subtlety worth testing when debugging.</p>
+    <p>Custom properties are readable and writable from JavaScript via <code>element.style.setProperty('--name', value)</code> and <code>getComputedStyle(element).getPropertyValue('--name')</code>, which is what makes them the standard bridge between JavaScript-driven interactivity (like a color picker or a drag-resize handle) and pure CSS styling.</p>
+    <p>Defining a palette of custom properties on <code>:root</code> is the foundation of theming: swap a handful of variable values (for dark mode, a rebrand, or a per-tenant theme) and the entire site updates without touching a single other rule — this is the single biggest practical win custom properties unlocked over the old copy-hex-codes-everywhere approach.</p>
+    <p>Unlike ordinary properties, custom properties don't have a defined type or syntax by default — <code>--gap: 16px</code> and <code>--gap: red</code> are both technically valid custom property values. The newer <code>@property</code> rule lets you register a custom property with an explicit syntax, initial value, and inheritance behavior, which also unlocks smoothly animating/transitioning custom properties, something plain <code>var()</code> usage can't do on its own.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>:root {
   --brand: #1F4E44;
+  --brand-hover: #2E6B5E;
   --text: #1A231F;
 }
 
 .btn { background: var(--brand); }
-.btn:hover { background: color-mix(in srgb, var(--brand) 85%, white); }</code></pre>
+.btn:hover { background: var(--brand-hover); }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (per-component override + JS bridge)</div>      <pre><code>:root { --card-accent: #1F4E44; }
+
+.card { border-top: 3px solid var(--card-accent); }
+.card.danger { --card-accent: #B3261E; } /* overrides only within this card */
+
+/* JavaScript can read/write the same variable: */
+// document.querySelector('.card').style.setProperty('--card-accent', '#C1832E');</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">styles.css (@property for animatable custom properties)</div>      <pre><code>@property --progress {
+  syntax: '&lt;percentage&gt;';
+  initial-value: 0%;
+  inherits: false;
+}
+
+.bar {
+  width: var(--progress);
+  transition: --progress 0.3s ease; /* only smoothly animatable once registered */
+}
+.bar.loaded { --progress: 100%; }</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Custom properties cascade and inherit like any other CSS property — they can be overridden per component.</li>
-        <li><code>var(--name, fallback)</code> supplies a fallback if the variable isn't defined.</li>
-        <li>Unlike Sass variables, custom properties are readable and writable from JavaScript via <code>element.style.setProperty()</code>.</li>
+        <li>Custom properties cascade and inherit like any other CSS property — they can be overridden per component or subtree.</li>
+        <li><code>var(--name, fallback)</code> supplies a fallback if the variable isn't defined, but an invalid (not missing) value falls back to the property's own initial value instead.</li>
+        <li>Unlike Sass variables, custom properties are live at runtime and readable/writable from JavaScript via <code>element.style.setProperty()</code>.</li>
         <li>A well-designed token set (colors, spacing, radii) is the backbone of any real design system.</li>
+        <li><code>@property</code> lets you register a type and initial value for a custom property, which also enables smoothly transitioning/animating it.</li>
+        <li>Custom properties have no built-in type checking by default — a variable meant for a color can technically hold any valid CSS token.</li>
+        <li>Redefining a variable name on a more specific selector overrides it only within that subtree, which is the mechanism behind per-component theming.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Define a small palette of custom properties on :root and refactor an existing page to use var() instead of hardcoded color values.</p>
+      <p>Define a small palette of custom properties on :root and refactor an existing page to use var() instead of hardcoded color values. Then add a 'danger' variant of one component that overrides just that component's accent color variable, and confirm the rest of the page is unaffected.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

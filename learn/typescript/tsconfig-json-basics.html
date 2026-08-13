@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>tsconfig.json basics</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="interfaces-and-type-aliases.html">Interfaces and type aliases</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>tsconfig.json</code> configures how the TypeScript compiler behaves — which files to include, which JavaScript version to output, and how strict the type checking should be. Running <code>tsc --init</code> generates a sensible starting file.</p>
-    <p>The single most valuable setting is <code>"strict": true</code>, which enables a bundle of stricter checks (including <code>strictNullChecks</code>) that catch far more real bugs than TypeScript's default, looser configuration.</p>
+    <p class="lead"><code>tsconfig.json</code> configures how the TypeScript compiler behaves — which files to include, which JavaScript version to output, where to emit that output, and how strict the type checking should be. Running <code>tsc --init</code> from a project's root generates a sensible starting file with most options present but commented out, ready to be uncommented as needed.</p>
+    <p>The single most valuable setting is <code>"strict": true</code>, which enables a whole bundle of stricter checks at once — including <code>strictNullChecks</code>, <code>noImplicitAny</code>, and <code>strictFunctionTypes</code> — that together catch far more real bugs than TypeScript's default, looser configuration. Turning it on individually flag by flag is possible, but starting a new project with the bundled <code>strict</code> flag is almost always the right call.</p>
+    <p><code>target</code> controls which version of JavaScript features the compiler is allowed to emit directly versus needing to down-level (rewrite) into older equivalents — targeting <code>ES2020</code> or newer lets modern syntax like optional chaining pass through untouched, while an older target rewrites it into more verbose, broadly compatible code. <code>module</code> separately controls which module system the output uses (CommonJS's <code>require</code>/<code>module.exports</code> versus ESM's <code>import</code>/<code>export</code>), and mismatching it against your actual runtime is a very common source of confusing 'module not found' errors.</p>
+    <p><code>include</code> and <code>exclude</code> control which files the compiler actually processes — a glob like <code>"src/**/*"</code> in <code>include</code> scopes the project to just that directory, while <code>exclude</code> (commonly <code>node_modules</code>, which is excluded by default anyway) keeps generated or third-party files out of type checking.</p>
+    <p>Project references (<code>"references": [...]</code> paired with <code>"composite": true</code>) let a large codebase be split into multiple tsconfig.json files that build incrementally and depend on each other, which matters once a monorepo grows large enough that a single full type check on every save becomes too slow.</p>
+    <p>Most modern build tools (Vite, esbuild, SWC) read <code>tsconfig.json</code> for module resolution and path mapping, but they typically strip types without actually checking them, for speed — meaning a broken type can still produce a working build. Running <code>tsc --noEmit</code> as a separate step (often in CI or a pre-commit hook) is how most projects catch what the fast bundler alone would silently let through.</p>
     <div class="code-block">
 <div class="cap">tsconfig.json</div>      <pre><code>{
   "compilerOptions": {
@@ -123,19 +140,41 @@
   "include": ["src/**/*"]
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">a-more-complete-config.json</div>      <pre><code>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Turn on <code>"strict": true</code> from day one on a new project — retrofitting it later is far more painful.</li>
-        <li><code>target</code> controls which JavaScript version is emitted; <code>module</code> controls the module system used.</li>
-        <li><code>include</code>/<code>exclude</code> control which files the compiler actually processes.</li>
-        <li>Most modern build tools (Vite, esbuild) read tsconfig.json for type checking even though they use a faster transpiler internally.</li>
+        <li>Turn on <code>"strict": true</code> from day one on a new project — retrofitting it onto a large, already-loose codebase later is far more painful.</li>
+        <li><code>target</code> controls which JavaScript version features are emitted directly versus rewritten for compatibility.</li>
+        <li><code>module</code> controls the module system used in the output — mismatching it against the actual runtime is a common source of confusing errors.</li>
+        <li><code>include</code>/<code>exclude</code> control which files the compiler processes; <code>node_modules</code> is excluded by default.</li>
+        <li><code>skipLibCheck</code> skips type checking inside <code>.d.ts</code> files (including third-party ones), which meaningfully speeds up compilation on most real projects.</li>
+        <li>Project references (<code>composite</code> + <code>references</code>) split a large codebase into independently, incrementally buildable pieces.</li>
+        <li>Most modern bundlers strip types for speed without truly checking them — running <code>tsc --noEmit</code> separately (often in CI) is how real type errors still get caught.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Run tsc --init in a new folder, turn on strict mode, and confirm a deliberately null-unsafe snippet gets flagged as an error.</p>
+      <p>Run tsc --init in a new folder, turn on strict mode, and confirm a deliberately null-unsafe snippet gets flagged as an error. Then add skipLibCheck and noUnusedLocals to the config and observe how each one changes what the compiler reports on the same project.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

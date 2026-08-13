@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,17 +119,52 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Composer and package management</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="sessions-cookies-and-basic-auth.html">Sessions, cookies, and basic auth</a></p>
   </div>
 
   <article>
-    <p class="lead">Composer is PHP's dependency manager — it installs libraries into a <code>vendor</code> folder and generates an autoloader so you can <code>use</code> any installed class without manually requiring each file.</p>
-    <p><code>composer.json</code> declares your project's dependencies; <code>composer.lock</code> pins the exact resolved versions, ensuring everyone on a team (and your production server) installs identical package versions.</p>
+    <p class="lead">Composer is PHP's dependency manager — it installs libraries into a <code>vendor</code> folder and generates an autoloader so you can <code>use</code> any installed class without manually requiring each file. It solves the problem every non-trivial PHP project eventually hits: pulling in other people's well-tested code (a logging library, an HTTP client, a database toolkit) without hand-managing file includes and version conflicts.</p>
+    <p><code>composer.json</code> declares your project's dependencies (and metadata like name, description, and autoloading rules); <code>composer.lock</code> pins the exact resolved versions of every dependency and sub-dependency, ensuring everyone on a team (and your production server) installs identical package versions rather than whatever happens to satisfy the version constraints at install time.</p>
+    <p>Version constraints in <code>composer.json</code> use symbols with specific meaning: an exact version like <code>1.2.3</code> pins that one version; a caret constraint like <code>^1.2</code> allows any 1.x release that's 1.2.0 or newer (following semantic versioning, no breaking changes expected); a tilde constraint like <code>~1.2</code> is similar but slightly stricter about how much of the version can change. Understanding these matters because <code>composer update</code> will happily jump to a newer version within the allowed range and potentially introduce behavior changes.</p>
+    <p><code>composer require</code> adds a new dependency and updates both files at once; <code>composer require --dev</code> adds a development-only dependency (like PHPUnit) that won't be installed when a production deploy runs <code>composer install --no-dev</code>. <code>composer dump-autoload</code> regenerates the autoloader without touching any package versions — needed after adding a new class to your own PSR-4-mapped source folder if the autoloader hasn't picked it up yet (rare with modern Composer, but still useful to know).</p>
+    <p>PSR-4 autoloading (configured in the <code>autoload</code> section of composer.json) maps your own namespaces to folders, so your own classes autoload too, not just installed packages — this is what makes <code>new App\Models\User()</code> work without a manual <code>require</code>, as long as the class lives at the folder path matching its namespace.</p>
+    <p><code>vendor/</code> itself should be gitignored and regenerated with <code>composer install</code>, which reads composer.lock and installs the exact pinned versions — never edit anything inside <code>vendor/</code> directly, since any change is lost the next time someone runs a fresh install.</p>
     <div class="code-block">
 <div class="cap">Terminal</div>      <pre><code>composer init
 composer require monolog/monolog
+composer require --dev phpunit/phpunit
 
 # In your PHP entry file:
 require "vendor/autoload.php";</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">composer.json</div>      <pre><code>{
+  "name": "yourname/blog",
+  "require": {
+    "php": "&gt;=8.1",
+    "monolog/monolog": "^3.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Using an autoloaded class</div>      <pre><code>&lt;?php
+require "vendor/autoload.php";
+
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
+$log = new Logger('app');
+$log-&gt;pushHandler(new StreamHandler(__DIR__ . '/app.log'));
+$log-&gt;info('Application started.');
+?&gt;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -126,12 +173,17 @@ require "vendor/autoload.php";</code></pre>
         <li>Commit both <code>composer.json</code> and <code>composer.lock</code> — the lock file guarantees reproducible installs.</li>
         <li><code>vendor/</code> itself should be gitignored and regenerated with <code>composer install</code>.</li>
         <li>PSR-4 autoloading (configured in composer.json) maps your own namespaces to folders, so your own classes autoload too, not just installed packages.</li>
+        <li>Caret (<code>^1.2</code>) and tilde (<code>~1.2</code>) version constraints allow different amounts of automatic version drift on <code>composer update</code>.</li>
+        <li><code>composer require --dev</code> keeps development-only tools (like PHPUnit) out of a production install run with <code>--no-dev</code>.</li>
+        <li>Never hand-edit files inside <code>vendor/</code> — a fresh <code>composer install</code> discards any such changes.</li>
+        <li><code>composer dump-autoload</code> regenerates the autoloader without changing any dependency versions.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Run composer init in a new project, require a small utility package, and use one of its classes in a script.</p>
+      <p>Run composer init in a new project, require a small utility package, and use one of its classes in a script. Then add a dev-only dependency like phpunit/phpunit with --dev, inspect the differences between the require and require-dev sections of the resulting composer.json, and confirm that composer install --no-dev skips installing the dev dependency.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

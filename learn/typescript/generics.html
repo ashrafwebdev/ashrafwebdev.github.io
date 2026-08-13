@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,32 +119,69 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Generics</h1>
     <p class="lang-line"><b>TypeScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="compiling-ts-to-js.html">Compiling TS to JS</a></p>
   </div>
 
   <article>
-    <p class="lead">Generics let a function, interface, or class work with any type while still preserving type information — instead of writing the same logic three times for strings, numbers, and objects, you write it once with a placeholder type parameter.</p>
-    <p>The convention is a single capital letter like <code>T</code> for the type parameter, though descriptive names (<code>TItem</code>) help in more complex generic functions.</p>
+    <p class="lead">Generics let a function, interface, or class work with any type while still preserving type information — instead of writing the same logic three times for strings, numbers, and objects (or giving up and typing everything <code>any</code>), you write it once with a placeholder type parameter that gets filled in differently at each call site.</p>
+    <p>The convention is a single capital letter like <code>T</code> for the type parameter, though descriptive names like <code>TItem</code> or <code>TResult</code> help readability in more complex generic functions with several independent type parameters, the same way a descriptive variable name helps over a single letter once a function gets complicated.</p>
+    <p>TypeScript can usually infer the generic type argument automatically from how the function is actually called, without you writing it out — passing an array of strings to a generic function that takes <code>T[]</code> infers <code>T</code> as <code>string</code> on the spot. Explicit type arguments (<code>firstItem&lt;string&gt;([...])</code>) are only needed when inference genuinely can't determine the type from the arguments alone, which is relatively rare.</p>
+    <p>The crucial difference between a generic function and one typed with <code>any</code> is that a generic preserves the relationship between input and output types: <code>firstItem</code> called with a <code>string[]</code> returns a proper <code>string</code>, not <code>any</code>, so everything downstream of the call stays fully type-checked. An <code>any</code>-based version of the same function would compile identically but silently give up all of that downstream safety.</p>
+    <p>Generic interfaces and classes work the same way as generic functions — a generic interface like a <code>Box</code> holding a value of type <code>T</code> lets you write one interface that's reused for a box of strings, a box of numbers, or a box of any other type, each instance remembering its own specific <code>T</code>.</p>
+    <p>Multiple type parameters are common in functions that combine two independent generic inputs — a function that pairs up two unrelated values, for instance, typically needs a separate type parameter for each argument so the result type can correctly reflect both, rather than forcing both arguments to share a single type.</p>
     <div class="code-block">
-<div class="cap">generics.ts</div>      <pre><code>function firstItem&lt;T&gt;(items: T[]): T | undefined {
+<div class="cap">generics.ts</div>      <pre><code>function firstItem&lt;T&gt;(items: T[]): T {
   return items[0];
 }
 
 const firstNumber = firstItem([1, 2, 3]);       // inferred as number
 const firstName = firstItem(["a", "b", "c"]);  // inferred as string</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">generic-interface-and-multiple-params.ts</div>      <pre><code>interface Box&lt;T&gt; {
+  value: T;
+}
+
+const numberBox: Box&lt;number&gt; = { value: 42 };
+const stringBox: Box&lt;string&gt; = { value: "hi" };
+
+function makePair&lt;T, U&gt;(first: T, second: U): { first: T; second: U } {
+  return { first, second };
+}
+
+const combined = makePair("Amina", 27);
+// combined is inferred as { first: string; second: number }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">generic-vs-any.ts</div>      <pre><code>function identityAny(value: any): any {
+  return value;
+}
+const a = identityAny("hello");
+a.toFixed(2); // no compile error — but this crashes at runtime
+
+function identityGeneric&lt;T&gt;(value: T): T {
+  return value;
+}
+const b = identityGeneric("hello");
+// b.toFixed(2); // Error: string has no toFixed — caught before running</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Generics preserve the specific type through a function, rather than widening everything to <code>any</code>.</li>
+        <li>Generics preserve the specific type through a function, rather than widening everything to <code>any</code> and losing downstream safety.</li>
         <li>TypeScript can usually infer the generic type argument from how the function is called — you rarely need to specify it explicitly.</li>
-        <li>Generic interfaces (<code>interface Box&lt;T&gt; { value: T }</code>) work the same way as generic functions.</li>
-        <li>Multiple type parameters (<code>&lt;T, U&gt;</code>) are common in functions that combine two independent generic inputs.</li>
+        <li>Generic interfaces work the same way as generic functions, with each instance remembering its own specific type argument.</li>
+        <li>Multiple type parameters are common when a function combines two or more independently-typed inputs into one result.</li>
+        <li>A generic function called with a concrete type still gives every caller full, type-specific checking on the result — unlike an <code>any</code>-based equivalent.</li>
+        <li>Descriptive type parameter names (<code>TItem</code>, <code>TResult</code>) are worth using once a generic function has more than one or two type parameters.</li>
+        <li>Explicit type arguments are only needed on the rare occasions inference genuinely can't determine the type from the call site alone.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a generic function called wrapInArray that takes a value of any type and returns a one-element array containing it, then call it with a string, a number, and an object.</p>
+      <p>Write a generic function called wrapInArray that takes a value of any type and returns a one-element array containing it, then call it with a string, a number, and an object and confirm each result is correctly and specifically typed. Then write a generic Box-style interface and create two instances of it holding different types.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

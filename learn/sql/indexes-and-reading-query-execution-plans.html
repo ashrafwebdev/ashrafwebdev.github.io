@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,56 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Indexes and reading query execution plans</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="basic-normalization-1nf-3nf.html">Basic normalization (1NF–3NF)</a></p>
   </div>
 
   <article>
-    <p class="lead">An <b>index</b> is a separate, ordered data structure (usually a B-tree) that lets the database find matching rows without scanning the entire table, dramatically speeding up lookups and joins on the indexed column at the cost of extra storage and slightly slower writes.</p>
-    <p><code>EXPLAIN</code> (or <code>EXPLAIN ANALYZE</code> to also run the query and report real timings) shows the <b>execution plan</b> the database chose: whether it used an index, performed a full table scan, and roughly how many rows it expects to examine at each step.</p>
-    <p>A <code>Seq Scan</code> (sequential/full table scan) on a large table is often the signal that a helpful index is missing; adding an index on the columns used in <code>WHERE</code> and <code>JOIN</code> clauses is the single most common way to fix a slow query.</p>
+    <p class="lead">An <b>index</b> is a separate, ordered data structure (usually a B-tree) that lets the database find matching rows without scanning the entire table, dramatically speeding up lookups and joins on the indexed column at the cost of extra storage and slightly slower writes, since every INSERT, UPDATE, or DELETE now also has to keep the index itself up to date.</p>
+    <p>A <b>composite index</b> spans multiple columns, and column order matters enormously: an index on (last_name, first_name) can efficiently serve a query filtering on last_name alone, but generally cannot help a query that filters on first_name alone, since the index is physically sorted by last_name first &mdash; this is often called the <b>leftmost prefix rule</b>.</p>
+    <p><code>EXPLAIN</code> (or <code>EXPLAIN ANALYZE</code> to also run the query and report real timings) shows the <b>execution plan</b> the database chose: whether it used an index, performed a full table scan, how it joined two tables, and roughly how many rows it expects to examine at each step versus how many it actually found.</p>
+    <p>A <code>Seq Scan</code> (sequential/full table scan) on a large table is often the signal that a helpful index is missing, but not always a problem &mdash; for a query expected to return most of the table's rows anyway, the database may correctly decide a sequential scan is cheaper than the overhead of index lookups plus fetching each matching row individually.</p>
+    <p>A large gap between a plan's estimated row count and its actual row count (visible in EXPLAIN ANALYZE output) usually means the database's internal statistics are stale, which can lead it to choose a genuinely worse plan; running <code>ANALYZE table_name</code> to refresh those statistics is a common, cheap fix worth trying before reaching for a schema change.</p>
+    <p>Indexes aren't free: every additional index slows down writes to that table and consumes disk space, so indexing every column "just in case" is itself a mistake &mdash; the columns most frequently used in WHERE, JOIN, and ORDER BY clauses are the ones worth indexing first, guided by actual query patterns rather than guesswork.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>EXPLAIN ANALYZE
 SELECT * FROM orders WHERE customer_id = 42;
 
 CREATE INDEX idx_orders_customer_id ON orders (customer_id);</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">composite_index.sql</div>      <pre><code>-- Serves queries filtering on last_name alone, or last_name + first_name together
+CREATE INDEX idx_customers_name ON customers (last_name, first_name);
+
+-- Can use the index (leftmost prefix)
+SELECT * FROM customers WHERE last_name = 'Smith';
+
+-- Cannot use this index efficiently (skips the leftmost column)
+SELECT * FROM customers WHERE first_name = 'Alex';</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">stale_stats.sql</div>      <pre><code>-- If estimated vs actual row counts diverge wildly in EXPLAIN ANALYZE output,
+-- refreshing statistics is often a cheap first fix:
+ANALYZE orders;
+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Indexes speed up lookups on indexed columns at the cost of storage and slightly slower writes.</li>
+        <li>Composite indexes follow the leftmost prefix rule: column order in the index definition matters.</li>
         <li>EXPLAIN ANALYZE shows the actual execution plan and real timing for a query.</li>
-        <li>A sequential scan on a large table often signals a missing index on a filtered or joined column.</li>
-        <li>Index the columns most frequently used in WHERE and JOIN clauses first.</li>
+        <li>A sequential scan isn't automatically wrong; it can beat index use when most rows match anyway.</li>
+        <li>A big gap between estimated and actual row counts often means statistics are stale; ANALYZE refreshes them.</li>
+        <li>Index the columns most frequently used in WHERE, JOIN, and ORDER BY clauses first.</li>
+        <li>Every extra index adds write overhead, so indexing everything indiscriminately is itself a mistake.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Run EXPLAIN ANALYZE on a query filtering a large table by a non-indexed column, add an index on that column, and compare the execution plan before and after.</p>
+      <p>Run EXPLAIN ANALYZE on a query filtering a large table by a non-indexed column, add an index on that column, and compare the execution plan before and after. Then create a composite index on two columns and write one query that can use it and one that can't, explaining why in terms of the leftmost prefix rule.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

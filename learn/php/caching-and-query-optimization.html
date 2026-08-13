@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Caching and query optimization</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="building-and-consuming-rest-apis.html">Building and consuming REST APIs</a></p>
   </div>
 
   <article>
-    <p class="lead">Caching avoids redoing expensive work — storing a computed result (in memory via Redis/Memcached, or even a local file) and reusing it until it's stale, rather than recalculating or re-querying on every request.</p>
-    <p>Query optimization starts with knowing what's actually slow: <code>EXPLAIN</code> on a MySQL query shows how the database plans to execute it, revealing whether it's using indexes effectively or scanning entire tables.</p>
+    <p class="lead">Caching avoids redoing expensive work — storing a computed result (in memory via Redis/Memcached, or even a local file) and reusing it until it's stale, rather than recalculating or re-querying on every request. The performance gain can be dramatic for anything expensive and frequently requested, since reading from memory is orders of magnitude faster than a database round-trip.</p>
+    <p>Cache invalidation (knowing when to expire or update cached data) is often harder than the caching itself, and is famously called one of the two hard problems in computer science. A short time-to-live (TTL) is the simplest strategy — accept slightly stale data in exchange for simplicity — while explicitly clearing a cache key whenever the underlying data changes is more precise but requires remembering to do it everywhere that data can change.</p>
+    <p>Query optimization starts with knowing what's actually slow: <code>EXPLAIN</code> on a MySQL query shows how the database plans to execute it, revealing whether it's using indexes effectively or scanning entire tables. A query plan showing <code>type: ALL</code> on a large table is a red flag — it means MySQL is reading every single row rather than using an index to jump straight to the relevant ones.</p>
+    <p>Indexes speed up reads but slow down writes and use extra storage — every insert or update also has to update every index on that table, so add them deliberately on columns actually used in <code>WHERE</code>, <code>JOIN</code>, and <code>ORDER BY</code> clauses, not on every column just in case.</p>
+    <p>A very common and specifically PHP-and-ORM-flavored performance trap is the N+1 query problem: fetching a list of N records, then looping over them and running one more query per record to fetch related data (an author, a category), resulting in N+1 total queries instead of 2. Eager loading — telling the ORM up front to fetch the related data in the same batch, like Eloquent's <code>with('author')</code> — collapses this back down to a small, fixed number of queries regardless of how many rows are returned.</p>
+    <p>Caching can happen at several different layers, and picking the right one matters: a full page cache (caching entire rendered HTML output) saves the most work per request but is the least flexible, since any dynamic per-user content breaks it; an object or query cache (caching one expensive query's result) is more precise and composable; and HTTP-level caching (<code>Cache-Control</code> headers, letting the browser or a CDN cache a response) offloads work away from your server entirely for content that doesn't need to be regenerated per request.</p>
     <div class="code-block">
 <div class="cap">A simple cache pattern with Redis</div>      <pre><code>&lt;?php
 $cacheKey = "user:$userId";
@@ -125,6 +142,31 @@ if ($cached) {
 }
 ?&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">EXPLAIN and adding a missing index</div>      <pre><code>-- Before: MySQL scans the whole table (type: ALL)
+EXPLAIN SELECT * FROM orders WHERE customer_email = 'a@example.com';
+
+-- Add an index on the column used in the WHERE clause
+CREATE INDEX idx_orders_customer_email ON orders (customer_email);
+
+-- After: EXPLAIN now shows type: ref, using the new index
+EXPLAIN SELECT * FROM orders WHERE customer_email = 'a@example.com';</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">n_plus_one.php (a common ORM performance mistake)</div>      <pre><code>&lt;?php
+// BAD: 1 query for posts, then 1 more query PER post for its author = N+1 queries
+$posts = Post::all();
+foreach ($posts as $post) {
+    echo $post-&gt;author-&gt;name; // triggers a separate query each time
+}
+
+// GOOD: eager-load the relationship up front = 2 queries total, regardless of N
+$posts = Post::with('author')-&gt;get();
+foreach ($posts as $post) {
+    echo $post-&gt;author-&gt;name; // already loaded, no extra query
+}
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,12 +174,21 @@ if ($cached) {
         <li><code>EXPLAIN SELECT ...</code> reveals whether MySQL is using an index or performing a full table scan.</li>
         <li>Indexes speed up reads but slow down writes and use extra storage — add them deliberately, not everywhere.</li>
         <li>Cache at the layer that gives the best return: a full page cache saves the most work, but an object/query cache is more precise.</li>
+        <li>The N+1 query problem is one of the most common PHP/ORM performance mistakes — one query per row in a loop instead of a single batched query.</li>
+        <li>Eager loading (like Eloquent's <code>with()</code>) fixes N+1 problems by fetching related data in the same small batch of queries.</li>
+        <li>A query plan showing <code>type: ALL</code> on a large table is a strong signal a useful index is missing.</li>
+        <li>HTTP-level caching (<code>Cache-Control</code> headers) can offload repeat work to the browser or a CDN entirely, bypassing your server.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add a Redis (or file-based) cache in front of a slow database query, and confirm the second request is significantly faster than the first.</p>
+      <p>Add a Redis (or file-based) cache in front of a slow database query, and confirm the second request is significantly faster than the first. Then run EXPLAIN on a query against a table without an index on its WHERE column, add the missing index, and compare the EXPLAIN output before and after. Finally, find or construct an N+1 query pattern in a loop and fix it with eager loading, counting the actual number of queries run before and after.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">A team task board with a versioned public API</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Arrays and lists</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="classes-and-objects-basics.html">Classes and objects basics</a></p>
   </div>
 
   <article>
-    <p class="lead">A C# array (<code>int[] scores = new int[5]</code>) is fixed-size and zero-indexed, same as most C-family languages. Accessing an out-of-range index throws an <code>IndexOutOfRangeException</code> at runtime.</p>
-    <p>For a resizable collection, <code>List of T</code> from <code>System.Collections.Generic</code> is the standard choice, offering <code>Add</code>, <code>Remove</code>, and <code>Contains</code> methods and growing automatically as items are added.</p>
-    <p>Both arrays and lists work seamlessly with LINQ (covered in a later lesson), so operations like sorting, filtering, and aggregating can be written declaratively instead of with manual loops.</p>
+    <p class="lead">A C# array (<code>int[] scores = new int[5]</code>) is fixed-size and zero-indexed, same as most C-family languages. Accessing an out-of-range index throws an <code>IndexOutOfRangeException</code> at runtime, and there is no way to grow or shrink an array once created &mdash; you must allocate a new one and copy elements over, which is exactly what <code>Array.Resize</code> does under the hood.</p>
+    <p>For a resizable collection, <code>List of T</code> from <code>System.Collections.Generic</code> is the standard choice, offering <code>Add</code>, <code>Remove</code>, <code>Insert</code>, and <code>Contains</code> methods and growing automatically as items are added. Internally a list is backed by an array that doubles in capacity when it fills up, so occasional resizes are amortized to still give roughly constant-time appends on average.</p>
+    <p>Multi-dimensional arrays come in two flavors: rectangular arrays (<code>int[,] grid = new int[3,3]</code>), where every row has the same length, and jagged arrays (<code>int[][] jagged</code>), which are arrays of arrays where each inner array can have a different length. Jagged arrays are generally preferred in C# because they're more memory-efficient when rows vary in size and integrate more naturally with the rest of the collection APIs.</p>
+    <p>Both arrays and lists implement <code>IEnumerable of T</code>, so they work seamlessly with LINQ (covered in a later lesson): operations like sorting, filtering, and aggregating can be written declaratively instead of with manual loops. A common beginner mistake is calling a LINQ method like <code>OrderBy</code> expecting it to sort in place &mdash; it doesn't; it returns a new sequence, leaving the original list untouched.</p>
+    <p>Removing items from a list while iterating it with <code>foreach</code> throws an <code>InvalidOperationException</code>, because the enumerator detects the collection was modified. The safe patterns are iterating backward with an indexed <code>for</code> loop, using <code>RemoveAll</code> with a predicate, or building a filtered copy with LINQ's <code>Where</code> and assigning it back.</p>
+    <p>For performance-sensitive scenarios, <code>Span of T</code> lets you work with a slice of an array without copying it, and collection expressions (<code>int[] xs = [1, 2, 3]</code>, C# 12+) offer a unified, terser syntax for initializing arrays, lists, and other collection types.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>int[] scores = { 88, 92, 75, 100, 60 };
 Array.Sort(scores);
@@ -123,19 +139,54 @@ names.Add("Omar");
 names.Remove("Bilal");
 Console.WriteLine(string.Join(", ", names));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">JaggedAndRemoval.cs</div>      <pre><code>// Jagged array: each row can be a different length
+int[][] triangle = new int[3][];
+triangle[0] = new int[] { 1 };
+triangle[1] = new int[] { 1, 2 };
+triangle[2] = new int[] { 1, 2, 3 };
+
+foreach (var row in triangle)
+    Console.WriteLine(string.Join(" ", row));
+
+// Safe removal while conceptually 'iterating': RemoveAll with a predicate
+var numbers = new List&lt;int&gt; { 1, 2, 3, 4, 5, 6 };
+numbers.RemoveAll(n =&gt; n % 2 == 0);
+Console.WriteLine(string.Join(", ", numbers)); // 1, 3, 5</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">MutationMistake.cs</div>      <pre><code>var items = new List&lt;int&gt; { 1, 2, 3 };
+
+// WRONG: throws InvalidOperationException -- collection modified during iteration
+// foreach (var i in items)
+//     if (i == 2) items.Remove(i);
+
+// RIGHT: iterate backward with an indexed loop
+for (int i = items.Count - 1; i &gt;= 0; i--)
+{
+    if (items[i] == 2) items.RemoveAt(i);
+}
+
+// ALSO RIGHT: OrderBy does not sort in place -- it returns a new sequence
+var sorted = items.OrderBy(x =&gt; x).ToList();</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Arrays have a fixed length set at creation; <code>List of T</code> grows and shrinks dynamically.</li>
-        <li><code>Array.Sort</code> sorts in place; <code>string.Join</code> is handy for printing collections.</li>
-        <li><code>List of T</code> offers <code>Add</code>, <code>Remove</code>, <code>Contains</code>, and <code>Count</code> out of the box.</li>
-        <li>Both arrays and lists implement IEnumerable, so foreach and LINQ work on either.</li>
+        <li>A List of T is backed by an array that doubles in capacity, giving amortized constant-time appends.</li>
+        <li>Jagged arrays (arrays of arrays) allow different row lengths; rectangular arrays require equal-length rows.</li>
+        <li><code>Array.Sort</code> sorts in place; LINQ's <code>OrderBy</code> does not &mdash; it returns a new sequence.</li>
+        <li>Removing items from a list during a <code>foreach</code> throws; use <code>RemoveAll</code> or an indexed backward loop instead.</li>
+        <li>Both arrays and lists implement IEnumerable of T, so foreach and LINQ work on either.</li>
+        <li>Collection expressions (<code>[1, 2, 3]</code>, C# 12+) offer a terser, unified initializer syntax.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a List of int with 8 numbers, remove any values less than 10, sort the rest, and print the result joined by commas.</p>
+      <p>Create a List of int with 8 numbers, remove any values less than 10 using RemoveAll, sort the rest, and print the result joined by commas. Then build a small jagged array representing rows of increasing length (like the triangle example) and print each row on its own line.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

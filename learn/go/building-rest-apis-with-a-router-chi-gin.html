@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,14 +119,18 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Building REST APIs with a router (chi/gin)</h1>
     <p class="lang-line"><b>Go</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="testing-with-the-built-in-testing-package.html">Testing with the built-in testing package</a></p>
   </div>
 
   <article>
-    <p class="lead">While <code>net/http</code> covers the basics, routers like <b>chi</b> and <b>gin</b> add convenient features on top: path parameters (<code>/users/{id}</code>), middleware chains, and route grouping, without straying far from idiomatic Go.</p>
-    <p><b>gin</b> is a full-featured, high-performance framework with built-in JSON binding and validation, popular for its speed and low-friction API; <b>chi</b> is a lightweight, fully <code>net/http</code>-compatible router that stays closer to the standard library's interfaces.</p>
-    <p>Both let you group related routes and apply shared middleware (logging, authentication) to a whole group at once, which keeps route definitions readable as an API grows.</p>
+    <p class="lead">While <code>net/http</code> covers the basics, routers like <b>chi</b> and <b>gin</b> add convenient features on top: path parameters (<code>/users/{id}</code>), middleware chains, route grouping, and automatic request binding/validation, without straying far from idiomatic Go.</p>
+    <p><b>gin</b> is a full-featured, high-performance framework with built-in JSON binding and validation via struct tags (<code>binding:"required"</code>), a custom <code>gin.Context</code> that bundles the request, response writer, and helper methods together, and its own middleware and error-handling conventions &mdash; popular for its speed and low-friction API for building an API quickly.</p>
+    <p><b>chi</b> is a lightweight, fully <code>net/http</code>-compatible router: its handlers are plain <code>func(w http.ResponseWriter, r *http.Request)</code>, so any existing <code>net/http</code> middleware or handler works with chi unmodified, which makes it a natural fit for teams who want just routing and grouping without a broader framework's opinions layered on top.</p>
+    <p>Both let you group related routes and apply shared middleware (logging, authentication, rate limiting) to a whole group at once, which keeps route definitions readable as an API grows &mdash; for example, mounting an <code>/admin</code> group behind an authentication middleware while leaving <code>/public</code> routes open.</p>
+    <p>Middleware in both frameworks runs in the order it's registered, wrapping the eventual handler like layers of an onion: a logging middleware registered first runs its pre-handler code first and its post-handler code last, so request-scoped setup (like attaching a request ID) belongs early in the chain and response-shaping code belongs later.</p>
+    <p>For a small API, plain <code>net/http</code> with Go 1.22's pattern-based <code>ServeMux</code> is often sufficient and keeps dependencies minimal; reaching for chi or gin becomes worthwhile once you need consistent middleware layering, structured request binding, or the ecosystem of plugins those frameworks provide.</p>
     <div class="code-block">
-<div class="cap">main.go</div>      <pre><code>package main
+<div class="cap">main.go (gin)</div>      <pre><code>package main
 
 import "github.com/gin-gonic/gin"
 
@@ -134,19 +150,79 @@ func main() {
 	r.Run(":8080")
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">main.go (gin binding + group)</div>      <pre><code>package main
+
+import "github.com/gin-gonic/gin"
+
+type CreateProductRequest struct {
+	Name  string  `json:"name" binding:"required"`
+	Price float64 `json:"price" binding:"required,gt=0"`
+}
+
+func main() {
+	r := gin.Default()
+
+	api := r.Group("/api")
+	{
+		api.POST("/products", func(c *gin.Context) {
+			var req CreateProductRequest
+			if err := c.ShouldBindJSON(&amp;req); err != nil {
+				c.JSON(400, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(201, req)
+		})
+	}
+	r.Run(":8080")
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">main.go (chi)</div>      <pre><code>package main
+
+import (
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+)
+
+func main() {
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+
+	r.Route("/tasks", func(r chi.Router) {
+		r.Get("/", listTasks)
+		r.Get("/{id}", getTask) // plain net/http-style handler, no framework Context needed
+	})
+
+	http.ListenAndServe(":8080", r)
+}
+
+func listTasks(w http.ResponseWriter, r *http.Request) { w.Write([]byte("[]")) }
+
+func getTask(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	w.Write([]byte("task " + id))
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Routers like chi and gin add path parameters, middleware, and route grouping on top of net/http.</li>
-        <li>gin favors speed and built-in JSON binding; chi favors staying close to standard net/http interfaces.</li>
-        <li>Struct tags like <code>json:"name"</code> control how a struct serializes to and from JSON.</li>
-        <li>Middleware applied to a route group runs for every route inside that group automatically.</li>
+        <li>gin favors speed and built-in JSON binding/validation via a custom Context; chi favors staying with plain net/http handler signatures.</li>
+        <li>Struct tags like <code>json:"name"</code> and <code>binding:"required"</code> control serialization and, in gin, request validation.</li>
+        <li>Middleware applied to a route group runs for every route inside that group automatically, in registration order.</li>
+        <li>chi's handlers are ordinary <code>net/http</code> handlers, so existing standard-library middleware works with it unmodified.</li>
+        <li>Middleware wraps a handler in layers: pre-handler code runs in registration order, post-handler code runs in reverse.</li>
+        <li>Reach for a router framework once you need consistent middleware layering or structured binding beyond what net/http offers directly.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch a gin or chi router with GET and POST routes for a /tasks resource, including a path parameter route for fetching one task by id.</p>
+      <p>Sketch a gin or chi router with GET and POST routes for a /tasks resource, including a path parameter route for fetching one task by id. Then add a request struct with binding tags for the POST body (in gin) or manual JSON decoding (in chi), and add a logging middleware applied only to a /tasks route group rather than the whole router.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

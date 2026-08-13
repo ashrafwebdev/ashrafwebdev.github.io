@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Testing with pytest</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="async-python-with-asyncio.html">Async Python with asyncio</a></p>
   </div>
 
   <article>
-    <p class="lead">pytest is the most widely used Python testing framework — test functions are just functions prefixed with <code>test_</code>, and assertions use plain <code>assert</code> statements instead of a special assertion API.</p>
-    <p>Fixtures (<code>@pytest.fixture</code>) provide reusable setup (like a database connection or sample data) that tests can request simply by naming it as a parameter.</p>
+    <p class="lead">pytest is the most widely used Python testing framework — test functions are just functions prefixed with <code>test_</code> in a file named <code>test_*.py</code> or <code>*_test.py</code>, and assertions use plain <code>assert</code> statements instead of a special assertion API like <code>self.assertEqual(...)</code> from the built-in unittest module.</p>
+    <p>Plain <code>assert</code> statements work directly because pytest rewrites them at test-collection time to give detailed, readable failure output automatically — showing you the actual values on both sides of a failed comparison, not just 'AssertionError' with no context, which is a big part of why pytest feels friendlier than unittest.</p>
+    <p>Fixtures (<code>@pytest.fixture</code>) provide reusable setup — like a database connection, a temp file, or sample data — that tests can request simply by naming the fixture as a parameter; pytest handles calling it and passing the result in. Fixtures can themselves depend on other fixtures, and have a <code>scope</code> (function, class, module, session) controlling how often they're recreated.</p>
+    <p><code>pytest.raises(ValueError)</code> used as a context manager is how you test that a specific exception is raised — the test fails if the code inside the block doesn't raise that exception, and you can further inspect the exception's message via the object it yields.</p>
+    <p><code>@pytest.mark.parametrize</code> runs the same test function multiple times with different input/expected-output pairs, which avoids copy-pasting near-identical test functions and makes it trivial to add one more edge case later — just add one more row of data, not one more function.</p>
+    <p>Fixtures with <code>scope="function"</code> (the default) run fresh for every single test, giving each test a clean, isolated starting point — this test isolation is one of pytest's core value propositions, since a test that depends on leftover state from a previous test is fragile and order-dependent in exactly the way tests shouldn't be.</p>
     <div class="code-block">
 <div class="cap">test_math.py</div>      <pre><code>import pytest
 from mymodule import add
@@ -129,19 +146,56 @@ def sample_data():
 def test_sum_of_sample(sample_data):
     assert sum(sample_data) == 6</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">test_parametrize_and_raises.py</div>      <pre><code>import pytest
+from mymodule import divide
+
+@pytest.mark.parametrize("a, b, expected", [
+    (10, 2, 5),
+    (9, 3, 3),
+    (-6, 2, -3),
+])
+def test_divide(a, b, expected):
+    assert divide(a, b) == expected
+
+def test_divide_by_zero_raises():
+    with pytest.raises(ZeroDivisionError):
+        divide(10, 0)</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">test_fixture_scope.py</div>      <pre><code>import pytest
+
+@pytest.fixture(scope="module")
+def db_connection():
+    print("opening connection")   # runs once for the whole test file
+    conn = {"connected": True}
+    yield conn                     # tests receive this value
+    print("closing connection")   # teardown after all tests finish
+
+def test_query_users(db_connection):
+    assert db_connection["connected"]
+
+def test_query_orders(db_connection):
+    assert db_connection["connected"]   # reuses the SAME connection</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>pytest test functions just need a <code>test_</code> prefix — no need to subclass anything, unlike Python's built-in unittest.</li>
         <li>Plain <code>assert</code> statements work directly — pytest rewrites them to give detailed failure output automatically.</li>
         <li>Fixtures let you share setup across many tests, and can themselves depend on other fixtures.</li>
+        <li>A fixture's <code>scope</code> (function, class, module, session) controls how often it's recreated — the default, function scope, gives every test a clean slate.</li>
         <li><code>pytest.raises(ValueError)</code> as a context manager tests that a specific exception is raised.</li>
+        <li><code>@pytest.mark.parametrize</code> runs one test function against many input/output pairs, avoiding near-duplicate test functions.</li>
+        <li>A fixture using <code>yield</code> instead of <code>return</code> can run teardown code after the test finishes, similar to a context manager.</li>
+        <li>Run <code>pytest -v</code> for verbose per-test output, or <code>pytest -k "add"</code> to run only tests whose name matches a keyword.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write three pytest test functions for a function you've already built, covering a normal case, an edge case, and a case that should raise an exception.</p>
+      <p>Write three pytest test functions for a function you've already built, covering a normal case, an edge case, and a case that should raise an exception (using pytest.raises). Then convert the normal-case tests into a single parametrized test using @pytest.mark.parametrize with at least three input/expected-output pairs.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

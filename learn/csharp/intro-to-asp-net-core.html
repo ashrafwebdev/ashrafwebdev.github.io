@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Intro to ASP.NET Core</h1>
     <p class="lang-line"><b>C#</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="working-with-files.html">Working with files</a></p>
   </div>
 
   <article>
-    <p class="lead"><b>ASP.NET Core</b> is Microsoft's cross-platform framework for building web apps and APIs in C#. A minimal API can be just a few lines: <code>WebApplication.CreateBuilder</code> configures the app, and <code>app.MapGet</code>/<code>MapPost</code> wire URL routes directly to handler functions.</p>
-    <p>ASP.NET Core is built around a request pipeline of <b>middleware</b> &mdash; small components that each handle one concern (logging, authentication, routing) and pass the request to the next one in sequence, configured explicitly in your startup code.</p>
-    <p>Larger applications typically use the MVC or Controller pattern instead of minimal APIs, grouping related endpoints into a controller class, but both approaches sit on the same underlying ASP.NET Core pipeline.</p>
+    <p class="lead"><b>ASP.NET Core</b> is Microsoft's cross-platform framework for building web apps and APIs in C#. A minimal API can be just a few lines: <code>WebApplication.CreateBuilder</code> configures the app (reading configuration, setting up dependency injection), and <code>app.MapGet</code>/<code>MapPost</code> wire URL routes directly to handler functions without any controller class needed.</p>
+    <p>ASP.NET Core is built around a request pipeline of <b>middleware</b> &mdash; small components that each handle one concern (logging, authentication, static files, routing, error handling) and pass the request to the next one in sequence, configured explicitly in your startup code with calls like <code>app.UseAuthentication()</code> or <code>app.UseStaticFiles()</code>. A custom middleware delegate is typically written with <code>async</code>/<code>await</code> so it can hand off to the next middleware without blocking a thread while it waits &mdash; the full mechanics of <code>async</code>/<code>await</code> are covered in a later lesson, but for now it's enough to know that <code>await next()</code> passes the request along the pipeline. Order matters: middleware registered earlier runs first on the way in and last on the way out, so authentication middleware, for example, needs to run before any middleware that assumes the user is identified.</p>
+    <p>Dependency injection is baked into the framework from the start: services are registered with the builder (<code>builder.Services.AddScoped&lt;IMyService, MyService&gt;()</code>) with a lifetime &mdash; <code>Singleton</code> (one instance for the app's whole lifetime), <code>Scoped</code> (one instance per HTTP request), or <code>Transient</code> (a new instance every time it's requested) &mdash; and are then automatically supplied wherever a constructor or minimal API handler asks for that type as a parameter.</p>
+    <p>Route parameters like <code>{name}</code> bind automatically to matching handler parameters by name and type, and more complex data (a JSON body on a POST) can be bound the same way by declaring a parameter of the model's type; the framework infers from context whether to read it from the route, the query string, or the body.</p>
+    <p>Configuration flows from multiple sources layered in a defined precedence order &mdash; <code>appsettings.json</code>, an environment-specific <code>appsettings.{Environment}.json</code>, environment variables, and command-line arguments &mdash; with later sources overriding earlier ones, which is how the same published app behaves differently across development, staging, and production without a rebuild.</p>
+    <p>Larger applications typically use the MVC or Controller pattern instead of minimal APIs, grouping related endpoints into a controller class annotated with routing attributes, but both approaches sit on the same underlying ASP.NET Core pipeline and can even be mixed within a single application.</p>
     <div class="code-block">
 <div class="cap">Program.cs</div>      <pre><code>var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -122,19 +138,62 @@ app.MapGet("/greet/{name}", (string name) =&gt; $"Hello, {name}!");
 
 app.Run();</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">ProgramWithDI.cs</div>      <pre><code>var builder = WebApplication.CreateBuilder(args);
+
+// Register a service with a Scoped lifetime (one instance per request)
+builder.Services.AddScoped&lt;IGreeter, FriendlyGreeter&gt;();
+
+var app = builder.Build();
+
+// The handler simply asks for IGreeter and DI supplies it
+app.MapGet("/greet/{name}", (string name, IGreeter greeter) =&gt;
+    greeter.Greet(name));
+
+app.Run();
+
+interface IGreeter { string Greet(string name); }
+class FriendlyGreeter : IGreeter
+{
+    public string Greet(string name) =&gt; $"Hey there, {name}!";
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">MiddlewareOrder.cs</div>      <pre><code>var app = builder.Build();
+
+// Order matters: each middleware runs before the ones after it
+// (async/await mechanics are explained fully in a later lesson)
+app.Use(async (context, next) =&gt;
+{
+    Console.WriteLine($"Request: {context.Request.Path}");
+    await next(); // pass control to the next middleware
+    Console.WriteLine($"Response: {context.Response.StatusCode}");
+});
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapGet("/secure", () =&gt; "only for authenticated users");</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Minimal APIs let you wire routes directly to handlers with very little boilerplate.</li>
-        <li>ASP.NET Core processes every request through a configurable pipeline of middleware.</li>
+        <li>ASP.NET Core processes every request through a configurable pipeline of middleware, and registration order controls execution order.</li>
+        <li>Dependency injection is built in; services are registered with a Singleton, Scoped, or Transient lifetime.</li>
         <li>Route parameters like <code>{name}</code> bind automatically to matching handler parameters.</li>
-        <li>Larger apps commonly organize endpoints into controller classes using the MVC pattern.</li>
+        <li>Configuration layers appsettings.json, environment-specific overrides, environment variables, and command-line args, each overriding the last.</li>
+        <li>Larger apps commonly organize endpoints into controller classes using the MVC pattern, on the same pipeline as minimal APIs.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a minimal ASP.NET Core Program.cs with two GET routes: one returning a static welcome message and one that echoes back a route parameter.</p>
+      <p>Write a minimal ASP.NET Core Program.cs with two GET routes: one returning a static welcome message and one that echoes back a route parameter. Then register a small service interface with AddScoped, inject it into one of the route handlers, and add a piece of custom middleware that logs the request path before the handler runs.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A tiny web-based bookshelf you can actually save books to</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

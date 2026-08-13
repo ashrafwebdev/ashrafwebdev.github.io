@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Syntax, variables, and control structures</h1>
     <p class="lang-line"><b>PHP</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">PHP variables always start with a dollar sign (<code>$name</code>) and need no type declaration. PHP code lives inside <code>&lt;?php ... ?&gt;</code> tags, which can be embedded directly in an HTML file — the server runs the PHP and sends the resulting HTML to the browser.</p>
-    <p>Control structures — <code>if</code>/<code>elseif</code>/<code>else</code>, <code>for</code>, <code>while</code>, <code>foreach</code> — look similar to C-family languages, with curly braces marking blocks.</p>
+    <p class="lead">PHP variables always start with a dollar sign (<code>$name</code>) and need no type declaration. PHP code lives inside <code>&lt;?php ... ?&gt;</code> tags, which can be embedded directly in an HTML file — the server runs the PHP and sends the resulting HTML to the browser. A file can contain many separate PHP blocks mixed with plain HTML; everything outside a PHP tag is sent to the browser verbatim.</p>
+    <p>Control structures — <code>if</code>/<code>elseif</code>/<code>else</code>, <code>for</code>, <code>while</code>, <code>do...while</code>, <code>foreach</code> — look similar to C-family languages, with curly braces marking blocks. <code>foreach</code> is the idiomatic way to walk any array, whether indexed or associative, and can destructure key and value at once with <code>foreach ($arr as $key =&gt; $value)</code>.</p>
+    <p>PHP is loosely (dynamically) typed and performs automatic type juggling during comparisons and arithmetic, which is convenient but a frequent source of bugs. The loose equality operator <code>==</code> converts operands to a common type before comparing, so <code>0 == "abc"</code> was historically true in older PHP versions and <code>"1" == "01"</code> is still true today; the strict equality operator <code>===</code> compares both value and type with no conversion, and should be the default choice unless you deliberately want juggling.</p>
+    <p>Arrays are PHP's single most important data structure and do double duty as both a list and a hash map — an ordered, mutable collection of key/value pairs where keys are automatically integers unless you supply strings. <code>$fruit = ["apple", "pear"];</code> creates an indexed array with keys 0 and 1, while <code>$ages = ["Amina" =&gt; 27, "Tom" =&gt; 31];</code> creates an associative array.</p>
+    <p>Comments use <code>//</code> or <code>#</code> for a single line and <code>/* ... */</code> for multiple lines; whitespace outside of string literals is insignificant, but every statement must end with a semicolon — omitting one is one of the most common beginner mistakes and produces a parse error on the following line, which can be confusing to debug.</p>
+    <p>PHP 8 introduced the <code>match</code> expression as a stricter, more concise alternative to <code>switch</code>: <code>match</code> compares with strict (<code>===</code>) semantics, has no fall-through between arms, requires every arm to be handled (or throws an <code>UnhandledMatchError</code>), and evaluates directly to a value rather than requiring a <code>break</code> in every branch.</p>
     <div class="code-block">
 <div class="cap">basics.php</div>      <pre><code>&lt;?php
 $name = "Amina";
@@ -124,19 +141,57 @@ if ($age &gt;= 18) {
 }
 ?&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">loops_and_arrays.php</div>      <pre><code>&lt;?php
+$scores = ["Amina" =&gt; 92, "Tom" =&gt; 81, "Lee" =&gt; 74];
+
+foreach ($scores as $name =&gt; $score) {
+    echo "$name scored $score\n";
+}
+
+// Classic for loop over an indexed array
+$nums = [10, 20, 30];
+for ($i = 0; $i &lt; count($nums); $i++) {
+    echo $nums[$i] . "\n";
+}
+?&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">match_vs_switch.php (a common type-juggling gotcha)</div>      <pre><code>&lt;?php
+$input = "0";
+
+// Loose comparison: string "0" is falsy, easy to trip over
+if ($input == false) {
+    echo "This runs even though \$input is a non-empty string!\n";
+}
+
+// match() uses strict comparison and returns a value directly
+$label = match ($input) {
+    "0" =&gt; "zero as text",
+    0    =&gt; "zero as int",
+    default =&gt; "something else",
+};
+echo $label; // "zero as text" — no int/string coercion happens
+?&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Every PHP variable starts with <code>$</code> — this is not optional punctuation, it's part of the variable name.</li>
         <li>PHP is loosely typed by default, though modern PHP supports optional type declarations on function parameters and return values.</li>
         <li>Variable interpolation works directly inside double-quoted strings (<code>"$name is..."</code>) but not single-quoted ones.</li>
-        <li>Every statement ends with a semicolon — a common early mistake is forgetting it.</li>
+        <li>Every statement ends with a semicolon — a common early mistake is forgetting it, which throws off the parser on the next line.</li>
+        <li>Prefer <code>===</code> and <code>!==</code> over <code>==</code> and <code>!=</code> to avoid surprising type-juggling bugs.</li>
+        <li>Arrays in PHP are ordered maps — the same construct handles both simple lists and associative dictionaries.</li>
+        <li><code>match</code> (PHP 8+) is stricter and more predictable than <code>switch</code>: no fall-through, strict comparisons, and it returns a value.</li>
+        <li><code>foreach</code> is almost always preferred over manual index loops for iterating arrays — it's clearer and works on both indexed and associative arrays.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a PHP script with variables for a product name and price, and an if statement that prints a discount message if the price is over $50.</p>
+      <p>Write a PHP script with variables for a product name and price, and an if statement that prints a discount message if the price is over $50. Then build a small associative array of three products to prices, loop over it with foreach to print each one, and rewrite the discount check using match instead of if/else.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

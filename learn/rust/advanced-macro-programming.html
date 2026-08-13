@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Advanced macro programming</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="unsafe-rust-and-when-it-s-actually-needed.html">Unsafe Rust and when it's actually needed</a></p>
   </div>
 
   <article>
     <p class="lead">Rust has two kinds of macros: <b>declarative macros</b> (<code>macro_rules!</code>), which match against patterns in the token stream and expand into code, similar to a sophisticated find-and-replace; and <b>procedural macros</b>, which are Rust functions that run at compile time and can generate or transform arbitrary code, most commonly used for <code>#[derive(...)]</code>.</p>
     <p>A <code>macro_rules!</code> macro can accept a variable number of arguments using repetition patterns (<code>$($x:expr),*</code>), which is exactly how the standard library's own <code>vec!</code> macro is implemented under the hood.</p>
     <p>Procedural macros come in three flavors &mdash; derive macros, attribute macros, and function-like macros &mdash; and are commonly used to eliminate boilerplate, such as <code>#[derive(Serialize, Deserialize)]</code> automatically generating serialization code for a struct.</p>
+    <p><code>macro_rules!</code> macros are <b>hygienic</b> by default: an identifier introduced inside the macro's expansion (like a temporary local variable) cannot accidentally collide with an identically-named variable at the call site, which is a meaningful safety guarantee that naive C preprocessor-style textual substitution simply doesn't provide.</p>
+    <p>Each <code>$variable</code> inside a <code>macro_rules!</code> pattern is annotated with a <b>fragment specifier</b> describing what kind of Rust syntax it's allowed to capture: <code>expr</code> for an expression, <code>ident</code> for an identifier, <code>ty</code> for a type, <code>block</code> for a brace-delimited block, and <code>tt</code> (token tree) as a catch-all for a single token or bracketed group. These specifiers are what let the macro system report a reasonably clear error instead of simply failing to parse.</p>
+    <p>Writing an actual procedural macro requires its own separate crate marked <code>proc-macro = true</code> in <code>Cargo.toml</code>, since proc macros operate directly on token streams rather than pattern-matching source text. Almost every real-world proc macro relies on the <code>syn</code> crate to parse the incoming tokens into a proper syntax tree, and the <code>quote</code> crate to generate the output tokens back out, which is why syn and quote are considered close to standard tooling for this kind of macro.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>macro_rules! max {
     ($a:expr, $b:expr) =&gt; {
@@ -125,6 +141,39 @@ fn main() {
     println!("{}", max!(10.5, 2.1));
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">sum_macro.rs</div>      <pre><code>macro_rules! sum {
+    ($($x:expr),*) =&gt; {
+        {
+            let mut total = 0;
+            $(total += $x;)*
+            total
+        }
+    };
+}
+
+fn main() {
+    println!("{}", sum!(1, 2));
+    println!("{}", sum!(1, 2, 3));
+    println!("{}", sum!(1, 2, 3, 4));
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">hygiene.rs</div>      <pre><code>macro_rules! double_it {
+    ($x:expr) =&gt; {
+        {
+            let total = $x * 2; // this `total` is hygienic
+            total
+        }
+    };
+}
+
+fn main() {
+    let total = 100; // this `total` is a completely separate binding
+    let doubled = double_it!(21);
+    println!("{} {}", total, doubled); // 100 42, no collision
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,12 +181,17 @@ fn main() {
         <li>Procedural macros are compile-time Rust functions that generate or transform code, powering derive macros.</li>
         <li>Repetition patterns let a macro accept a variable number of arguments, as vec! itself does.</li>
         <li>Derive macros like #[derive(Serialize)] eliminate large amounts of otherwise-repetitive boilerplate.</li>
+        <li>macro_rules! macros are hygienic: identifiers they introduce don't collide with the call site's identifiers.</li>
+        <li>Fragment specifiers (expr, ident, ty, block, tt) control what kind of syntax each $variable may capture.</li>
+        <li>Procedural macros live in their own crate marked <code>proc-macro = true</code> in Cargo.toml.</li>
+        <li>syn parses proc-macro input into a syntax tree; quote generates the output tokens &mdash; the de facto standard toolkit.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a macro_rules! macro called sum that accepts a variable number of expressions and expands to their total, then test it with two, three, and four arguments.</p>
+      <p>Write a macro_rules! macro called sum that accepts a variable number of expressions using a repetition pattern and expands to their total, testing it with two, three, and four arguments. Then add a comment explaining which fragment specifier you used for the repeated argument and why an ident or ty specifier would not have worked there.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

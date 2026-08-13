@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Subqueries</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="group-by-and-aggregate-functions.html">GROUP BY and aggregate functions</a></p>
   </div>
 
   <article>
     <p class="lead">A <b>subquery</b> is a complete query nested inside another, and can appear almost anywhere a value or table is expected: in the <code>WHERE</code> clause, the <code>SELECT</code> list, or the <code>FROM</code> clause, evaluated as an intermediate step before the outer query completes.</p>
-    <p>A subquery inside <code>WHERE ... IN (subquery)</code> filters rows based on a computed list of values, such as finding all customers who have placed at least one order over $100 by first selecting matching customer IDs from the orders table.</p>
-    <p>A <b>correlated subquery</b> references a column from the outer query and is re-evaluated once per outer row, unlike a regular subquery which runs once; correlated subqueries are powerful but can be slow on large tables, and are often rewritten as a JOIN for better performance.</p>
+    <p>A subquery inside <code>WHERE ... IN (subquery)</code> filters rows based on a computed list of values, such as finding all customers who have placed at least one order over $100 by first selecting matching customer IDs from the orders table. A <b>scalar subquery</b>, one guaranteed to return exactly one row and one column, can be used anywhere a single value is expected, including directly in the SELECT list or compared with a plain equals sign.</p>
+    <p>A subquery in the <code>FROM</code> clause, sometimes called a <b>derived table</b>, lets you treat the result of one query as if it were a table for the outer query to select from or join against &mdash; useful for pre-aggregating data before joining it to something else, such as computing each customer's order total first and then joining that summary to customer details.</p>
+    <p>A <b>correlated subquery</b> references a column from the outer query and is re-evaluated once per outer row, unlike a regular (uncorrelated) subquery which runs once and its result is reused for every outer row; correlated subqueries are powerful but can be slow on large tables, and are often rewritten as a JOIN or a window function for better performance.</p>
+    <p><code>EXISTS</code> and <code>NOT EXISTS</code> test only whether a correlated subquery returns any rows at all, without caring about the actual values returned &mdash; because the database can typically stop scanning as soon as it finds one matching row, EXISTS is often faster than an equivalent IN subquery, and it doesn't suffer from the NULL trap that NOT IN does.</p>
+    <p>It's easy to over-nest subqueries until a query becomes hard to read; a <b>common table expression</b> (a <code>WITH</code> clause) usually expresses the same logic more clearly by giving an intermediate result a name up front, which is worth reaching for once a query has more than one or two levels of nested subqueries.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT name, email
 FROM customers
@@ -122,19 +138,46 @@ WHERE id IN (
     WHERE total &gt; 100
 );</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">derived_table_and_exists.sql</div>      <pre><code>-- Derived table: pre-aggregate, then join
+SELECT c.name, totals.order_total
+FROM customers c
+JOIN (
+    SELECT customer_id, SUM(total) AS order_total
+    FROM orders
+    GROUP BY customer_id
+) AS totals ON totals.customer_id = c.id;
+
+-- EXISTS: faster and NULL-safe compared to an equivalent IN subquery
+SELECT c.name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.total &gt; 100
+);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">correlated_scalar.sql</div>      <pre><code>-- Correlated scalar subquery in the SELECT list: re-runs per outer row
+SELECT c.name,
+       (SELECT MAX(o.total) FROM orders o WHERE o.customer_id = c.id) AS biggest_order
+FROM customers c;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A subquery is a full query nested inside another, usable in WHERE, SELECT, or FROM.</li>
-        <li>WHERE ... IN (subquery) filters rows against a dynamically computed list of values.</li>
+        <li>A scalar subquery returns exactly one row and column and can be used wherever a single value fits.</li>
+        <li>A subquery in FROM (a derived table) lets you treat a query's result as a table to join against.</li>
         <li>A correlated subquery references the outer query and re-runs once per outer row.</li>
-        <li>Correlated subqueries can often be rewritten as JOINs for significantly better performance.</li>
+        <li>EXISTS/NOT EXISTS test only for row presence and are typically faster and NULL-safe versus IN/NOT IN.</li>
+        <li>Correlated subqueries can often be rewritten as JOINs or window functions for better performance.</li>
+        <li>A WITH clause (common table expression) often reads far more clearly than deeply nested subqueries.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a subquery that selects the names of products priced above the average price of all products, using a subquery to compute that average.</p>
+      <p>Write a subquery that selects the names of products priced above the average price of all products, using a subquery to compute that average. Then rewrite an IN-based filter for customers who have placed an order as an equivalent EXISTS query, and explain in a sentence why EXISTS avoids the NULL pitfall that NOT IN has.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

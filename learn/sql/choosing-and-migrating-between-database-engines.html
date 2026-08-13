@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,33 +119,60 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Choosing and migrating between database engines</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="deep-performance-tuning-under-real-production-lo.html">Deep performance tuning under real production load</a></p>
   </div>
 
   <article>
-    <p class="lead">Choosing a database engine depends on the workload: PostgreSQL's rich feature set and strong consistency suit most general-purpose applications; MySQL remains extremely common for web applications; specialized engines (Cassandra for massive write throughput, MongoDB for flexible document schemas, ClickHouse for analytical queries) fit narrower, specific needs better than a general-purpose relational database.</p>
-    <p>A migration between engines is rarely a simple data dump-and-restore: differing SQL dialects, data type mappings, and feature availability (stored procedures, specific index types, JSON support) all need careful auditing before and during the move.</p>
-    <p>A common, lower-risk migration strategy runs both databases side by side temporarily &mdash; writing to both, reading from the old one, then gradually cutting reads over and verifying consistency &mdash; rather than a single risky cutover that can't easily be reversed if something goes wrong.</p>
+    <p class="lead">Choosing a database engine depends on the workload: PostgreSQL's rich feature set and strong consistency suit most general-purpose applications; MySQL remains extremely common for web applications and has a huge ecosystem of hosting and tooling; specialized engines (Cassandra for massive write throughput across many nodes, MongoDB for flexible document schemas, ClickHouse for analytical queries over huge datasets) fit narrower, specific needs better than a general-purpose relational database.</p>
+    <p>Beyond raw features, practical factors often decide the choice in the real world: team familiarity with an engine, managed hosting availability and cost on your cloud provider, the maturity of client libraries in your application's language, and how well an engine's operational tooling (backups, monitoring, replication setup) fits your team's existing practices.</p>
+    <p>A migration between engines is rarely a simple data dump-and-restore: differing SQL dialects (window function syntax, date arithmetic, string functions, auto-increment mechanics all vary), data type mappings (a numeric type in one engine may not map exactly to the equivalent type in another), and feature availability (stored procedures, specific index types, native JSON support) all need careful auditing before and during the move.</p>
+    <p>Application code itself often has implicit assumptions baked in about the source engine's specific behavior &mdash; how NULLs sort by default, what happens on a unique constraint violation, case sensitivity defaults for string comparisons &mdash; and these differences can cause correctness bugs that only surface after the migration, well past the point where they're easy to trace back to the engine change.</p>
+    <p>A common, lower-risk migration strategy runs both databases side by side temporarily &mdash; writing to both, reading from the old one, then gradually cutting reads over and verifying consistency &mdash; rather than a single risky cutover that can't easily be reversed if something goes wrong. This dual-write period also gives real production traffic time to surface subtle behavioral differences before the old system is decommissioned.</p>
+    <p>Always verify data consistency between old and new systems (row counts, checksums, or targeted spot-checks on business-critical tables) before decommissioning the old one, and keep the old system available in a read-only or backup capacity for some agreed period afterward, since some discrepancies only surface once every code path has actually exercised the new system under real load.</p>
     <div class="code-block">
 <div class="cap">migration-plan.txt</div>      <pre><code>1. Stand up the new database engine alongside the old one.
-2. Dual-write: application writes to both databases.
-3. Backfill historical data from old -&gt; new.
-4. Verify: compare row counts and checksums between the two.
-5. Cut reads over gradually, monitoring for discrepancies.
-6. Decommission the old database once fully confident.</code></pre>
+2. Audit SQL dialect differences: date functions, window functions, auto-increment syntax.
+3. Dual-write: application writes to both databases.
+4. Backfill historical data from old -&gt; new.
+5. Verify: compare row counts and checksums between the two.
+6. Cut reads over gradually, monitoring for discrepancies.
+7. Keep the old database available read-only for an agreed window.
+8. Decommission the old database once fully confident.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">dialect_differences.sql</div>      <pre><code>-- PostgreSQL: auto-incrementing primary key
+id SERIAL PRIMARY KEY
+
+-- MySQL equivalent
+id INT AUTO_INCREMENT PRIMARY KEY
+
+-- PostgreSQL date arithmetic
+created_at + INTERVAL '30 days'
+
+-- MySQL equivalent
+DATE_ADD(created_at, INTERVAL 30 DAY)</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Engine choice should follow the actual workload: general-purpose, high write throughput, flexible schema, or analytics.</li>
+        <li>Practical factors like team familiarity, managed hosting, and tooling often decide as much as raw features.</li>
         <li>SQL dialect differences and feature gaps make engine migrations more than a simple data dump-and-restore.</li>
+        <li>Application code often has implicit assumptions about the source engine's specific behavior that surface as bugs later.</li>
         <li>Dual-write migrations with a gradual read cutover reduce the risk of a single irreversible cutover.</li>
         <li>Always verify data consistency between old and new systems before decommissioning the old one.</li>
+        <li>Keep the old system available read-only for a window after cutover in case of late-surfacing discrepancies.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>List three concrete factors (beyond raw performance) you would weigh when choosing between PostgreSQL and a document database like MongoDB for a new application.</p>
+      <p>List three concrete factors (beyond raw performance) you would weigh when choosing between PostgreSQL and a document database like MongoDB for a new application. Then sketch a brief dual-write migration plan for moving an existing orders table from MySQL to PostgreSQL, naming at least one SQL dialect difference you'd need to account for.</p>
     </div>
+    <a class="capstone-banner" href="project-hero.html">
+      <span class="cb-label">You've finished the Hero stage &mdash; capstone project</span>
+      <span class="cb-title">A scale-out plan for the database your app outgrew</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

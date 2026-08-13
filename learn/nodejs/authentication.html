@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Authentication: JWT and session-based auth</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="streams-and-buffers-basics.html">Streams and buffers basics</a></p>
   </div>
 
   <article>
-    <p class="lead">Session-based auth stores a session identifier in a cookie, with the actual session data kept server-side (in memory, Redis, or a database) — simple and revocable, but requires shared state across server instances.</p>
-    <p>JWT (JSON Web Token) auth encodes claims (like a user ID) directly into a signed token the client stores and sends with each request — stateless, which scales easily across servers, but harder to revoke before it naturally expires.</p>
+    <p class="lead">Session-based auth stores a session identifier in a cookie, with the actual session data kept server-side (in memory, Redis, or a database) — simple and easily revocable (just delete the session record), but requires shared state accessible to every server instance handling requests.</p>
+    <p>JWT (JSON Web Token) auth encodes claims (like a user ID) directly into a signed token the client stores and sends with each request — stateless, which scales easily across servers with no shared session store needed, but harder to revoke before it naturally expires, since the server doesn't track which tokens are 'still valid' anywhere by default.</p>
+    <p>Passwords must always be hashed (with bcrypt or argon2, never a plain fast hash like MD5 or SHA-256 alone) before storage — never stored in plain text, ever. Bcrypt's deliberate slowness (controlled by a 'cost factor') is a feature, not a flaw: it makes brute-forcing a leaked password database computationally expensive.</p>
+    <p>Where you store a JWT on the client matters a lot for security: <code>localStorage</code> is readable by any JavaScript running on the page, so it's vulnerable to theft via XSS; an <code>httpOnly</code> cookie can't be read by JavaScript at all, which meaningfully reduces that specific risk, though it introduces its own concerns around CSRF that need separate mitigation (like <code>SameSite</code> cookie attributes).</p>
+    <p>A common production pattern combines a short-lived access token (minutes) with a longer-lived refresh token (days/weeks) stored more securely — the access token authenticates most requests and expiring quickly limits the damage if it leaks, while the refresh token is used only to obtain a new access token, and can itself be revoked server-side if needed.</p>
+    <p>Session stores that live only in a single server's memory (the default for something like <code>express-session</code> without configuration) silently break the moment you run more than one server instance or restart the process — a user's session vanishes. Backing sessions with Redis or a database is what makes session auth compatible with horizontal scaling.</p>
     <div class="code-block">
 <div class="cap">auth.js (JWT)</div>      <pre><code>const jwt = require("jsonwebtoken");
 
@@ -129,6 +146,40 @@ function requireAuth(req, res, next) {
   }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">hashPassword.js (bcrypt)</div>      <pre><code>const bcrypt = require("bcrypt");
+
+async function register(email, plainPassword) {
+  const passwordHash = await bcrypt.hash(plainPassword, 12); // cost factor 12
+  return saveUser({ email, passwordHash });
+}
+
+async function login(email, plainPassword) {
+  const user = await findUserByEmail(email);
+  if (!user) return null;
+  const valid = await bcrypt.compare(plainPassword, user.passwordHash);
+  return valid ? user : null;
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">sessions.js (express-session with Redis)</div>      <pre><code>const session = require("express-session");
+const RedisStore = require("connect-redis").default;
+
+app.use(session({
+  store: new RedisStore({ client: redisClient }), // shared across instances
+  secret: process.env.SESSION_SECRET,
+  cookie: { httpOnly: true, secure: true, maxAge: 24 * 60 * 60 * 1000 },
+  resave: false,
+  saveUninitialized: false,
+}));
+
+app.post("/login", async (req, res) =&gt; {
+  const user = await login(req.body.email, req.body.password);
+  if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  req.session.userId = user.id; // stored server-side, cookie just holds the id
+  res.json({ ok: true });
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -136,12 +187,17 @@ function requireAuth(req, res, next) {
         <li>Always set a reasonable <code>expiresIn</code> on JWTs — a token that never expires is a serious liability if it leaks.</li>
         <li>Store JWT secrets in environment variables, never in source code.</li>
         <li>Passwords must always be hashed (with bcrypt or argon2) before storage — never stored in plain text, ever.</li>
+        <li>An <code>httpOnly</code> cookie protects a token from being read by client-side JavaScript, reducing XSS-driven theft risk.</li>
+        <li>Combining a short-lived access token with a longer-lived, revocable refresh token limits damage from a leaked access token.</li>
+        <li>An in-memory session store breaks the moment you run more than one server instance — back it with Redis or a database for horizontal scaling.</li>
+        <li><code>bcrypt.compare()</code>, not manual string comparison, must be used to check a password against its stored hash.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add JWT-based login to an Express app: a route that issues a token on valid credentials, and middleware that protects another route by requiring a valid token.</p>
+      <p>Add JWT-based login to an Express app: a route that hashes and stores a password with bcrypt on registration, a login route that verifies it and issues a token, and middleware that protects another route by requiring a valid token. Then, as a comparison, rebuild the same login flow using express-session instead and note in comments which approach would need extra work to run across multiple server instances.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

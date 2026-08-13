@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Streams and buffers basics</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="connecting-to-a-database-mongodb-or-postgresql.html">Connecting to a database (MongoDB or PostgreSQL)</a></p>
   </div>
 
   <article>
-    <p class="lead">A stream processes data incrementally, in chunks, rather than loading an entire file or response into memory at once — essential for handling large files or long-lived connections efficiently.</p>
-    <p>A Buffer represents raw binary data — what you get, for instance, when reading a file without specifying a text encoding. Streams of data (like a file being read) emit Buffer chunks that you can process as they arrive.</p>
+    <p class="lead">A stream processes data incrementally, in chunks, rather than loading an entire file or response into memory at once — essential for handling large files or long-lived connections efficiently, since a naive <code>readFile</code> on a multi-gigabyte file would try to hold the whole thing in memory.</p>
+    <p>A Buffer represents raw binary data — what you get, for instance, when reading a file without specifying a text encoding. Streams of data (like a file being read) emit Buffer chunks that you can process as they arrive, and <code>Buffer.from()</code>/<code>Buffer.alloc()</code> let you create buffers directly when working with binary protocols or encodings.</p>
+    <p>Node has four stream types: Readable (a source of data, like a file being read), Writable (a destination, like a file being written or an HTTP response), Duplex (both, like a TCP socket), and Transform (a duplex stream that modifies data as it passes through, like a gzip compressor). Most application code works with the first two.</p>
+    <p><code>.pipe()</code> connects a readable stream directly to a writable one — reading a file and streaming it as an HTTP response, for example — and automatically manages backpressure: pausing the readable side when the writable side can't keep up, which prevents memory from ballooning if, say, a slow network connection can't consume data as fast as a fast local disk can produce it.</p>
+    <p>The modern, more robust alternative to chaining <code>.pipe()</code> calls manually is <code>stream.pipeline()</code> (or its promise version), which forwards errors from any stream in the chain and guarantees all streams are properly closed afterward — plain <code>.pipe()</code> notoriously does *not* automatically forward errors or clean up on failure, which is a common source of resource leaks in production code.</p>
+    <p>HTTP request/response objects in Node are themselves streams — this is how large file uploads and downloads are handled efficiently without buffering the entire body in memory first, and it's why frameworks like Express can support piping a file straight from disk into a response with <code>res.sendFile()</code> or a manual pipe.</p>
     <div class="code-block">
 <div class="cap">streams.js</div>      <pre><code>const fs = require("fs");
 
@@ -123,19 +140,53 @@ readStream.on("data", (chunk) =&gt; {
 
 readStream.on("end", () =&gt; console.log("Done reading"));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">copy-with-pipeline.js</div>      <pre><code>const { pipeline } = require("stream/promises");
+const fs = require("fs");
+const zlib = require("zlib");
+
+async function compressFile(input, output) {
+  await pipeline(
+    fs.createReadStream(input),
+    zlib.createGzip(),           // a Transform stream
+    fs.createWriteStream(output)
+  );
+  // pipeline() forwards errors from any stage and cleans up all streams
+}
+
+compressFile("large-file.txt", "large-file.txt.gz")
+  .then(() =&gt; console.log("Compressed successfully"))
+  .catch((err) =&gt; console.error("Failed:", err));</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">buffers.js</div>      <pre><code>const buf = Buffer.from("hello", "utf-8");
+console.log(buf);            // &lt;Buffer 68 65 6c 6c 6f&gt;
+console.log(buf.toString()); // "hello"
+console.log(buf.length);     // 5 (bytes, not characters — matters for multi-byte text)
+
+const empty = Buffer.alloc(4); // 4 zeroed bytes, useful as a fixed-size binary buffer</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Streams process data in chunks, keeping memory usage low regardless of the total file/data size.</li>
-        <li><code>.pipe()</code> connects a readable stream directly to a writable one (e.g. reading a file and streaming it as an HTTP response).</li>
+        <li><code>.pipe()</code> connects a readable stream directly to a writable one and automatically manages backpressure.</li>
         <li>A Buffer holds raw bytes; specify an encoding when you want text instead.</li>
+        <li>There are four stream types — Readable, Writable, Duplex, and Transform — most app code only needs the first two.</li>
+        <li>Plain <code>.pipe()</code> doesn't forward errors or guarantee cleanup — prefer <code>stream.pipeline()</code> (or its promise version) in real code.</li>
         <li>HTTP request/response objects in Node are themselves streams — this is how large file uploads/downloads are handled efficiently.</li>
+        <li>Backpressure is the mechanism that prevents a fast producer from overwhelming a slow consumer's memory.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Use fs.createReadStream and fs.createWriteStream together with .pipe() to copy a large file without loading it entirely into memory.</p>
+      <p>Use fs.createReadStream and fs.createWriteStream together with stream.pipeline() (not raw .pipe()) to copy a large file without loading it entirely into memory. Then insert a zlib gzip Transform stream into the pipeline so the copy is compressed on the way through, and confirm errors (e.g. from a missing source file) are properly surfaced by the pipeline's promise rejection.</p>
     </div>
+    <a class="capstone-banner" href="project-learning.html">
+      <span class="cb-label">You've finished the Learning stage &mdash; capstone project</span>
+      <span class="cb-title">A CRUD task API backed by a real database</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

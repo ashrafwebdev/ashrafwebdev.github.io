@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,36 +119,58 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Using a GUI client (or psql/mysql CLI)</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="primary-keys-and-basic-table-design.html">Primary keys and basic table design</a></p>
   </div>
 
   <article>
-    <p class="lead">Every SQL database ships with a command-line client &mdash; <code>psql</code> for PostgreSQL, <code>mysql</code> for MySQL &mdash; that lets you connect, run ad-hoc queries, and inspect schema directly from the terminal, and is often the fastest way to debug something quickly.</p>
-    <p>GUI clients like DBeaver, TablePlus, or pgAdmin add visual table browsing, query result grids, and schema diagrams on top of the same underlying connection, which many find more approachable for exploring an unfamiliar database.</p>
-    <p>Common CLI commands are worth memorizing early: in <code>psql</code>, <code>\dt</code> lists tables, <code>\d table_name</code> describes a table's columns, and <code>\q</code> exits &mdash; these small habits make working directly against a database far faster than looking everything up each time.</p>
+    <p class="lead">Every SQL database ships with a command-line client &mdash; <code>psql</code> for PostgreSQL, <code>mysql</code> for MySQL &mdash; that lets you connect, run ad-hoc queries, and inspect schema directly from the terminal, and is often the fastest way to debug something quickly without leaving the keyboard.</p>
+    <p>GUI clients like DBeaver, TablePlus, or pgAdmin add visual table browsing, query result grids, entity-relationship diagrams, and query history on top of the same underlying connection, which many find more approachable for exploring an unfamiliar database or reviewing results that don't fit comfortably in a terminal.</p>
+    <p>Common <code>psql</code> commands are worth memorizing early: <code>\dt</code> lists tables, <code>\d table_name</code> describes a table's columns and indexes, <code>\du</code> lists database roles, <code>\l</code> lists databases, and <code>\q</code> exits &mdash; these small habits make working directly against a database far faster than looking everything up each time.</p>
+    <p>Connection strings encode everything needed to reach a database in one line &mdash; host, port, username, password, and database name &mdash; and both CLI and GUI clients accept them, which makes it easy to save and share a connection configuration without re-typing each field, though the password portion should never end up committed to source control.</p>
+    <p>Query history and saved snippets, available in most GUI clients and in <code>psql</code> via up-arrow recall or a <code>.psql_history</code> file, save real time once you're iterating on a query repeatedly, since re-typing a long multi-line statement from scratch each time is a genuine drag on productivity.</p>
+    <p>Whichever client you use, it's worth getting comfortable reading a result grid's row count and any error message carefully &mdash; "0 rows affected" versus an actual syntax error look similar at a glance but mean very different things, and misreading one for the other is a common source of confusion when debugging.</p>
     <div class="code-block">
 <div class="cap">terminal</div>      <pre><code>$ psql -U postgres -d mydb
 mydb=# \dt
 mydb=# \d products
-mydb=# SELECT count(*) FROM products;
+mydb=# SELECT * FROM products;
 mydb=# \q
 
 $ mysql -u root -p mydb
 mysql&gt; SHOW TABLES;
 mysql&gt; DESCRIBE products;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">connection_string.txt</div>      <pre><code># PostgreSQL connection string (URI form)
+postgresql://app_user:secret@localhost:5432/mydb
+
+# Using it directly with psql
+$ psql "postgresql://app_user:secret@localhost:5432/mydb"
+
+# MySQL equivalent
+$ mysql --host=localhost --port=3306 --user=app_user -p mydb</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>psql and mysql are the standard command-line clients for PostgreSQL and MySQL respectively.</li>
-        <li>GUI clients like DBeaver or TablePlus add visual browsing on top of the same connection.</li>
-        <li>\dt and \d table_name in psql are among the most useful everyday commands to know.</li>
+        <li>GUI clients like DBeaver or TablePlus add visual browsing and diagrams on top of the same connection.</li>
+        <li>\dt, \d table_name, \du, and \l in psql are among the most useful everyday commands to know.</li>
+        <li>Connection strings bundle host, port, user, password, and database into one shareable line.</li>
+        <li>Never commit a connection string containing a real password to source control.</li>
+        <li>Query history (up-arrow recall or a GUI's history panel) saves real time during iterative debugging.</li>
         <li>Being comfortable in a CLI client speeds up ad-hoc debugging far more than a GUI alone.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Connect to a local database with psql or mysql from the command line, list its tables, describe one table's structure, and run a simple SELECT count query.</p>
+      <p>Connect to a local database with psql or mysql from the command line, list its tables, describe one table's structure, and run a simple SELECT query against it. Then write out (without any real password) what a PostgreSQL connection URI for a database named shop, user app, on localhost port 5432, would look like.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">Your bookshelf, turned into a real SQL database</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

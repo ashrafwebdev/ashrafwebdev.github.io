@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,59 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>JOINs: inner, left, right</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="using-a-gui-client-or-psql-mysql-cli.html">Using a GUI client (or psql/mysql CLI)</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>JOIN</b> combines rows from two or more tables based on a related column, most commonly a foreign key referencing another table's primary key. <code>INNER JOIN</code> (the default kind of JOIN) returns only rows that have a match in both tables.</p>
-    <p><code>LEFT JOIN</code> returns every row from the left table, with matching columns from the right table filled in where available and <code>NULL</code> where there's no match &mdash; useful for questions like "every customer, including those with zero orders".</p>
-    <p><code>RIGHT JOIN</code> is the mirror image of <code>LEFT JOIN</code>, keeping every row from the right table instead; in practice, most developers write every join as a <code>LEFT JOIN</code> by simply swapping table order, so <code>RIGHT JOIN</code> shows up far less often in real code.</p>
+    <p class="lead">A <b>JOIN</b> combines rows from two or more tables based on a related column, most commonly a foreign key referencing another table's primary key. <code>INNER JOIN</code> (the default kind of JOIN, and what plain <code>JOIN</code> means if unqualified) returns only rows that have a match in both tables, silently dropping anything on either side without a partner.</p>
+    <p><code>LEFT JOIN</code> returns every row from the left table, with matching columns from the right table filled in where available and <code>NULL</code> where there's no match &mdash; useful for questions like "every customer, including those with zero orders". Filtering a left-joined column's NULLs afterward in the WHERE clause accidentally turns a LEFT JOIN back into an INNER JOIN, a common and confusing mistake, so any such filter belongs in the ON clause or an explicit IS NULL check instead.</p>
+    <p><code>RIGHT JOIN</code> is the mirror image of <code>LEFT JOIN</code>, keeping every row from the right table instead; in practice, most developers write every join as a <code>LEFT JOIN</code> by simply swapping table order, so <code>RIGHT JOIN</code> shows up far less often in real code and some style guides ban it outright for consistency.</p>
+    <p>A <code>FULL OUTER JOIN</code> keeps every row from both tables, matching where possible and filling NULLs on whichever side lacks a match &mdash; less common than LEFT or INNER, but useful for reconciliation queries such as finding all mismatches between two related datasets in either direction.</p>
+    <p>You can join more than two tables in a single query by chaining additional JOIN clauses, each with its own ON condition; the order rarely matters for correctness with INNER JOINs, but it can matter a great deal for LEFT JOIN chains, since each step's NULLs propagate into the next join.</p>
+    <p>The <code>ON</code> clause specifies exactly which columns relate the two tables, and is distinct from <code>WHERE</code>: conditions in ON affect which rows get matched during the join itself (and matter enormously for LEFT JOIN), while conditions in WHERE filter the already-joined result afterward.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT customers.name, orders.id AS order_id, orders.total
 FROM customers
 LEFT JOIN orders ON orders.customer_id = customers.id
 ORDER BY customers.name;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">three_table_join.sql</div>      <pre><code>SELECT o.id AS order_id, c.name AS customer_name, p.name AS product_name, oi.quantity
+FROM orders o
+INNER JOIN customers c ON c.id = o.customer_id
+INNER JOIN order_items oi ON oi.order_id = o.id
+INNER JOIN products p ON p.id = oi.product_id
+ORDER BY o.id;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">left_join_mistake.sql</div>      <pre><code>-- Mistake: this WHERE condition silently turns the LEFT JOIN into an INNER JOIN
+SELECT c.name, o.id
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id
+WHERE o.total &gt; 50;
+
+-- Fix: move the condition into ON to still keep customers with no orders
+SELECT c.name, o.id
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.id AND o.total &gt; 50;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>INNER JOIN returns only rows with a match in both tables.</li>
         <li>LEFT JOIN keeps every row from the left table, filling unmatched right-side columns with NULL.</li>
+        <li>A WHERE filter on the right-hand table can silently convert a LEFT JOIN into an INNER JOIN.</li>
         <li>RIGHT JOIN mirrors LEFT JOIN; most developers just swap table order and always write LEFT JOIN.</li>
-        <li>The ON clause specifies exactly which columns relate the two tables.</li>
+        <li>FULL OUTER JOIN keeps every row from both tables, useful for reconciliation-style queries.</li>
+        <li>Chaining multiple JOINs lets you combine three or more related tables in one query.</li>
+        <li>The ON clause controls matching during the join; WHERE filters the result afterward.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a LEFT JOIN query that lists every customer alongside their order count, including customers who have placed zero orders.</p>
+      <p>Write a LEFT JOIN query that lists every customer alongside their order count, including customers who have placed zero orders. Then extend it to a three-table join that also brings in product names for each order line, and explain in one sentence why putting a right-table condition in WHERE instead of ON can silently drop unmatched rows.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Control flow and methods</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="syntax-variables-and-types.html">Syntax, variables, and types</a></p>
   </div>
 
   <article>
-    <p class="lead">Java supports the familiar <code>if</code>/<code>else</code>, <code>for</code>, <code>while</code>, and <code>switch</code> constructs. Since Java 14, <code>switch</code> can also be written as an expression that directly returns a value using arrow syntax, which avoids the classic fall-through bugs of the older colon-based form.</p>
-    <p>A <b>method</b> in Java is declared with a return type, a name, and a parameter list, and it lives inside a class. Methods marked <code>static</code> belong to the class itself and can be called without creating an object; methods without <code>static</code> belong to individual instances.</p>
-    <p>Method overloading &mdash; declaring multiple methods with the same name but different parameter lists &mdash; lets you offer several convenient entry points into the same logic, and the compiler picks the right one based on the arguments you pass.</p>
+    <p class="lead">Java supports the familiar <code>if</code>/<code>else</code>, <code>for</code>, <code>while</code>, and <code>do-while</code> loops, plus <code>switch</code>. Since Java 14, <code>switch</code> can also be written as an expression that directly returns a value using arrow syntax (<code>case 1 -> ...</code>), which avoids the classic fall-through bugs of the older colon-based form where forgetting a <code>break</code> silently runs the next case too.</p>
+    <p>A <b>method</b> is declared with a return type, a name, and a parameter list, and it lives inside a class. Methods marked <code>static</code> belong to the class itself and can be called without creating an object (<code>ClassName.method()</code>); methods without <code>static</code> belong to individual instances and can access that instance's fields via an implicit <code>this</code>.</p>
+    <p><b>Method overloading</b> &mdash; declaring multiple methods with the same name but different parameter lists &mdash; lets you offer several convenient entry points into the same logic, and the compiler picks the right one based on the number and types of arguments you pass, resolved entirely at compile time. This is different from overriding, which happens between a superclass and subclass at runtime.</p>
+    <p><code>break</code> exits a loop or switch entirely; <code>continue</code> skips the rest of the current iteration and jumps to the next one. Labeled versions of both (<code>break outer;</code>) let you control an outer loop from inside a nested one, which is occasionally the cleanest way to escape deeply nested iteration without extra flag variables.</p>
+    <p>Traditional <code>switch</code> statements also support <b>pattern matching</b> as of recent Java versions, where a case can test an object's runtime type directly (<code>case String s -></code>), binding a typed variable in the same line &mdash; this removes a lot of the boilerplate that used to require <code>instanceof</code> checks followed by manual casting.</p>
+    <p>Java has no goto and no function pointers in the C sense; instead, complex control flow is expressed through methods, recursion, and (as covered in a later lesson) lambda expressions passed as arguments, which keeps control flow readable and keeps the type system involved at every step.</p>
     <div class="code-block">
 <div class="cap">Grade.java</div>      <pre><code>public class Grade {
     static String letterFor(int score) {
@@ -125,8 +141,30 @@
     }
 
     public static void main(String[] args) {
-        for (int score : new int[]{95, 82, 40}) {
+        for (int score = 60; score &lt;= 100; score += 20) {
             System.out.println(score + " -&gt; " + letterFor(score));
+        }
+    }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Overloads.java</div>      <pre><code>public class Overloads {
+    static int total(int a, int b) { return a + b; }
+    static int total(int a, int b, int c) { return a + b + c; }
+    static double total(double a, double b) { return a + b; }
+
+    public static void main(String[] args) {
+        System.out.println(total(2, 3));        // uses (int, int)
+        System.out.println(total(2, 3, 4));      // uses (int, int, int)
+        System.out.println(total(2.5, 3.5));     // uses (double, double)
+
+        outer:
+        for (int row = 0; row &lt; 3; row++) {
+            for (int col = 0; col &lt; 3; col++) {
+                if (row == 1 &amp;&amp; col == 1) continue outer; // skip rest of row 1
+                if (row == 2 &amp;&amp; col == 0) break outer;    // stop everything
+                System.out.println(row + "," + col);
+            }
         }
     }
 }</code></pre>
@@ -134,16 +172,20 @@
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Arrow-form <code>switch</code> expressions return a value directly and do not fall through.</li>
-        <li><code>static</code> methods belong to the class; instance methods belong to an object.</li>
-        <li>Method overloading is resolved at compile time based on argument types.</li>
-        <li>Enhanced <code>for</code> loops (<code>for (int x : array)</code> ) simplify iterating collections and arrays.</li>
+        <li>Arrow-form <code>switch</code> expressions return a value directly and do not fall through to the next case.</li>
+        <li><code>static</code> methods belong to the class; instance methods belong to an object and can use an implicit this.</li>
+        <li>Method overloading is resolved at compile time based on the number and static types of the arguments.</li>
+        <li>A traditional <code>for</code> loop can count through any numeric range; a shorter for-each form for iterating arrays and collections directly is introduced once those topics arrive.</li>
+        <li>Labeled <code>break</code> and <code>continue</code> let you control an outer loop from inside a nested one.</li>
+        <li>Pattern-matching switch cases can test and bind a runtime type in a single case label, avoiding manual instanceof-and-cast boilerplate.</li>
+        <li>Java has no goto; recursion, methods, and lambdas are the idiomatic replacements for that kind of jump.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a static method categorize(int temperature) that uses a switch expression to return "cold", "mild", or "hot", then call it in a loop over an array of sample temperatures.</p>
+      <p>Write a static method categorize(int temperature) that uses a switch expression to return "cold", "mild", or "hot", then call it in a for loop that counts through a range of sample temperatures (for example, 0 to 100 in steps of 10). Add an overloaded categorize(double temperature, String unit) that first converts Fahrenheit to Celsius when unit is "F", and use a labeled loop to skip printing any reading below freezing.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,17 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Fetching data with fetch() and working with JSON</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="array-object-methods.html">Array/object methods: map, filter, reduce, destructuring</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>fetch()</code> makes an HTTP request from JavaScript and returns a Promise that resolves to a Response object. Most APIs return JSON, so you almost always chain <code>.json()</code> to parse the response body into a usable JavaScript object.</p>
-    <p>Real API calls need error handling — <code>fetch()</code> only rejects on network failure, not on HTTP error statuses like 404 or 500, so checking <code>response.ok</code> yourself is essential.</p>
+    <p class="lead"><code>fetch()</code> makes an HTTP request from JavaScript and returns a Promise that resolves to a Response object once the response headers have arrived — the body itself hasn't necessarily been read yet at that point. Most APIs communicate in JSON, so you almost always chain a call to <code>.json()</code>, which reads and parses the response body into a plain JavaScript object or array; <code>.json()</code> returns its own Promise too, since reading the body is itself an asynchronous operation.</p>
+    <p>A Promise is simply a placeholder for a value that isn't ready yet, and the examples below reach for the <code>async</code>/<code>await</code> syntax to work with it: marking a function <code>async</code> lets you write <code>await someFetchCall</code> to pause that function right there until the request finishes, instead of chaining <code>.then()</code> callbacks. Treat that as a working preview for now — Promises and <code>async</code>/<code>await</code> get a full, in-depth lesson of their own later on — but the pattern is so standard for real fetch code that it's worth using here rather than an awkward, less realistic alternative.</p>
+    <p>A critical and frequently-missed detail: <code>fetch()</code> only rejects its promise on genuine network failure — DNS resolution failing, no connectivity, a CORS block. It does <b>not</b> reject on HTTP error status codes like 404 or 500; a failed request with a 500 status still resolves successfully as far as <code>fetch()</code> is concerned. That means you must check <code>response.ok</code> (or <code>response.status</code>) yourself and throw an error explicitly if the request wasn't actually successful, or your error handling will silently never trigger for failed requests.</p>
+    <p>Sending data (POST, PUT, PATCH) requires passing a second options object to <code>fetch()</code> with at least <code>method</code>, a <code>headers</code> object including <code>"Content-Type": "application/json"</code>, and a <code>body</code> that is a JSON string — plain JavaScript objects are not automatically serialized, so you need <code>JSON.stringify()</code> yourself before sending, and correspondingly <code>JSON.parse()</code> (or <code>.json()</code>) on the way back.</p>
+    <p><code>JSON.stringify()</code> and <code>JSON.parse()</code> are the underlying tools for converting between JavaScript values and JSON text more broadly, useful even outside of networking — for example, persisting an object to <code>localStorage</code>, which only stores strings. Be aware JSON can't represent everything JavaScript can: functions, <code>undefined</code> values, and symbols are silently dropped when stringifying, dates become plain strings (not Date objects) and need to be re-parsed manually, and circular references throw an error outright.</p>
+    <p>Real network calls need genuine error handling on two separate fronts: network-level failures (wrap the fetch/await in a try/catch to handle offline states, timeouts, or DNS errors gracefully) and application-level failures (check <code>response.ok</code> and read the error body, since a well-built API often returns a useful JSON error message alongside a 4xx/5xx status that's worth surfacing to the user or the logs).</p>
+    <p>For requests that might hang indefinitely, pass an <code>AbortController</code>'s signal into the fetch options — this lets you cancel an in-flight request, either after a timeout you set yourself, or when the user navigates away or triggers a newer request that should supersede the old one (a common pattern in live search-as-you-type inputs, to avoid an old, slow response overwriting a newer one).</p>
     <div class="code-block">
 <div class="cap">api.js</div>      <pre><code>async function getUser(id) {
   const response = await fetch(`https://api.example.com/users/${id}`);
@@ -121,19 +139,66 @@
   return response.json();
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">posting-json-with-error-handling.js</div>      <pre><code>async function createUser(user) {
+  try {
+    const response = await fetch("https://api.example.com/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(user),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() =&gt; null);
+      throw new Error(errorBody?.message || `Request failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error("createUser failed:", err.message);
+    throw err;
+  }
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">cancelling-with-abortcontroller.js</div>      <pre><code>async function searchUsers(query) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() =&gt; controller.abort(), 5000);
+
+  try {
+    const response = await fetch(
+      `https://api.example.com/search?q=${encodeURIComponent(query)}`,
+      { signal: controller.signal }
+    );
+    return await response.json();
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.warn("Search request timed out");
+      return [];
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>fetch()</code> does NOT reject on HTTP error statuses (404, 500) — always check <code>response.ok</code> yourself.</li>
-        <li><code>.json()</code> itself returns a Promise too, so it needs its own <code>await</code>.</li>
-        <li>POST requests need a <code>method</code>, <code>headers</code>, and a JSON-stringified <code>body</code> in the fetch options object.</li>
-        <li>Wrap fetch calls in try/catch to handle genuine network failures (offline, DNS errors) gracefully.</li>
+        <li><code>fetch()</code> does NOT reject on HTTP error statuses (404, 500) — always check <code>response.ok</code> yourself and throw explicitly if needed.</li>
+        <li><code>.json()</code> itself returns a Promise too, so it needs its own <code>await</code> — reading the body is an async step separate from receiving the headers.</li>
+        <li>POST/PUT requests need a <code>method</code>, <code>headers</code> with a content-type, and a <code>JSON.stringify()</code>-ed <code>body</code> in the fetch options object.</li>
+        <li><code>JSON.stringify()</code> silently drops functions, <code>undefined</code>, and symbols, and turns dates into plain strings that need manual re-parsing.</li>
+        <li>Wrap fetch calls in try/catch to handle genuine network failures (offline, DNS errors, CORS blocks) separately from application-level HTTP errors.</li>
+        <li><code>AbortController</code> lets you cancel an in-flight fetch — useful for timeouts and for cancelling stale requests in live-search style inputs.</li>
+        <li>A well-designed API often returns a useful JSON error body alongside a 4xx/5xx status — read and surface it instead of only logging the status code.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write an async function that fetches data from a free public API (like https://jsonplaceholder.typicode.com/users) and logs each user's name.</p>
+      <p>Write an async function that fetches data from a free public API (like https://jsonplaceholder.typicode.com/users) and logs each user's name. Then extend it to POST a new resource with a JSON body and proper headers, checking response.ok and throwing a descriptive error on failure, and finally add an AbortController-based timeout so the request gives up after 5 seconds instead of hanging indefinitely.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

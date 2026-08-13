@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Syntax, variables, and control flow</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">Ruby was designed for programmer happiness — its syntax reads close to plain English. Variables need no type declaration or keyword: <code>name = "Amina"</code> just works. Blocks are usually closed with <code>end</code> rather than curly braces.</p>
-    <p>Conditionals include a distinctly Ruby feature: modifier form, letting you write <code>puts "adult" if age >= 18</code> as a single readable line instead of a full multi-line if block.</p>
+    <p class="lead">Ruby was designed for programmer happiness, and its syntax reflects that goal directly — it reads close to plain English wherever possible. Variables need no type declaration or keyword: <code>name = "Amina"</code> just works, and Ruby infers the type from whatever value gets assigned. By convention, local variables and method names use snake_case, while constants (which Ruby only warns about, rather than prevents, reassigning) start with an uppercase letter.</p>
+    <p>Blocks of code — the bodies of methods, classes, if statements, and loops — are almost always closed with the keyword <code>end</code> rather than curly braces or significant indentation. This is one of Ruby's most visually distinctive choices, and it means indentation is a style convention (enforced by tools like RuboCop) rather than something the language itself requires for the code to run correctly.</p>
+    <p>Ruby offers the usual <code>if</code>/<code>elsif</code>/<code>else</code>, but also <code>unless</code> as a readable inverse of a negated if, and <code>case</code>/<code>when</code> for clean multi-branch logic that can match against classes, ranges, and regular expressions, not just exact equality. A distinctly Ruby feature is the modifier form: <code>puts "adult" if age >= 18</code> lets a simple one-line conditional read as a single sentence instead of a full multi-line block.</p>
+    <p>Truthiness has one famous gotcha for people arriving from other languages: only <code>nil</code> and <code>false</code> are falsy in Ruby. The number <code>0</code>, an empty string <code>""</code>, and an empty array <code>[]</code> are all truthy, unlike in JavaScript, Python, or C. Forgetting this is a real source of bugs when someone checks whether a count is 'empty' with a plain <code>if count</code> instead of an explicit <code>if count.zero?</code> or <code>if count &gt; 0</code>.</p>
+    <p>For repetition, Ruby has <code>while</code> and <code>until</code> loops, but idiomatic code leans heavily on iterator methods that take a block instead: <code>5.times</code>, <code>array.each</code>, and range iteration are far more common in real Ruby than a counting loop. (Blocks -- the <code>{ |i| ... }</code> part -- get a full lesson of their own next; for now it's enough to read <code>3.times { |i| ... }</code> as "run this code 3 times.") A traditional <code>for</code> loop does exist, but it's rarely used idiomatically, partly because its loop variable leaks into the surrounding scope after the loop finishes, rather than being scoped to the loop body the way a block's variables are.</p>
+    <p>Every value in Ruby is an object, including integers, strings, and even <code>nil</code> — there are no separate 'primitive' types the way there are in Java or C. This is precisely why a number can respond to a method call like <code>5.times</code> or <code>(-3).abs</code>, and it's one of the ideas that most shapes how idiomatic Ruby ends up looking, favoring method calls chained off a value over free-standing functions or purely symbolic operators.</p>
     <div class="code-block">
 <div class="cap">basics.rb</div>      <pre><code>name = "Amina"
 age = 27
@@ -124,19 +141,55 @@ end
 
 puts "Welcome!" if age &gt;= 18  # modifier form</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">control_flow.rb</div>      <pre><code>score = 82
+
+grade = case score
+        when 90..100 then "A"
+        when 80...90 then "B"
+        when 70...80 then "C"
+        else "F"
+        end
+puts grade  # "B" -- note the exclusive range (...) for 80..89
+
+puts "no access" unless age = 15 and age &gt;= 18
+
+3.times { |i| puts "iteration #{i}" }  # 0, 1, 2</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">gotchas.rb -- a couple of classic traps</div>      <pre><code>count = 0
+
+# BUG: 0 is truthy in Ruby, so this branch always runs
+if count
+  puts "has items"  # prints even though count is zero!
+end
+
+# Correct:
+puts "has items" if count.positive?
+
+# for loops leak their variable outside the loop body
+for n in 1..3
+end
+puts n  # 3 -- still accessible, unlike a block-scoped `each`</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>String interpolation uses <code>#{...}</code> inside double-quoted strings.</li>
+        <li>String interpolation uses <code>#{...}</code> inside double-quoted strings; single-quoted strings do not interpolate.</li>
         <li>Blocks typically end with <code>end</code>, not a closing brace — one of Ruby's most distinctive syntax choices.</li>
         <li>The modifier form (<code>statement if condition</code>) is idiomatic Ruby for simple one-line conditionals.</li>
-        <li>Almost everything in Ruby is an object, including numbers and even <code>nil</code> — this is why methods like <code>5.times</code> work.</li>
+        <li>Only <code>nil</code> and <code>false</code> are falsy — <code>0</code>, <code>""</code>, and <code>[]</code> are all truthy, a frequent gotcha for newcomers.</li>
+        <li><code>unless</code> reads more naturally than <code>if !condition</code> for a single negative check.</li>
+        <li><code>case</code>/<code>when</code> can match ranges, classes, and regular expressions, not just literal equality.</li>
+        <li>A traditional <code>for</code> loop leaks its variable into the enclosing scope; <code>each</code> with a block does not, which is one reason <code>each</code> is preferred idiomatically.</li>
+        <li>Almost everything in Ruby is an object, including numbers and <code>nil</code> — this is why methods like <code>5.times</code> work at all.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script with variables for a name and age, printing a different greeting depending on whether the age is above or below 18, using both full if/else and the modifier form.</p>
+      <p>Write a script with variables for a name and age, printing a different greeting depending on whether the age is above or below 18, using both a full if/else block and the modifier form. Then add a case/when statement that buckets the age into "minor", "young adult", or "adult", and deliberately trigger the truthiness gotcha with a variable holding 0 to see it firsthand before fixing it.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

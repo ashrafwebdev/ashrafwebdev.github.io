@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,66 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Reading input and printing output</h1>
     <p class="lang-line"><b>Python</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="lists-dictionaries-tuples-sets.html">Lists, dictionaries, tuples, sets</a></p>
   </div>
 
   <article>
-    <p class="lead"><code>print()</code> writes to standard output, and accepts multiple arguments separated by commas, joined with a space by default. <code>input()</code> pauses execution and reads a line of text typed by the user, always returning it as a string.</p>
-    <p>f-strings (<code>f"..."</code>) are the modern, preferred way to embed variables and expressions directly inside a string, replacing older <code>%</code>-formatting and <code>.format()</code> styles.</p>
+    <p class="lead"><code>print()</code> writes to standard output, and accepts multiple arguments separated by commas, joined with a space by default. <code>input(prompt)</code> displays the prompt, pauses execution, and reads a single line of text typed by the user, always returning it as a string — even if the user typed digits.</p>
+    <p>f-strings (<code>f"..."</code>) are the modern, preferred way to embed variables and expressions directly inside a string, replacing older <code>%</code>-formatting and <code>.format()</code> styles. Anything inside the curly braces is a real Python expression, not just a variable name — you can call a method, index into a list, or do arithmetic right there.</p>
+    <p>f-strings also support a format-spec mini-language after a colon: <code>f"{price:.2f}"</code> formats to two decimal places, <code>f"{count:,}"</code> adds thousands separators, and <code>f"{value:>10}"</code> right-aligns within a 10-character field — genuinely useful for lining up tabular console output.</p>
+    <p>Because <code>input()</code> always returns a string, converting it before doing arithmetic is not optional: <code>int(input(...))</code> or <code>float(input(...))</code> is the normal pattern, and both raise a <code>ValueError</code> if the text isn't actually a valid number. A later lesson covers <code>try</code>/<code>except</code> in full, but here's a quick preview of the shape: wrapping the risky line in <code>try:</code> and handling the failure in <code>except ValueError:</code> lets your program respond with a friendly message instead of crashing.</p>
+    <p><code>print()</code> takes two often-overlooked keyword arguments: <code>sep</code> controls what goes between multiple printed values (default is a single space), and <code>end</code> controls what's printed after everything else (default is a newline) — setting <code>end=""</code> is the standard way to build up output on one line across multiple print calls.</p>
+    <p>For anything beyond quick console scripts, the built-in <code>logging</code> module is a better fit than scattering <code>print()</code> calls everywhere — it supports severity levels, timestamps, and can be redirected to a file, none of which plain <code>print()</code> gives you for free.</p>
     <div class="code-block">
 <div class="cap">io_basics.py</div>      <pre><code>name = input("What's your name? ")
 age_text = input("How old are you? ")
-age = int(age_text)  # input() always returns a string — convert explicitly
+age = int(age_text)  # input() always returns a string -- convert explicitly
 
 print(f"Hello, {name}! In 10 years you'll be {age + 10}.")</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">formatting.py</div>      <pre><code>price = 1234.5
+quantity = 3
+
+print(f"Total: ${price * quantity:,.2f}")   # Total: $3,703.50
+
+for i in range(3):
+    print(i, end=" -&gt; ")
+print("done")   # 0 -&gt; 1 -&gt; 2 -&gt; done</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">safe_input.py</div>      <pre><code>def read_int(prompt):
+    while True:
+        text = input(prompt)
+        try:
+            return int(text)
+        except ValueError:
+            print(f"'{text}' isn't a whole number, try again.")
+
+age = read_int("How old are you? ")
+print(f"You are {age} years old.")</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li><code>input()</code> always returns a string — convert with <code>int()</code>/<code>float()</code> before doing math on it.</li>
-        <li>f-strings support expressions, not just variable names: <code>f"{price * 1.1:.2f}"</code> formats to two decimals.</li>
+        <li><code>input()</code> always returns a string — convert with <code>int()</code>/<code>float()</code> before doing math on it, and expect a ValueError on bad input.</li>
+        <li>f-strings support arbitrary expressions, not just variable names: <code>f"{price * 1.1:.2f}"</code> both computes and formats in one place.</li>
+        <li>The format-spec after the colon controls decimals (<code>.2f</code>), thousands separators (<code>,</code>), and alignment/width (<code>&gt;10</code>).</li>
         <li><code>print(a, b, sep=", ")</code> customizes the separator between multiple printed values.</li>
-        <li><code>print(..., end="")</code> suppresses the automatic trailing newline.</li>
+        <li><code>print(..., end="")</code> suppresses the automatic trailing newline, letting you build a line across several print calls.</li>
+        <li>Wrap numeric conversions from <code>input()</code> in <code>try</code>/<code>except ValueError</code> whenever the user might type something unexpected — a preview of a pattern the error-handling lesson covers in full.</li>
+        <li>The <code>logging</code> module is the better tool once a script grows beyond quick, throwaway console output.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that asks the user for two numbers via input(), converts them to floats, and prints their sum, difference, and product.</p>
+      <p>Write a script that asks the user for two numbers via input(), converts them to floats, and prints their sum, difference, and product, each formatted to two decimal places using an f-string format spec. Then wrap the conversion step in a try/except (mirroring the safe_input.py pattern above -- you'll cover try/except properly in a later lesson) so the script prints a friendly error instead of crashing if the user types something that isn't a number.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">Convertible: a terminal calculator and unit converter that never quits mid-task</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

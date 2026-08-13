@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Performance: critical CSS, containment, will-change</h1>
     <p class="lang-line"><b>CSS</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="subgrid-and-advanced-grid-layouts.html">Subgrid and advanced Grid layouts</a></p>
   </div>
 
   <article>
-    <p class="lead">Critical CSS means inlining just the styles needed for the visible, above-the-fold content directly in the HTML head, so the browser can paint immediately without waiting on an external stylesheet round-trip — the rest of the CSS loads afterward.</p>
-    <p><code>contain</code> tells the browser an element's internals won't affect layout/paint outside its boundary, letting the browser skip recalculating the rest of the page when that element changes. <code>will-change</code> hints that a property is about to animate, letting the browser prepare ahead of time — but overusing it wastes memory, so apply it sparingly, right before the animation and removed after.</p>
+    <p class="lead">Critical CSS means inlining just the styles needed for the visible, above-the-fold content directly in the HTML head, so the browser can paint immediately without waiting on an external stylesheet round-trip — the rest of the CSS (for content the user hasn't scrolled to yet) loads afterward, typically via a non-blocking or deferred link.</p>
+    <p><code>contain</code> tells the browser an element's internals won't affect layout, paint, size, or style outside its own boundary, letting the browser skip recalculating the rest of the page whenever that element changes. <code>contain: layout paint</code> is a strong, low-risk performance win for long, repeated lists of independent items, like a social feed or a large table, where each row genuinely doesn't affect its neighbors.</p>
+    <p><code>content-visibility: auto</code> goes a step further than <code>contain</code> alone: it lets the browser entirely skip rendering work (layout and paint) for elements that are off-screen, only doing that work once the element scrolls into view. This is one of the single biggest wins available for very long pages, but it requires reserving approximate space with <code>contain-intrinsic-size</code> so the page doesn't jump around as off-screen content is realized.</p>
+    <p><code>will-change</code> hints to the browser that a property is about to change (usually right before an animation starts), letting it prepare an optimized rendering path ahead of time. But it has a real cost: each element with <code>will-change</code> set typically gets promoted to its own GPU layer, which consumes memory — applying it to many elements, or leaving it on permanently, can actually slow a page down rather than speed it up.</p>
+    <p>The correct pattern for <code>will-change</code> is to add it via JavaScript immediately before the animation begins and remove it once the animation finishes, rather than baking it into the stylesheet permanently — this way the browser only pays the preparation cost during the brief window it's actually needed.</p>
+    <p>None of these techniques should be applied speculatively — Lighthouse and the Performance panel in Chrome DevTools are how you verify a given change actually reduced layout/paint time or improved a real metric like Largest Contentful Paint, rather than assuming an optimization helped because it sounds like it should.</p>
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>.widget-list-item {
   contain: layout paint;
@@ -121,19 +138,39 @@
   will-change: transform;
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">styles.css (content-visibility for long pages)</div>      <pre><code>.feed-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 220px; /* reserved placeholder height, avoids layout jumps */
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">script.js (applying will-change only when needed)</div>      <pre><code>const drawer = document.querySelector('.drawer');
+
+drawer.addEventListener('pointerdown', () =&gt; {
+  drawer.style.willChange = 'transform'; // set right before the animation
+});
+drawer.addEventListener('transitionend', () =&gt; {
+  drawer.style.willChange = 'auto'; // remove once it's done, free the layer
+});</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Critical CSS trades a small inline block for a faster first paint — most useful on content-heavy landing pages.</li>
         <li><code>contain: layout paint</code> is a strong performance win for long, repeated lists of independent items.</li>
-        <li>Apply <code>will-change</code> only right before an animation starts, and remove it after — permanent use wastes GPU memory.</li>
+        <li><code>content-visibility: auto</code> skips rendering work for off-screen content entirely, but needs <code>contain-intrinsic-size</code> to avoid layout jumps.</li>
+        <li>Apply <code>will-change</code> only right before an animation starts, and remove it after — permanent use wastes GPU memory across many elements.</li>
+        <li>Each element with <code>will-change</code> typically gets its own GPU layer, which has a real memory cost, not just a benefit.</li>
         <li>Lighthouse and the Performance panel in DevTools are how you verify these techniques actually helped, rather than guessing.</li>
+        <li>None of these optimizations are free — each one trades some resource (memory, complexity, or a reserved-space guess) for rendering speed, so apply them where profiling shows a real cost, not everywhere.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Add contain: layout paint to items in a long repeated list (like a feed) and use the Performance panel to compare scrolling before and after.</p>
+      <p>Add contain: layout paint to items in a long repeated list (like a feed) and use the Performance panel to compare scrolling before and after. Then apply content-visibility: auto with a reasonable contain-intrinsic-size to the same list, and measure whether it further reduces initial rendering time.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

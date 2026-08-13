@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Methods and blocks</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="syntax-variables-and-control-flow.html">Syntax, variables, and control flow</a></p>
   </div>
 
   <article>
-    <p class="lead">Methods are defined with <code>def name(params) ... end</code>. Ruby methods implicitly return the value of their last evaluated expression — an explicit <code>return</code> is optional and used mainly for early exits.</p>
-    <p>A block is a chunk of code passed to a method, written with <code>do...end</code> or curly braces, and is central to idiomatic Ruby — most collection operations (<code>each</code>, <code>map</code>, <code>select</code>) work by yielding to a block you supply.</p>
+    <p class="lead">Methods are defined with <code>def name(params) ... end</code>. Ruby methods implicitly return the value of their last evaluated expression — an explicit <code>return</code> is entirely optional and is used mainly for early exits from inside a method body, such as guard clauses at the top.</p>
+    <p>Ruby supports default parameter values, keyword arguments, and splat arguments for variable-length argument lists. Keyword arguments (<code>def greet(name:, greeting: "Hello")</code>) are especially common in real-world Ruby and Rails code because they make call sites self-documenting — you can immediately see which value is which without checking the method's definition.</p>
+    <p>A block is a chunk of code passed to a method, written with <code>do...end</code> or curly braces, and it is central to idiomatic Ruby. Most collection operations — <code>each</code>, <code>map</code>, <code>select</code>, <code>reduce</code> — work by yielding each element to a block you supply, which is how Ruby achieves so much with so little explicit looping code.</p>
+    <p>A method receives a block implicitly; inside the method body, <code>yield</code> invokes whatever block the caller passed, and <code>block_given?</code> checks whether one was passed at all before trying to yield to it. A block can also be captured explicitly as a <code>Proc</code> object by prefixing the last parameter with <code>&amp;</code>, which lets you store it, pass it along to another method, or call it later with <code>.call</code>.</p>
+    <p>Procs and lambdas are both ways to hold a block of code as a first-class value, but they differ subtly: a lambda enforces the exact number of arguments it was defined with and a <code>return</code> inside a lambda only exits the lambda itself, while a <code>return</code> inside a plain proc actually returns from the enclosing method — a distinction that trips up almost everyone the first time they hit it.</p>
+    <p>By convention, a method name ending in <code>?</code> (like <code>empty?</code> or <code>nil?</code>) returns a boolean, and a method name ending in <code>!</code> signals that it mutates the receiver or otherwise behaves more dangerously than its non-bang counterpart. Ruby doesn't enforce either convention mechanically — they are promises the method's author makes to callers, and well-behaved libraries stick to them closely.</p>
     <div class="code-block">
 <div class="cap">methods.rb</div>      <pre><code>def greet(name)
   "Hello, #{name}!"  # implicitly returned, no `return` needed
@@ -123,19 +140,55 @@ puts greet("Yusuf")
   puts n * 2
 end</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">args_and_yield.rb</div>      <pre><code>def order_summary(item, qty: 1, **options)
+  "#{qty}x #{item}" + (options.empty? ? "" : " (#{options})")
+end
+
+puts order_summary("Widget", qty: 3, gift_wrap: true)
+
+def repeat(n)
+  return enum_for(:repeat, n) unless block_given?
+
+  n.times { |i| yield i }
+end
+
+repeat(3) { |i| puts "call ##{i}" }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">proc_vs_lambda.rb -- the return gotcha</div>      <pre><code>def uses_proc
+  p = Proc.new { return 10 }
+  p.call
+  puts "never reached"  # proc's return exits the whole method
+end
+
+def uses_lambda
+  l = lambda { return 10 }
+  l.call
+  puts "this DOES print"  # lambda's return only exits the lambda
+end
+
+uses_proc
+uses_lambda</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>The last evaluated expression in a method is returned automatically — explicit <code>return</code> is a stylistic choice for clarity or early exit.</li>
         <li><code>do...end</code> is conventional for multi-line blocks; <code>{ }</code> is conventional for short, single-line blocks.</li>
-        <li>A method can accept a block implicitly and invoke it with <code>yield</code>.</li>
-        <li>Method names ending in <code>?</code> (like <code>empty?</code>) conventionally return a boolean; names ending in <code>!</code> conventionally mutate the receiver.</li>
+        <li>A method can accept a block implicitly and invoke it with <code>yield</code>; check <code>block_given?</code> before yielding if the block is optional.</li>
+        <li>Keyword arguments make call sites self-documenting and are the idiomatic default for methods with several optional parameters.</li>
+        <li>A <code>return</code> inside a lambda exits only the lambda; a <code>return</code> inside a plain <code>Proc</code> exits the enclosing method entirely.</li>
+        <li>Lambdas strictly check their argument count; procs are lenient and silently ignore extra or missing arguments.</li>
+        <li>Method names ending in <code>?</code> (like <code>empty?</code>) conventionally return a boolean; names ending in <code>!</code> conventionally signal a more dangerous or mutating variant.</li>
+        <li>Prefixing a parameter with <code>&amp;</code> captures a passed block as an explicit <code>Proc</code> object you can store or forward.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a method that takes an array and a block, and yields each element to the block, then use it to print each element doubled.</p>
+      <p>Write a method that takes an array and a block, and yields each element to the block, then use it to print each element doubled. Next, write a second method demonstrating the difference between a proc and a lambda by having each attempt a return from inside a loop, and explain in a comment why their behavior differs.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

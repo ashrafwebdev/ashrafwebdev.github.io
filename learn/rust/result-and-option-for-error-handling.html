@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Result and Option for error handling</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="ownership-and-borrowing-in-depth.html">Ownership and borrowing in depth</a></p>
   </div>
 
   <article>
     <p class="lead">Rust has no exceptions and no null. Instead, a value that might be absent is wrapped in <code>Option</code>, with variants <code>Some(value)</code> or <code>None</code>; a fallible operation returns <code>Result</code>, with variants <code>Ok(value)</code> or <code>Err(error)</code>. Both are ordinary enums the compiler forces you to handle explicitly.</p>
     <p>The <code>?</code> operator is Rust's concise error-propagation shortcut: inside a function returning <code>Result</code>, writing <code>some_call()?</code> either unwraps the <code>Ok</code> value or immediately returns the <code>Err</code> to the caller, avoiding deeply nested manual error checks.</p>
     <p>Because both types must be explicitly matched, unwrapped, or propagated, it is structurally impossible to accidentally use a missing or errored value as if it were valid &mdash; the compiler simply won't allow it.</p>
+    <p>Both types offer a rich set of <b>combinators</b> for transforming values without a full <code>match</code>: <code>.map()</code> transforms the inner value if present, <code>.and_then()</code> chains together operations that themselves return Option or Result, and <code>.unwrap_or(default)</code> / <code>.unwrap_or_else(|| ...)</code> supply a fallback value. These keep code concise while remaining just as total (every case still handled) as an explicit match.</p>
+    <p><code>.unwrap()</code> and <code>.expect("message")</code> immediately panic the whole program if called on a <code>None</code> or <code>Err</code>. They're genuinely useful in prototypes, tests, and cases you've already proven can't fail, and <code>.expect</code>'s custom message makes debugging a panic much easier &mdash; but reaching for either in production logic that should handle failure gracefully is a common code-review flag.</p>
+    <p>Real applications frequently define their own error enum (implementing <code>std::error::Error</code>, often with help from crates like <code>thiserror</code> or <code>anyhow</code>) so a function can return one unified error type instead of leaking whichever specific library's error type happened to fail underneath. The <code>?</code> operator can automatically convert between error types along the way, as long as a <code>From</code> implementation exists describing how to convert one into the other.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>use std::num::ParseIntError;
 
@@ -128,6 +144,54 @@ fn main() {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">combinators.rs</div>      <pre><code>fn safe_divide(a: f64, b: f64) -&gt; Option&lt;f64&gt; {
+    if b == 0.0 { None } else { Some(a / b) }
+}
+
+fn main() {
+    let result = safe_divide(10.0, 2.0)
+        .map(|v| v * 100.0)
+        .unwrap_or(0.0);
+    println!("{}", result);
+
+    let failed = safe_divide(10.0, 0.0)
+        .map(|v| v * 100.0)
+        .unwrap_or(-1.0);
+    println!("{}", failed);
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">custom_error.rs</div>      <pre><code>use std::fmt;
+
+#[derive(Debug)]
+enum AppError {
+    Parse(String),
+    Empty,
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&amp;self, f: &amp;mut fmt::Formatter) -&gt; fmt::Result {
+        match self {
+            AppError::Parse(s) =&gt; write!(f, "could not parse: {}", s),
+            AppError::Empty =&gt; write!(f, "input was empty"),
+        }
+    }
+}
+
+fn parse_positive(input: &amp;str) -&gt; Result&lt;i32, AppError&gt; {
+    if input.is_empty() {
+        return Err(AppError::Empty);
+    }
+    input.parse::&lt;i32&gt;().map_err(|_| AppError::Parse(input.to_string()))
+}
+
+fn main() -&gt; Result&lt;(), AppError&gt; {
+    let n = parse_positive("42")?;
+    println!("parsed: {}", n);
+    Ok(())
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -135,12 +199,17 @@ fn main() {
         <li>The <code>?</code> operator propagates an <code>Err</code> or unwraps an <code>Ok</code> in a single character.</li>
         <li>The compiler forces every Option and Result to be handled, eliminating null-reference-style bugs entirely.</li>
         <li><code>match</code>, <code>unwrap_or</code>, and <code>if let</code> are common ways to work with these types.</li>
+        <li>Combinators like <code>.map()</code> and <code>.and_then()</code> transform and chain values without a full match.</li>
+        <li><code>.unwrap()</code>/<code>.expect()</code> panic on None/Err; use them deliberately, not as a default habit.</li>
+        <li>Custom error enums let a function return one unified error type instead of leaking a dependency's error type.</li>
+        <li>The <code>?</code> operator can convert between error types automatically via a <code>From</code> implementation.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that parses a string to an i32, returning a Result, then use the ? operator inside a caller function and handle both success and error with a match.</p>
+      <p>Write a function that parses a string to an i32, returning a Result, then use the ? operator inside a caller function and handle both success and error with a match. Then write a second function returning Option of f64 that safely divides two numbers, chaining .map() and .unwrap_or() to produce a default value instead of a full match.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

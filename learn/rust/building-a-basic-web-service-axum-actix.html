@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Building a basic web service (axum/actix)</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="testing-and-documentation.html">Testing and documentation</a></p>
   </div>
 
   <article>
     <p class="lead"><b>axum</b> and <b>actix-web</b> are the two most popular async web frameworks in Rust, both built on tokio. axum favors composability and integrates tightly with tower's middleware ecosystem; actix-web favors raw performance and has been a long-standing benchmark leader.</p>
     <p>In axum, routes are declared with a <code>Router</code>, mapping a path and HTTP method to an async handler function; handler parameters implementing axum's extractor traits (like <code>Json</code> or <code>Path</code>) automatically parse the relevant part of the request.</p>
     <p>Returning a type that implements axum's <code>IntoResponse</code> trait (a plain <code>String</code>, a tuple of status code and body, or a <code>Json</code> wrapper) is enough to produce a proper HTTP response, with serialization handled automatically for JSON.</p>
+    <p>Real handlers usually need access to shared resources, such as a database connection pool or an in-memory cache. axum's <code>State</code> extractor, paired with <code>.with_state(...)</code> on the <code>Router</code>, is the idiomatic way to give every handler access to the same shared value, typically wrapped in an <code>Arc</code> so cloning it into each handler stays cheap.</p>
+    <p>Cross-cutting behavior &mdash; logging, CORS headers, request timeouts, response compression &mdash; is added with tower's <code>Layer</code> trait rather than woven into every handler individually. Calling <code>.layer(...)</code> on a <code>Router</code> wraps every route with that middleware, and the <code>tower-http</code> crate ships a large set of ready-made layers covering the common cases.</p>
+    <p>A handler doesn't have to return a fixed success type: returning a <code>Result</code> whose error type implements <code>IntoResponse</code> lets you centralize how a domain error (like "not found" or "invalid input") turns into the right HTTP status code and body, rather than hand-matching the error in every single handler that could produce it.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>use axum::{routing::get, Router, extract::Path};
 
@@ -134,6 +150,61 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">shared_state.rs</div>      <pre><code>use axum::{routing::{get, post}, Router, extract::State, Json};
+use std::sync::{Arc, Mutex};
+
+#[derive(Clone)]
+struct AppState {
+    counter: Arc&lt;Mutex&lt;i32&gt;&gt;,
+}
+
+async fn increment(State(state): State&lt;AppState&gt;) -&gt; Json&lt;i32&gt; {
+    let mut count = state.counter.lock().unwrap();
+    *count += 1;
+    Json(*count)
+}
+
+async fn current(State(state): State&lt;AppState&gt;) -&gt; Json&lt;i32&gt; {
+    Json(*state.counter.lock().unwrap())
+}
+
+#[tokio::main]
+async fn main() {
+    let state = AppState { counter: Arc::new(Mutex::new(0)) };
+
+    let app = Router::new()
+        .route("/increment", post(increment))
+        .route("/count", get(current))
+        .with_state(state);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">handler_errors.rs</div>      <pre><code>use axum::{response::{IntoResponse, Response}, http::StatusCode};
+
+enum ApiError {
+    NotFound,
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -&gt; Response {
+        match self {
+            ApiError::NotFound =&gt; (StatusCode::NOT_FOUND, "not found").into_response(),
+        }
+    }
+}
+
+async fn get_item(id: u32) -&gt; Result&lt;String, ApiError&gt; {
+    if id == 1 {
+        Ok(String::from("widget"))
+    } else {
+        Err(ApiError::NotFound)
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -141,12 +212,21 @@ async fn main() {
         <li>axum routes map a path and method to an async handler using a Router.</li>
         <li>Extractor types like Path and Json automatically parse relevant parts of the incoming request.</li>
         <li>Returning any IntoResponse-implementing type is enough to produce a valid HTTP response.</li>
+        <li>The State extractor with <code>.with_state(...)</code> gives handlers access to shared, typically Arc-wrapped resources.</li>
+        <li>tower's Layer trait adds cross-cutting middleware (logging, CORS, timeouts) without touching handler logic.</li>
+        <li>A handler returning Result of T, E where E implements IntoResponse centralizes error-to-response mapping.</li>
+        <li>tower-http ships ready-made layers, avoiding the need to hand-roll common middleware.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Sketch an axum Router with a GET route returning a static message and a GET route with a path parameter that echoes it back in the response body.</p>
+      <p>Extend a small axum app with an Arc-wrapped in-memory counter as shared State, add a POST route that increments it and a GET route that returns the current value as JSON. Then add one tower-http layer (such as request tracing) to the router, and write a custom error enum implementing IntoResponse for a route that can fail.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">A URL-shortener API with a background analytics logger</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

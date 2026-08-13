@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,33 +119,57 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Gems and Bundler</h1>
     <p class="lang-line"><b>Ruby</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="object-oriented-ruby.html">Object-oriented Ruby: classes, modules, mixins</a></p>
   </div>
 
   <article>
-    <p class="lead">A gem is a packaged Ruby library, installed with <code>gem install</code> or, more commonly in a real project, declared in a <code>Gemfile</code> and installed together with Bundler — Ruby's dependency manager.</p>
-    <p>Bundler resolves compatible versions for every gem a project needs and records the exact resolved versions in <code>Gemfile.lock</code>, so every developer (and production server) installs identical versions.</p>
+    <p class="lead">A gem is a packaged Ruby library, installed with <code>gem install</code> or, more commonly in a real project, declared in a <code>Gemfile</code> and installed together with Bundler — Ruby's dependency manager, bundled with Ruby itself since version 2.6. Working directly with <code>gem install</code> for a project's dependencies is generally discouraged, because it gives you no record of exactly what a project needs to run.</p>
+    <p>Bundler resolves compatible versions for every gem a project needs — including the transitive dependencies of those gems — and records the exact resolved version of each one in <code>Gemfile.lock</code>. Committing that lock file means every developer, CI run, and production server installs identical gem versions, eliminating an entire class of 'works on my machine' bugs caused by subtly different dependency versions.</p>
+    <p>Version constraints in a Gemfile control how much freedom Bundler has when resolving a version: <code>"7.0.0"</code> pins an exact version, <code>"&gt;= 7.0"</code> allows anything newer, and the pessimistic operator <code>"~&gt; 7.0"</code> allows patch and minor updates (<code>7.1</code>, <code>7.0.5</code>) but blocks an accidental jump to a new major version (<code>8.0</code>) that might break compatibility.</p>
+    <p><code>bundle exec command</code> runs a command using the exact gem versions specified in the lock file, rather than whatever version happens to be installed globally on the system — this matters a lot when multiple projects on the same machine depend on different, conflicting versions of the same gem, since without <code>bundle exec</code> a command might silently pick up the wrong one.</p>
+    <p>Gems can be grouped in a Gemfile (<code>group :development, :test do ... end</code>), so that, for instance, testing and debugging tools are installed locally but excluded from a production deployment with <code>bundle install --without development test</code>, keeping the production install lighter and faster.</p>
+    <p>Beyond the public registry, Bundler can also pull a gem straight from a git repository or a local path — <code>gem "my_gem", git: "..."</code> or <code>path: "../my_gem"</code> — which is especially useful while developing a gem alongside the application that consumes it, before it's ready to be published.</p>
     <div class="code-block">
 <div class="cap">Gemfile</div>      <pre><code>source "https://rubygems.org"
 
 gem "rails", "~&gt; 7.0"
 gem "pg"
 
+group :development, :test do
+  gem "rspec-rails"
+  gem "pry"
+end
+
 # Terminal:
 # bundle install</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal -- everyday Bundler commands</div>      <pre><code>$ bundle install                      # resolve + install, write Gemfile.lock
+$ bundle exec rspec                   # run rspec using the locked versions
+$ bundle update rspec-rails           # bump only that gem, within constraints
+$ bundle install --without development test  # production install</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Gemfile -- git and local path sources</div>      <pre><code>gem "my_gem", git: "https://github.com/me/my_gem", branch: "main"
+gem "internal_tool", path: "../internal_tool"  # develop it alongside the app</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>bundle install</code> reads the Gemfile, resolves versions, and writes/updates Gemfile.lock.</li>
-        <li>Always commit <code>Gemfile.lock</code> — it guarantees everyone installs the exact same gem versions.</li>
+        <li>Always commit <code>Gemfile.lock</code> -- it guarantees everyone installs the exact same gem versions.</li>
         <li><code>bundle exec command</code> runs a command using the exact gem versions specified in the lock file, not whatever happens to be globally installed.</li>
         <li>Version constraints like <code>"~&gt; 7.0"</code> allow patch/minor updates but prevent an accidental major version jump.</li>
+        <li>Gemfile groups (<code>group :development, :test</code>) let you exclude non-production gems from a production install.</li>
+        <li>Bundler can install a gem directly from a git repository or a local path, useful when developing a gem alongside its consuming app.</li>
+        <li>Gemfile.lock also pins the transitive dependencies of your direct dependencies, not just the gems you listed yourself.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Gemfile requiring a small gem, run bundle install, and use the gem in a short script run with bundle exec.</p>
+      <p>Create a Gemfile requiring a small gem, run bundle install, and use the gem in a short script run with bundle exec. Then add a second gem inside a development-only group, run bundle install --without development to confirm it's skipped, and explain in a comment what Gemfile.lock changed between the two installs.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

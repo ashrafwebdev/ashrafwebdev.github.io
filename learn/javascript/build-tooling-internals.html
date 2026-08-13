@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Build tooling internals: bundlers, transpilers, tree-shaking</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="common-design-patterns-module-observer-factory-i.html">Common design patterns (module, observer, factory) in JS</a></p>
   </div>
 
   <article>
-    <p class="lead">A bundler (Vite, Webpack, esbuild) combines many source files and their dependencies into fewer optimized files for production, resolving imports and often splitting code into chunks that load on demand.</p>
-    <p>A transpiler (Babel, or the TypeScript compiler) converts modern syntax into an older, more widely-supported form. Tree-shaking is the process of statically analyzing which exports are actually used and eliminating unused code from the final bundle — it only works reliably with ES Modules' static import/export structure.</p>
+    <p class="lead">A bundler (Vite, Webpack, esbuild, Rollup) starts from one or more entry files, statically resolves the entire graph of everything they <code>import</code> (and everything those imports import, recursively), and combines the result into a smaller number of optimized output files ready for production — rather than shipping hundreds of separate small files to the browser, which is genuinely slow due to per-request overhead, even over a fast connection.</p>
+    <p>A transpiler (Babel, or the TypeScript compiler used purely for its down-leveling ability) converts modern JavaScript syntax into an older, more broadly-supported form, so code written using brand-new language features still runs correctly on browsers or environments that haven't implemented those features yet. This is a genuinely different job from bundling — a transpiler rewrites syntax within a single file, while a bundler combines many files together — and modern tools like Vite typically use both together, often via distinct, fast, purpose-built tools like esbuild or SWC for the transpilation step rather than the (slower) traditional Babel pipeline.</p>
+    <p>Tree-shaking is the process of statically analyzing exactly which exports from a module are actually imported and used elsewhere, and eliminating everything unused from the final bundle — code that exists in your source files but is provably never referenced never makes it into what ships to users. Crucially, this only works reliably with ES Modules, because their <code>import</code>/<code>export</code> structure is static and can be fully analyzed without running any code; CommonJS's <code>require()</code> is dynamic (a require call can, in principle, be conditional or computed at runtime) and largely defeats tree-shaking, which is one of the practical reasons ES Modules are preferred in modern frontend code even beyond their nicer syntax.</p>
+    <p>Code splitting is a related but distinct optimization: instead of producing one enormous bundle that a user must download entirely before anything runs, a bundler can split the output into multiple chunks that load on demand — a route's code loading only when a user actually navigates to it, or a heavy library loading only when the specific feature that needs it is used, dramatically shrinking the amount of code a typical visit actually has to download and parse before the page is interactive.</p>
+    <p>Minification shrinks the final output further by renaming variables to short meaningless names, removing whitespace and comments, and applying various safe code transformations that reduce byte size without changing behavior — this happens after bundling and transpilation, as a final production-only pass, since minified code is deliberately unreadable and would make development painfully hard to debug.</p>
+    <p>Source maps are what make debugging minified, bundled, transpiled production code actually tractable: a source map is a separate file mapping each position in the shipped, transformed code back to its exact original location in your real source files, so browser DevTools can show you your actual original code — with your real variable names and file structure — even though what's genuinely running in the browser is the heavily transformed bundle.</p>
     <div class="code-block">
 <div class="cap">A minimal Vite config</div>      <pre><code>// vite.config.js
 import { defineConfig } from "vite";
@@ -123,19 +140,48 @@ export default defineConfig({
   },
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">tree-shaking-in-practice.js</div>      <pre><code>// utils.js — two named exports, statically analyzable
+export function formatCurrency(n) { return `$${n.toFixed(2)}`; }
+export function formatDate(d) { return d.toISOString().slice(0, 10); }
+
+// main.js — only formatCurrency is imported and used
+import { formatCurrency } from "./utils.js";
+console.log(formatCurrency(19.999));
+
+// After a production build, formatDate is provably unused and is
+// removed from the output bundle entirely — this only works because
+// the import/export structure above is fully static.</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">code-splitting-with-dynamic-import.js</div>      <pre><code>// Without splitting: chartLibrary ships in the main bundle for everyone,
+// even visitors who never open the chart.
+import { renderChart } from "./chart-library.js";
+
+// With splitting: chart-library.js becomes its own chunk, fetched
+// only when this code path actually runs.
+async function openChartTab() {
+  const { renderChart } = await import("./chart-library.js");
+  renderChart(document.querySelector("#chart"));
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Bundlers resolve the entire dependency graph starting from your entry file(s) and output optimized, deployable assets.</li>
-        <li>Tree-shaking depends on static (not dynamic/conditional) import/export — CommonJS's require() defeats it.</li>
-        <li>Code splitting lets a bundler generate separate chunks loaded only when needed, shrinking initial load time.</li>
-        <li>Source maps let you debug the original, unminified source even though the browser is running the bundled output.</li>
+        <li>Transpilers rewrite modern syntax into older, broadly-supported syntax — a distinct job from bundling, though modern toolchains do both together.</li>
+        <li>Tree-shaking depends on static (not dynamic/conditional) import/export — CommonJS's <code>require()</code> largely defeats it.</li>
+        <li>Code splitting lets a bundler generate separate chunks loaded only when needed, shrinking a typical visit's initial download and parse cost.</li>
+        <li>Minification runs as a final production-only pass, shrinking output size through renaming and whitespace removal — never used in development, since it's deliberately unreadable.</li>
+        <li>Source maps let you debug the original, unminified source in DevTools even though the browser is actually running the transformed, bundled output.</li>
+        <li>Dynamic <code>import()</code> is the standard trigger for code splitting — it tells the bundler a module can be its own separately-loaded chunk.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Set up a minimal Vite project, import an unused function alongside a used one from a module, build for production, and confirm the unused one is tree-shaken out of the output.</p>
+      <p>Set up a minimal Vite project, import an unused function alongside a used one from a module, build for production, and confirm the unused one is tree-shaken out of the output. Then convert a static import of a heavy module into a dynamic import behind a button click, rebuild, and confirm in the network tab that the chunk only loads after the button is clicked rather than on initial page load.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

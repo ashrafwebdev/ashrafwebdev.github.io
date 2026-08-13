@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Window functions</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="transactions-and-isolation-levels.html">Transactions and isolation levels</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>window function</b> computes a value across a set of related rows (the "window") without collapsing them into a single row the way <code>GROUP BY</code> does, so you keep every original row while adding a computed column alongside it &mdash; ideal for running totals or rankings.</p>
-    <p><code>ROW_NUMBER()</code>, <code>RANK()</code>, and <code>DENSE_RANK()</code> number rows within a window, differing in how they handle ties; <code>OVER (PARTITION BY column ORDER BY column)</code> defines the window as a separate, independently-numbered group per partition value.</p>
-    <p>Aggregate functions like <code>SUM</code> and <code>AVG</code> can also be used as window functions with <code>OVER (...)</code>, commonly used for running totals (<code>SUM(amount) OVER (ORDER BY date)</code>) that accumulate as you move through the ordered rows.</p>
+    <p class="lead">A <b>window function</b> computes a value across a set of related rows (the "window") without collapsing them into a single row the way <code>GROUP BY</code> does, so you keep every original row while adding a computed column alongside it &mdash; ideal for running totals, rankings, or comparisons against neighboring rows.</p>
+    <p><code>ROW_NUMBER()</code>, <code>RANK()</code>, and <code>DENSE_RANK()</code> number rows within a window, differing in how they handle ties: <code>ROW_NUMBER()</code> always assigns distinct sequential numbers even to tied rows (in an arbitrary but consistent order), <code>RANK()</code> gives tied rows the same number and then skips the next rank accordingly (1, 2, 2, 4), while <code>DENSE_RANK()</code> gives tied rows the same number without leaving a gap afterward (1, 2, 2, 3).</p>
+    <p><code>OVER (PARTITION BY column ORDER BY column)</code> defines the window: <code>PARTITION BY</code> splits rows into independently-numbered groups (similar in spirit to GROUP BY, but without collapsing rows), and <code>ORDER BY</code> inside the OVER clause determines the sequence used for ranking or running calculations within each partition.</p>
+    <p>Aggregate functions like <code>SUM</code> and <code>AVG</code> can also be used as window functions with <code>OVER (...)</code>, commonly used for running totals (<code>SUM(amount) OVER (ORDER BY date)</code>) that accumulate as you move through the ordered rows, or for comparing each row against its partition's overall average without a separate self-join.</p>
+    <p><code>LAG()</code> and <code>LEAD()</code> look at a preceding or following row within the same window without any join at all, which makes computing something like "the change since the previous day's total" or "tomorrow's scheduled value" a single expression instead of a self-join with an offset condition.</p>
+    <p>Window functions logically execute after WHERE, GROUP BY, and HAVING but before the final ORDER BY, which means you cannot reference a window function's result directly in the same query's WHERE clause &mdash; filtering on a computed rank typically requires wrapping the windowed query in a subquery or common table expression and filtering the outer query instead.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT
     customer_id,
@@ -122,19 +138,41 @@
     SUM(total) OVER (PARTITION BY customer_id ORDER BY order_date) AS running_total
 FROM orders;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">lag_lead.sql</div>      <pre><code>SELECT
+    order_date,
+    daily_total,
+    LAG(daily_total) OVER (ORDER BY order_date) AS previous_day_total,
+    daily_total - LAG(daily_total) OVER (ORDER BY order_date) AS change_from_previous
+FROM daily_order_totals
+ORDER BY order_date;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">filter_on_rank.sql</div>      <pre><code>-- Can't filter on rank_num directly in WHERE, so wrap it in a CTE
+WITH ranked AS (
+    SELECT product_id, category, price,
+           RANK() OVER (PARTITION BY category ORDER BY price DESC) AS rank_num
+    FROM products
+)
+SELECT * FROM ranked WHERE rank_num &lt;= 3;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Window functions add a computed column per row without collapsing rows like GROUP BY does.</li>
         <li>ROW_NUMBER, RANK, and DENSE_RANK differ in how they number and handle tied rows.</li>
-        <li>PARTITION BY splits the window into independently-numbered groups.</li>
+        <li>PARTITION BY splits the window into independently-numbered groups; ORDER BY sets the sequence within each.</li>
         <li>Aggregate functions used with OVER(...) compute running totals and moving statistics.</li>
+        <li>LAG and LEAD read a neighboring row's value directly, avoiding a manual self-join.</li>
+        <li>Window functions run after WHERE/GROUP BY/HAVING, so their results can't be filtered in the same query's WHERE.</li>
+        <li>Filtering on a window function's result requires wrapping it in a subquery or CTE and filtering the outer layer.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a query using RANK() OVER (PARTITION BY category ORDER BY price DESC) to rank products by price within each category.</p>
+      <p>Write a query using RANK() OVER (PARTITION BY category ORDER BY price DESC) to rank products by price within each category. Then wrap that query in a common table expression and filter the outer query to keep only the top 3 ranked products per category.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

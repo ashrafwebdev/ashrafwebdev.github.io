@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>ES Modules and code organization</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="classes-prototypes-and-inheritance.html">Classes, prototypes, and inheritance</a></p>
   </div>
 
   <article>
-    <p class="lead">ES Modules let you split code across files, explicitly exporting what should be public with <code>export</code> and pulling it into another file with <code>import</code> — replacing older, less structured approaches like globals or CommonJS's <code>require</code> in browser code.</p>
-    <p>A default export is the one 'main' thing a module offers; named exports let a module offer multiple independent pieces, imported selectively by name.</p>
+    <p class="lead">ES Modules let you split code across multiple files, explicitly choosing what should be public with <code>export</code> and pulling specific pieces into another file with <code>import</code> — replacing older, less structured approaches like relying on global variables, or Node's CommonJS <code>require</code>/<code>module.exports</code> system, which is still common in older Node code but works differently under the hood (synchronous, dynamic, not statically analyzable the way ES Modules are).</p>
+    <p>A module can have exactly one default export (the one 'main' thing it offers, imported without curly braces and under any name you choose) alongside any number of named exports (imported with curly braces, by their exact exported name, though you can rename them locally with the <code>as</code> keyword). Whether to use a default export, named exports, or a mix is a real design decision — named exports make renaming and refactoring safer across a codebase (tools can trace exactly what's used where) and are generally the more common recommendation in modern style guides, though default exports still make sense for a module that clearly represents one primary thing, like a single React component file.</p>
+    <p>Modules are automatically deferred (they don't block page parsing the way a classic blocking script tag does) and execute in strict mode by default, and — importantly — a given module only ever executes once no matter how many other files import it; every importer receives references to the exact same live bindings, not separate copies, so if one file changes an exported mutable value, every other file that imported it sees the updated value too.</p>
+    <p>In the browser, <code>&lt;script type="module"&gt;</code> is required to use <code>import</code>/<code>export</code> directly — a plain <code>&lt;script&gt;</code> tag doesn't understand module syntax and will throw a syntax error. In Node.js, module support depends on either using a <code>.mjs</code> file extension or setting <code>"type": "module"</code> in <code>package.json</code>; Node also supports dynamic imports (<code>await import("./module.js")</code>), which load a module lazily at runtime rather than eagerly at the top of the file — useful for code-splitting or conditionally loading something only when it's actually needed.</p>
+    <p>Circular imports (module A imports from module B, which imports back from module A) are technically supported but can produce confusing partially-initialized values, since one side of the cycle may still be executing when the other side tries to read from it — this is a real, if uncommon, source of hard-to-debug 'why is this undefined' bugs, and generally worth restructuring code to avoid rather than working around.</p>
+    <p>Splitting code into small, focused modules with a clear single responsibility makes it dramatically easier to test in isolation, easier to understand at a glance (a well-named file with a handful of related exports tells you more at a glance than a thousand-line file with everything mixed together), and easier for a bundler to tree-shake unused code out of the final production build.</p>
     <div class="code-block">
 <div class="cap">math.js / main.js</div>      <pre><code>// math.js
 export function add(a, b) { return a + b; }
@@ -122,19 +139,48 @@ export default function multiply(a, b) { return a * b; }
 import multiply, { add, PI } from "./math.js";
 console.log(add(2, 3), multiply(2, 3), PI);</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">renaming-and-shared-state.js</div>      <pre><code>// config.js
+export let requestCount = 0;
+export function trackRequest() { requestCount++; }
+
+// analytics.js — imports the same live binding, not a copy
+import { requestCount, trackRequest } from "./config.js";
+trackRequest();
+console.log(requestCount); // 1 — sees the update made through the import
+
+// Renaming an import to avoid a naming collision
+import { add as sum } from "./math.js";
+console.log(sum(2, 3));</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">dynamic-import.js</div>      <pre><code>// Load a heavy module only when it's actually needed
+async function showChart(data) {
+  const { renderChart } = await import("./chart-library.js");
+  renderChart(data);
+}
+
+document.querySelector("#show-chart-btn")
+  .addEventListener("click", () =&gt; showChart(myData));</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>A module can have exactly one default export but any number of named exports.</li>
         <li><code>&lt;script type="module"&gt;</code> in HTML is required to use import/export in the browser directly.</li>
-        <li>Modules are automatically deferred and only execute once, even if imported from multiple files.</li>
-        <li>Splitting code into focused modules makes it dramatically easier to test and reason about in isolation.</li>
+        <li>Modules execute exactly once, and every importer shares the same live bindings — not separate copies — so changes to an exported mutable value are visible everywhere it's imported.</li>
+        <li>Named exports can be renamed on import with <code>as</code>, and are generally easier to trace and refactor across a codebase than default exports.</li>
+        <li>Dynamic <code>import("./module.js")</code> loads a module lazily at runtime, returning a Promise — useful for code-splitting and conditional loading.</li>
+        <li>Node.js requires either a <code>.mjs</code> extension or <code>"type": "module"</code> in package.json to use ES Module syntax, as opposed to older CommonJS <code>require()</code>.</li>
+        <li>Circular imports are supported but can yield partially-initialized values mid-cycle — worth restructuring code to avoid rather than debugging around.</li>
+        <li>Splitting code into focused modules makes it dramatically easier to test, understand, and tree-shake in isolation.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Split a small script into two modules — one exporting utility functions, one that imports and uses them — and load it via a script type=module tag.</p>
+      <p>Split a small script into two modules — one exporting utility functions, one that imports and uses them — and load it via a script type=module tag. Then add a mutable exported variable to the utility module, mutate it from the main module, and confirm both modules see the same updated value through their live binding. Finally, add a button that dynamically imports a third module only when clicked, and confirm in the network tab that it doesn't load until then.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

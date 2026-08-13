@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Ownership basics (the core Rust idea)</h1>
     <p class="lang-line"><b>Rust</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="syntax-and-variables.html">Syntax and variables</a></p>
   </div>
 
   <article>
     <p class="lead"><b>Ownership</b> is Rust's central idea: every value has exactly one owner variable, and when that owner goes out of scope, Rust automatically frees the value's memory &mdash; no garbage collector, no manual <code>free()</code>, and no dangling pointers, enforced entirely at compile time.</p>
     <p>Assigning a heap-allocated value like a <code>String</code> to another variable <b>moves</b> ownership rather than copying it; the original variable becomes invalid, and using it afterward is a compile error. This is different from simple types like integers, which implement the <code>Copy</code> trait and are duplicated cheaply instead of moved.</p>
     <p>This one rule &mdash; one owner, memory freed automatically when it goes out of scope &mdash; is what lets Rust guarantee memory safety without runtime overhead, and understanding it is the single most important step in learning the language.</p>
+    <p>Cleanup itself is handled by the <code>Drop</code> trait, an implementation of the RAII (Resource Acquisition Is Initialization) pattern: when an owner goes out of scope, Rust automatically calls its <code>drop</code> method, which is how file handles get closed and heap memory gets freed without you writing any cleanup code. You can implement <code>Drop</code> yourself for custom cleanup logic, but you can never call <code>.drop()</code> directly &mdash; use <code>std::mem::drop(value)</code> if you need to force early cleanup. The example below defines a small struct and attaches a <code>Drop</code> implementation to it purely to make the cleanup timing visible &mdash; struct definitions, <code>impl</code> blocks, and trait implementations each get their own full lesson soon, so for now just watch when the printed messages appear.</p>
+    <p>Passing a value into a function by value moves it in exactly the same way an assignment does: unless the function hands it back as its return value, the caller permanently loses access to it. This is precisely the inconvenience that borrowing (covered in a later lesson) exists to solve, letting code access a value temporarily without taking ownership at all.</p>
+    <p>When you genuinely need two independent copies of a heap value, <code>.clone()</code> performs an explicit deep copy. Rust deliberately does not clone automatically the way it copies simple stack types, so the cost of duplicating a potentially large heap allocation is always visible directly in the source code rather than hidden behind an innocuous-looking assignment.</p>
     <div class="code-block">
 <div class="cap">main.rs</div>      <pre><code>fn main() {
     let s1 = String::from("hello");
@@ -125,6 +141,43 @@
     println!("{} {}", x, y);
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">drop_and_functions.rs</div>      <pre><code>struct Connection {
+    name: String,
+}
+
+impl Drop for Connection {
+    fn drop(&amp;mut self) {
+        println!("closing connection: {}", self.name);
+    }
+}
+
+fn take_ownership(s: String) -&gt; String {
+    println!("got: {}", s);
+    s // handed back to the caller
+}
+
+fn main() {
+    let a = Connection { name: String::from("db") };
+    let b = Connection { name: String::from("cache") };
+
+    let greeting = String::from("hi");
+    let greeting = take_ownership(greeting);
+    println!("{}", greeting);
+
+    // a and b drop in reverse declaration order: b, then a
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">clone_rescue.rs</div>      <pre><code>fn main() {
+    let original = String::from("important data");
+    let backup = original.clone(); // explicit deep copy
+
+    let moved_away = original; // original is now invalid, but backup is untouched
+    println!("{}", moved_away);
+    println!("{}", backup);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
@@ -132,12 +185,17 @@
         <li>Assigning a heap value like String moves ownership; the old variable becomes invalid.</li>
         <li>Types implementing the Copy trait (like integers) are duplicated instead of moved.</li>
         <li>These rules are enforced entirely at compile time, with zero runtime garbage-collection cost.</li>
+        <li>The Drop trait implements RAII: cleanup code runs automatically when an owner leaves scope.</li>
+        <li>Passing a value into a function by value moves it, unless the function returns it back.</li>
+        <li><code>.clone()</code> performs an explicit deep copy, keeping the cost of duplication visible in the code.</li>
+        <li><code>std::mem::drop(value)</code> forces early cleanup instead of calling <code>.drop()</code> directly.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a function that takes ownership of a String, prints it, and returns a new String; call it and observe which variables remain valid afterward.</p>
+      <p>Write a function that takes ownership of a String, prints it, and returns a new String; call it and observe which variables remain valid afterward. Then define a struct with a Drop implementation that prints a message on cleanup, create two instances of it, and observe the order in which the drop messages print relative to their declaration order.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

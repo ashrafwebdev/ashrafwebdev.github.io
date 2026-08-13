@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,54 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>SELECT, WHERE, ORDER BY</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">SQL's most basic statement is <code>SELECT</code>, which retrieves rows from a table. <code>SELECT name, price FROM products;</code> returns just those two columns for every row; <code>SELECT * FROM products;</code> returns every column, handy for exploration but best avoided in application code since it silently breaks if columns are later added or reordered.</p>
-    <p>The <code>WHERE</code> clause filters which rows come back, evaluated per row before any results are returned: <code>WHERE price > 20</code> keeps only rows where that condition is true. SQL is declarative &mdash; you describe the result you want, not the steps to get it, and the database engine decides how to actually fetch the data.</p>
-    <p><code>ORDER BY</code> sorts the result set, ascending by default (<code>ASC</code>) or descending with <code>DESC</code>, and can sort by multiple columns in sequence, such as by category first and then by price within each category.</p>
+    <p class="lead">SQL's most basic statement is <code>SELECT</code>, which retrieves rows from a table. <code>SELECT name, price FROM products;</code> returns just those two columns for every row; <code>SELECT * FROM products;</code> returns every column, handy for exploration but best avoided in application code since it silently breaks if columns are later added, removed, or reordered, and it pulls more data over the wire than the caller actually needs.</p>
+    <p>The <code>WHERE</code> clause filters which rows come back, evaluated per row before any results are returned. Comparisons use the operators you'd expect &mdash; equals, not-equals, greater-than, less-than, greater-or-equal, less-or-equal &mdash; and SQL is declarative: you describe the result you want, not the steps to get it, leaving the database engine free to decide how to actually fetch the data.</p>
+    <p>NULL deserves special attention early, because it does not behave like an ordinary value. A column with no value is NULL, and comparing anything to NULL with an ordinary equals sign never returns true, not even <code>NULL = NULL</code>. To test for a missing value you must use <code>IS NULL</code> or <code>IS NOT NULL</code> instead of the equality operator, and this trips up nearly every beginner at least once.</p>
+    <p><code>ORDER BY</code> sorts the result set, ascending by default (<code>ASC</code>) or descending with <code>DESC</code>, and can sort by multiple columns in sequence, such as by category first and then by price within each category. Where NULLs land in a sort is engine-specific by default &mdash; PostgreSQL sorts them last in an ascending sort, for instance &mdash; so an explicit <code>NULLS FIRST</code> or <code>NULLS LAST</code> is worth adding whenever the sort order actually matters.</p>
+    <p><code>LIMIT</code> (or <code>TOP</code>/<code>FETCH FIRST</code> depending on the engine) caps how many rows come back, and combined with <code>OFFSET</code> it becomes the basis of simple pagination: skip the first N rows, then take the next page's worth. It's worth knowing this style of pagination degrades on very large offsets, since the database still has to walk past every skipped row.</p>
+    <p>Column aliases, written with <code>AS</code>, rename a column or computed expression in the output without touching the underlying table &mdash; useful for giving a calculated value like <code>price * quantity AS subtotal</code> a readable name that downstream code or a report can reference directly.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT name, price
 FROM products
 WHERE price &gt; 20
 ORDER BY price DESC;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">pagination.sql</div>      <pre><code>-- Second page of 10 results, cheapest first, missing prices sorted last
+SELECT name, price AS current_price
+FROM products
+WHERE category = 'electronics'
+ORDER BY price ASC NULLS LAST
+LIMIT 10 OFFSET 10;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">null_mistake.sql</div>      <pre><code>-- Wrong: this never matches rows where discount really is NULL
+SELECT * FROM products WHERE discount = NULL;
+
+-- Correct
+SELECT * FROM products WHERE discount IS NULL;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>SELECT chooses which columns to return; avoid SELECT * in application code.</li>
         <li>WHERE filters rows before they're returned, evaluated independently per row.</li>
-        <li>ORDER BY sorts results; ASC is the default, DESC reverses it.</li>
+        <li>ORDER BY sorts results; ASC is the default, DESC reverses it, and multiple columns break ties in sequence.</li>
+        <li>NULL is never equal to anything, even itself; use IS NULL / IS NOT NULL, not =.</li>
+        <li>LIMIT and OFFSET implement basic pagination, though large offsets scale poorly on big tables.</li>
+        <li>AS gives a column or computed expression a readable alias in the output.</li>
         <li>SQL is declarative: you describe the desired result, not the retrieval steps.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a query against a products table that selects name and price for products over $15, sorted by price ascending.</p>
+      <p>Write a query against a products table that selects name and price for products over $15, sorted by price ascending. Then extend it to alias price as current_price, skip the first 5 matching rows, and return only the next 5 using LIMIT and OFFSET.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Streams and lambda expressions</h1>
     <p class="lang-line"><b>Java</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="generics.html">Generics</a></p>
   </div>
 
   <article>
-    <p class="lead">A <b>lambda expression</b> is a compact, anonymous function, written as <code>(parameters) -> expression</code>, that can be passed around as a value wherever a matching functional interface (an interface with a single abstract method, like <code>Comparator</code>) is expected.</p>
-    <p>The <b>Stream API</b>, introduced in Java 8, lets you express collection processing as a pipeline of operations &mdash; <code>filter</code>, <code>map</code>, <code>sorted</code>, <code>collect</code> &mdash; rather than hand-written loops, often making the intent of the code clearer.</p>
-    <p>Streams are lazy: intermediate operations like <code>filter</code> and <code>map</code> don't run until a terminal operation like <code>collect</code> or <code>forEach</code> pulls the results through the pipeline.</p>
+    <p class="lead">A <b>lambda expression</b> is a compact, anonymous function, written as <code>(parameters) -> expression</code>, that can be passed around as a value wherever a matching <b>functional interface</b> (an interface with a single abstract method, like <code>Comparator</code> or <code>Runnable</code>) is expected. Behind the scenes a lambda is compiled to an implementation of that interface, not to some special new language construct.</p>
+    <p>The <code>java.util.function</code> package defines the common functional interface shapes you'll reach for constantly: <code>Function&lt;T,R&gt;</code> (takes a T, returns an R), <code>Predicate&lt;T&gt;</code> (takes a T, returns boolean), <code>Consumer&lt;T&gt;</code> (takes a T, returns nothing), and <code>Supplier&lt;T&gt;</code> (takes nothing, returns a T) cover the vast majority of use cases without needing to write your own interface.</p>
+    <p>The <b>Stream API</b>, introduced in Java 8, lets you express collection processing as a pipeline of operations &mdash; <code>filter</code>, <code>map</code>, <code>sorted</code>, <code>collect</code> &mdash; rather than hand-written loops, often making the intent of the code clearer by naming each transformation instead of burying it inside loop bodies and mutable accumulator variables.</p>
+    <p>Streams are lazy: intermediate operations like <code>filter</code> and <code>map</code> don't run until a <b>terminal operation</b> like <code>collect</code>, <code>forEach</code>, or <code>reduce</code> pulls the results through the pipeline. This laziness lets the stream fuse operations and process elements one at a time through the whole chain rather than materializing an intermediate list after every step.</p>
+    <p>A stream can only be consumed <b>once</b>: calling a terminal operation on it a second time throws <code>IllegalStateException</code>, because a stream models a single pass over a data source rather than a reusable collection. If you need to run multiple pipelines over the same data, start a fresh stream from the source collection each time.</p>
+    <p><code>Collectors</code> offers more than just gathering results into a List: <code>Collectors.groupingBy</code> partitions elements into a Map keyed by some derived property, <code>Collectors.joining</code> concatenates strings with an optional delimiter, and <code>Collectors.toMap</code> builds a Map directly from a stream, which together cover most of the aggregation logic that used to require manual loop-and-accumulate code.</p>
     <div class="code-block">
 <div class="cap">Names.java</div>      <pre><code>import java.util.*;
 import java.util.stream.*;
@@ -131,19 +147,58 @@ public class Names {
     }
 }</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">Grouping.java</div>      <pre><code>import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
+
+record Employee(String name, String department, double salary) {}
+
+public class Grouping {
+    public static void main(String[] args) {
+        List&lt;Employee&gt; staff = List.of(
+            new Employee("Amina", "Engineering", 95000),
+            new Employee("Bilal", "Sales", 60000),
+            new Employee("Omar", "Engineering", 88000)
+        );
+
+        Map&lt;String, List&lt;String&gt;&gt; byDept = staff.stream()
+            .collect(Collectors.groupingBy(
+                Employee::department,
+                Collectors.mapping(Employee::name, Collectors.toList())));
+        System.out.println(byDept);
+
+        double totalPayroll = staff.stream()
+            .mapToDouble(Employee::salary)
+            .sum();
+        System.out.println("Total payroll: " + totalPayroll);
+
+        Predicate&lt;Employee&gt; isHighEarner = e -&gt; e.salary() &gt; 90000;
+        String names = staff.stream()
+            .filter(isHighEarner)
+            .map(Employee::name)
+            .collect(Collectors.joining(", "));
+        System.out.println("High earners: " + names);
+    }
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Lambdas provide a concise syntax for implementing single-method functional interfaces inline.</li>
+        <li>java.util.function's Function, Predicate, Consumer, and Supplier cover most common lambda shapes without custom interfaces.</li>
         <li><code>method::reference</code> is shorthand for a lambda that just calls an existing method.</li>
-        <li>Stream pipelines chain <code>filter</code>, <code>map</code>, and <code>sorted</code>, ending in a terminal operation like <code>collect</code>.</li>
+        <li>Stream pipelines chain filter, map, and sorted, ending in a terminal operation like collect, forEach, or reduce.</li>
         <li>Streams are lazily evaluated: nothing runs until a terminal operation is invoked.</li>
+        <li>A stream can only be traversed once; reusing a consumed stream throws IllegalStateException.</li>
+        <li>Collectors.groupingBy, joining, and toMap handle common aggregation patterns without manual loops.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Given a List of Integer, use a stream to filter out odd numbers, square the remaining values, and collect the results into a new List.</p>
+      <p>Given a List of Integer, use a stream to filter out odd numbers, square the remaining values, and collect the results into a new List. Then, given a List of a small record type with a category field, use Collectors.groupingBy to build a Map from category to a count of items in that category, and add a Predicate variable used inside the filter step instead of an inline lambda.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

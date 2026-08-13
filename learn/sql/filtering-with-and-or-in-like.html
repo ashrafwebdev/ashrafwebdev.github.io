@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,55 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Filtering with AND/OR/IN/LIKE</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="select-where-order-by.html">SELECT, WHERE, ORDER BY</a></p>
   </div>
 
   <article>
-    <p class="lead">Multiple conditions in a <code>WHERE</code> clause combine with <code>AND</code> (all must be true) and <code>OR</code> (at least one must be true); when mixing both, parentheses make evaluation order explicit and avoid subtle logic bugs, since AND binds tighter than OR by default.</p>
-    <p><code>IN</code> checks a column against a list of values in one concise expression, replacing what would otherwise be a long chain of <code>OR</code> comparisons on the same column: <code>WHERE category IN ('books', 'electronics')</code>.</p>
-    <p><code>LIKE</code> performs pattern matching on text, using <code>%</code> to match any sequence of characters and <code>_</code> to match exactly one character &mdash; <code>WHERE name LIKE 'A%'</code> finds every name starting with A.</p>
+    <p class="lead">Multiple conditions in a <code>WHERE</code> clause combine with <code>AND</code> (all must be true) and <code>OR</code> (at least one must be true); when mixing both, parentheses make evaluation order explicit and avoid subtle logic bugs, since AND binds tighter than OR by default and a missing parenthesis can silently change which rows match.</p>
+    <p><code>IN</code> checks a column against a list of values in one concise expression, replacing what would otherwise be a long chain of <code>OR</code> comparisons on the same column. Its counterpart <code>NOT IN</code> excludes those values, but it deserves caution: if the list contains a NULL, <code>NOT IN</code> can unexpectedly return zero rows for the entire query, because comparing anything to that NULL yields unknown rather than true or false.</p>
+    <p><code>BETWEEN</code> tests whether a value falls within an inclusive range, and <code>WHERE price BETWEEN 10 AND 20</code> is equivalent to combining a greater-or-equal and a less-or-equal check with AND, just more compact to read and write.</p>
+    <p><code>LIKE</code> performs pattern matching on text, using <code>%</code> to match any sequence of characters (including zero characters) and <code>_</code> to match exactly one character. A pattern that starts with <code>%</code>, such as matching anything ending in a suffix, generally cannot use a standard index efficiently, since the database can no longer narrow the search from the left edge of the indexed values.</p>
+    <p><code>IS NULL</code> and <code>IS NOT NULL</code> are technically filters too, and combine naturally with the others: a condition like matching a category list and also requiring a non-missing description is written by joining an IN check with an IS NOT NULL check using AND.</p>
+    <p>Case sensitivity of <code>LIKE</code> depends on the database engine and the column's collation; PostgreSQL's <code>LIKE</code> is case-sensitive by default (its <code>ILIKE</code> variant is not), while MySQL's default collation often makes <code>LIKE</code> case-insensitive, so behavior that looks identical in development can differ once deployed against a different engine or configuration.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>SELECT name, category, price
 FROM products
 WHERE category IN ('books', 'electronics')
   AND (price &lt; 10 OR name LIKE 'Deluxe%');</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">between_and_pattern.sql</div>      <pre><code>SELECT name, price
+FROM products
+WHERE price BETWEEN 10 AND 50
+  AND name LIKE '%Pro%'
+  AND description IS NOT NULL;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">not_in_null_trap.sql</div>      <pre><code>-- If this list contains a NULL, the query returns zero rows entirely
+SELECT * FROM products
+WHERE id NOT IN (3, 7, NULL);
+
+-- Safer: keep NULLs out of the list you're comparing against
+SELECT * FROM products
+WHERE id NOT IN (3, 7);</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>AND requires every condition true; OR requires at least one; parentheses make precedence explicit.</li>
         <li>IN checks a column against a list of values, replacing a long chain of OR comparisons.</li>
+        <li>NOT IN silently returns zero rows for the whole query if its list contains a NULL.</li>
+        <li>BETWEEN expresses an inclusive range concisely; it's equivalent to two combined comparisons.</li>
         <li>LIKE performs pattern matching, with % for any sequence and _ for a single character.</li>
+        <li>A leading % in a LIKE pattern usually prevents a standard index from being used efficiently.</li>
         <li>Case sensitivity of LIKE depends on the database engine and column collation.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a query selecting all products whose category is either 'toys' or 'games' and whose name starts with the letter 'S'.</p>
+      <p>Write a query selecting all products whose category is either 'toys' or 'games' and whose name starts with the letter 'S'. Then add a BETWEEN condition to keep only prices from $5 to $25, and explain in one sentence why a NULL hiding inside a NOT IN list can cause the entire query to silently return zero rows.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

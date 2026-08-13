@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,13 +119,18 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Basic forms: input, button, label</h1>
     <p class="lang-line"><b>HTML</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="links-and-images.html">Links and images</a></p>
   </div>
 
   <article>
     <p class="lead">Forms collect input from visitors. A <code>&lt;form&gt;</code> wraps one or more <code>&lt;input&gt;</code> elements, each with a <code>type</code> (text, email, password, checkbox...) that changes how the browser handles it. A <code>&lt;button&gt;</code> submits the form.</p>
-    <p>Every input should have a matching <code>&lt;label&gt;</code>. Connect them with the label's <code>for</code> attribute matching the input's <code>id</code> — this lets clicking the label focus the input, and it's essential for screen reader users.</p>
+    <p>Every input should have a matching <code>&lt;label&gt;</code>. Connect them with the label's <code>for</code> attribute matching the input's <code>id</code> — this lets clicking the label focus the input, and it's essential for screen reader users, who otherwise hear only "edit text" with no idea what the field is for.</p>
+    <p>The <code>name</code> attribute is what actually gets sent to the server when the form submits — <code>id</code> is a separate concept used for labels, CSS, and JavaScript, and the two are easy to confuse when you're starting out. A field with an <code>id</code> but no <code>name</code> will render and label correctly but silently vanish from the submitted data.</p>
+    <p>Forms have two important attributes on the <code>&lt;form&gt;</code> tag itself: <code>action</code>, the URL the data is sent to, and <code>method</code>, either <code>GET</code> (appends data to the URL, visible and bookmarkable, fine for search boxes) or <code>POST</code> (sends data in the request body, the right choice for anything that changes data or includes sensitive information like a password).</p>
+    <p>There's a meaningful difference between the three button types: <code>type="submit"</code> (the default inside a form) submits the form, <code>type="reset"</code> clears all fields back to their initial values, and <code>type="button"</code> does nothing by itself and exists purely as a hook for JavaScript. Forgetting to set <code>type="button"</code> on a button meant only to trigger a script is a classic bug — it accidentally submits the form instead.</p>
+    <p>Even before any JavaScript is written, an HTML form with a real <code>action</code> and <code>method</code> is fully functional on its own, submitting a normal page request to the server. This matters more than it might seem: it means a form still works if a script fails to load, which is the foundation of the progressive enhancement approach covered later in this roadmap.</p>
     <div class="code-block">
-<div class="cap">index.html</div>      <pre><code>&lt;form&gt;
+<div class="cap">index.html</div>      <pre><code>&lt;form action="/submit-contact" method="POST"&gt;
   &lt;label for="name"&gt;Your name&lt;/label&gt;
   &lt;input type="text" id="name" name="name"&gt;
 
@@ -123,19 +140,46 @@
   &lt;button type="submit"&gt;Send&lt;/button&gt;
 &lt;/form&gt;</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">three button types</div>      <pre><code>&lt;form action="/save" method="POST"&gt;
+  &lt;label for="nickname"&gt;Nickname&lt;/label&gt;
+  &lt;input type="text" id="nickname" name="nickname"&gt;
+
+  &lt;button type="submit"&gt;Save&lt;/button&gt;
+  &lt;button type="reset"&gt;Clear form&lt;/button&gt;
+  &lt;button type="button" onclick="alert('Just a helper, does not submit')"&gt;Preview&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">common mistake: id without name</div>      <pre><code>&lt;!-- Wrong: has an id for the label, but no name, so this
+     field's value is silently dropped from the submitted data --&gt;
+&lt;label for="nick"&gt;Nickname&lt;/label&gt;
+&lt;input type="text" id="nick"&gt;
+
+&lt;!-- Right: name is what the server actually receives --&gt;
+&lt;label for="nick"&gt;Nickname&lt;/label&gt;
+&lt;input type="text" id="nick" name="nickname"&gt;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Always pair an <code>&lt;input&gt;</code> with a <code>&lt;label&gt;</code> connected via <code>for</code>/<code>id</code>.</li>
-        <li>The <code>name</code> attribute is what gets sent to the server — don't forget it.</li>
+        <li>The <code>name</code> attribute is what gets sent to the server — <code>id</code> alone is not enough.</li>
         <li><code>type="email"</code>, <code>type="number"</code>, etc. give free validation and better mobile keyboards.</li>
-        <li><code>&lt;button type="submit"&gt;</code> submits; <code>type="button"</code> does nothing on its own.</li>
+        <li><code>&lt;button type="submit"&gt;</code> submits; <code>type="button"</code> does nothing on its own; <code>type="reset"</code> clears the form.</li>
+        <li>Use <code>method="POST"</code> for anything that changes data or is sensitive; <code>GET</code> is fine for simple searches.</li>
+        <li>A form with a real <code>action</code> works even before any JavaScript runs.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a simple contact form with fields for name, email, and a message (use a textarea for the message), each with a proper label.</p>
+      <p>Build a simple contact form with fields for name, email, and a message (use a textarea for the message), each with a proper label, plus a real action and method="POST". Add a reset button and a plain type="button" that just shows an alert, and confirm in dev tools that only fields with a name attribute appear in the submitted form data.</p>
     </div>
+    <a class="capstone-banner" href="project-zero.html">
+      <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
+      <span class="cb-title">Your résumé, built by hand in raw HTML</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

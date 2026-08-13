@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>CommonJS modules (require/module.exports)</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="npm-and-package-json-basics.html">npm and package.json basics</a></p>
   </div>
 
   <article>
-    <p class="lead">CommonJS is Node's original module system: <code>module.exports</code> defines what a file makes available, and <code>require()</code> pulls that into another file. It's synchronous and file-based, unlike the newer ES Modules standard.</p>
-    <p>Modern Node also supports ES Modules (<code>import</code>/<code>export</code>) via <code>.mjs</code> files or <code>"type": "module"</code> in package.json — new projects increasingly default to ESM, but a huge amount of existing Node code is still CommonJS.</p>
+    <p class="lead">CommonJS is Node's original module system: <code>module.exports</code> defines what a file makes available, and <code>require()</code> pulls that into another file. It's synchronous and file-based, unlike the newer ES Modules standard that browsers and modern bundlers use natively.</p>
+    <p>Modern Node also supports ES Modules (<code>import</code>/<code>export</code>) via <code>.mjs</code> files or <code>"type": "module"</code> in package.json — new projects increasingly default to ESM, but a huge amount of existing Node code, and most older npm packages, are still CommonJS.</p>
+    <p><code>require()</code> caches modules by their resolved file path — requiring the same file twice, from anywhere in the project, returns the exact same already-executed module object rather than re-running the file. This matters for anything with module-level state, like a shared database connection or an in-memory cache.</p>
+    <p>A common beginner mistake is confusing <code>exports</code> and <code>module.exports</code>. <code>exports</code> starts as a reference to the same object as <code>module.exports</code>, so <code>exports.add = fn</code> works fine — but reassigning <code>exports = {...}</code> breaks that link and exports nothing, since <code>module.exports</code> still points to the original (now-unused) object. Reassigning <code>module.exports</code> directly is always safe.</p>
+    <p>Circular requires — module A requiring module B while B is also requiring A — are possible in CommonJS but return a partially-completed export from whichever module hasn't finished executing yet, which can silently produce <code>undefined</code> values for functions or objects that haven't been defined yet at that point in the file. Restructuring to avoid the cycle is usually simpler than working around it.</p>
+    <p>Each CommonJS file also gets its own <code>__dirname</code> and <code>__filename</code> variables giving its absolute location on disk — useful for building file paths relative to the current module rather than relative to wherever the process happened to be started from. ES Modules don't have these automatically; they require <code>import.meta.url</code> instead.</p>
     <div class="code-block">
 <div class="cap">math.js / index.js</div>      <pre><code>// math.js
 function add(a, b) { return a + b; }
@@ -121,19 +138,41 @@ module.exports = { add };
 const { add } = require("./math");
 console.log(add(2, 3));</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">The exports vs module.exports pitfall</div>      <pre><code>// BROKEN — reassigning exports breaks the link to module.exports
+exports = { add: (a, b) =&gt; a + b };
+// require("./this-file") will return {} — nothing was actually exported!
+
+// CORRECT — either mutate exports, or reassign module.exports directly
+exports.add = (a, b) =&gt; a + b;         // ok
+module.exports = { add: (a, b) =&gt; a + b }; // also ok, and clearer</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">paths.js</div>      <pre><code>const path = require("path");
+
+console.log(__dirname);  // absolute directory of this file
+console.log(__filename); // absolute path of this file
+
+// Build a path relative to this module, not the process's cwd
+const dataFile = path.join(__dirname, "data", "users.json");</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>module.exports</code> can be a single value, a function, or (most commonly) an object of named exports.</li>
-        <li><code>require()</code> caches modules — requiring the same file twice returns the same already-executed module.</li>
+        <li><code>require()</code> caches modules by resolved file path — requiring the same file twice returns the same already-executed module.</li>
+        <li>Reassigning <code>exports = {...}</code> breaks its link to <code>module.exports</code> and silently exports nothing — mutate <code>exports</code> or reassign <code>module.exports</code> instead.</li>
         <li>CommonJS <code>require()</code> is synchronous, which is part of why it doesn't work directly in browsers without a bundler.</li>
+        <li>Circular requires can return a partially-completed export from whichever module hasn't finished executing yet.</li>
+        <li><code>__dirname</code> and <code>__filename</code> give a module's absolute location on disk — use them for module-relative paths.</li>
         <li>Mixing CommonJS and ESM in one project is possible but adds real complexity — pick one per project where you can.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Split a script into two CommonJS files — one exporting a couple of utility functions, one requiring and using them.</p>
+      <p>Split a script into two CommonJS files — one exporting a couple of utility functions, one requiring and using them. Then deliberately trigger the exports-vs-module.exports bug by reassigning exports directly in one file, confirm the import breaks, and fix it.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

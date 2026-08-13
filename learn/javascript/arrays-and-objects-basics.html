@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Arrays and objects basics</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="functions-and-parameters.html">Functions and parameters</a></p>
   </div>
 
   <article>
-    <p class="lead">Arrays hold ordered lists of values, accessed by index starting at 0. Objects hold key-value pairs, accessed by key — use arrays when order matters and items are similar; use objects when you're modeling a single 'thing' with named properties.</p>
-    <p>Both are mutable by default — even a <code>const</code> array or object can have its contents changed, since <code>const</code> only prevents reassigning the variable itself, not mutating what it points to.</p>
+    <p class="lead">Arrays hold ordered lists of values, accessed by a numeric index starting at 0. Objects hold unordered key-value pairs, accessed by key. As a rule of thumb: reach for an array when order matters and the items are similar in shape (a list of users, a list of scores); reach for an object when you're modeling one specific 'thing' with named properties (a single user's name, age, and email).</p>
+    <p>Both are reference types and both are mutable by default, even when declared with <code>const</code>. This surprises beginners: <code>const</code> only prevents reassigning the variable itself to point at a different array or object — it does nothing to stop you from pushing to that array or setting a new property on that object, because the variable is still pointing at the same object in memory.</p>
+    <p>Objects can be accessed with dot notation (<code>user.name</code>) when the key is a valid identifier known ahead of time, or bracket notation (<code>user["name"]</code>) when the key is dynamic — stored in a variable, computed, or containing characters that aren't valid in dot notation, like a space or a hyphen.</p>
+    <p>Copying an array or object with a simple assignment (<code>const b = a</code>) does not create a new one — it just creates a second variable pointing at the exact same data in memory, so mutating through either variable affects both. To make an actual independent copy, use the spread operator (<code>[...arr]</code> or <code>{...obj}</code>) or methods like <code>Array.from()</code> — but note this only copies one level deep; nested arrays or objects inside are still shared references, a trap known as a shallow copy.</p>
+    <p>Nested structures — arrays of objects, objects containing arrays, objects containing other objects — are the normal shape of real-world data, especially anything coming back from an API as JSON. Getting comfortable reading and building nested structures, and knowing how to safely reach deep into them (optional chaining helps a lot here), is one of the most practically useful JavaScript skills.</p>
+    <p>Useful array checks and utilities worth knowing early: <code>Array.isArray()</code> is the correct way to test whether something is actually an array (<code>typeof</code> just says <code>"object"</code> for arrays too), <code>.length</code> gives the element count, and <code>Object.keys()</code>/<code>Object.values()</code>/<code>Object.entries()</code> let you turn an object's keys, values, or key-value pairs into arrays you can loop over or transform.</p>
     <div class="code-block">
 <div class="cap">collections.js</div>      <pre><code>const fruits = ["apple", "banana", "cherry"];
 fruits.push("date"); // mutates the array, allowed even with const
@@ -123,19 +140,58 @@ const user = {
 };
 console.log(fruits[0], user.name, user["age"]);</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">copying-and-nesting.js</div>      <pre><code>// Reference vs copy
+const original = { name: "Amina", tags: ["admin"] };
+const alias = original;      // same object, not a copy
+const shallow = { ...original }; // new outer object, but...
+
+alias.name = "Changed";
+console.log(original.name);  // "Changed" — alias affected the original
+
+shallow.tags.push("editor");
+console.log(original.tags);  // ["admin", "editor"] — nested array still shared!
+
+// A nested structure typical of real API data
+const order = {
+  id: 1042,
+  customer: { name: "Yusuf", email: "yusuf@example.com" },
+  items: [
+    { sku: "MUG-1", qty: 2 },
+    { sku: "PEN-3", qty: 5 },
+  ],
+};
+console.log(order.customer.name, order.items[0].sku);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">object-key-helpers.js</div>      <pre><code>const inventory = { mugs: 12, pens: 40, notebooks: 7 };
+
+console.log(Object.keys(inventory));   // ["mugs", "pens", "notebooks"]
+console.log(Object.values(inventory)); // [12, 40, 7]
+console.log(Object.entries(inventory));
+// [["mugs", 12], ["pens", 40], ["notebooks", 7]]
+
+for (const [item, count] of Object.entries(inventory)) {
+  console.log(`${item}: ${count}`);
+}</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
-        <li>Arrays: ordered, indexed from 0, use <code>.length</code> to get the count.</li>
-        <li>Objects: unordered key-value pairs, access via dot notation or bracket notation.</li>
+        <li>Arrays: ordered, indexed from 0, use <code>.length</code> to get the count; use <code>Array.isArray()</code> to test for one, not <code>typeof</code>.</li>
+        <li>Objects: unordered key-value pairs, accessed via dot notation (fixed keys) or bracket notation (dynamic or invalid-identifier keys).</li>
         <li><code>const</code> prevents reassignment, not mutation — <code>const arr = []; arr.push(1);</code> is perfectly valid.</li>
-        <li>Nested structures (arrays of objects, objects containing arrays) are extremely common in real code.</li>
+        <li>Assigning an array or object to a new variable copies the reference, not the data — both variables point at the same underlying value.</li>
+        <li>Spread (<code>{...obj}</code> or <code>[...arr]</code>) creates a shallow copy — nested arrays/objects inside are still shared with the original.</li>
+        <li><code>Object.keys()</code>, <code>Object.values()</code>, and <code>Object.entries()</code> convert an object into an array you can loop over, map, or filter.</li>
+        <li>Nested structures (arrays of objects, objects of objects) are the everyday shape of real data — practice reading and building them deliberately.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create an array of 3 objects, each representing a book with title and author properties, then log each book's title in a loop.</p>
+      <p>Create an array of 3 objects, each representing a book with title and author properties, then log each book's title in a loop. Then write a small nested order object like the one above, and use Object.entries() together with a loop to print every top-level key alongside its value. Finally, demonstrate the shallow-copy trap by spreading an object with a nested array, mutating the nested array through the copy, and showing that the original changed too.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

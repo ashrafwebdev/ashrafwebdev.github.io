@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,11 +119,16 @@
     <span class="stage-chip"><span class="n">02</span> Learning stage</span>
     <h1>Events and event listeners</h1>
     <p class="lang-line"><b>JavaScript</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="dom-selection-and-manipulation.html">DOM selection and manipulation</a></p>
   </div>
 
   <article>
-    <p class="lead">Events are how a page responds to what a user does — clicks, key presses, form submissions, scrolling. <code>addEventListener(type, handler)</code> attaches a function that runs whenever that event fires on an element.</p>
-    <p>The event object passed to your handler carries useful details: <code>event.target</code> (what was actually clicked), and for forms, calling <code>event.preventDefault()</code> stops the browser's default action, like a full page reload on submit.</p>
+    <p class="lead">Events are how a page responds to what happens — clicks, key presses, form submissions, scrolling, network responses finishing, and dozens more. <code>element.addEventListener(type, handler)</code> attaches a function that runs every time that event fires on that element, and unlike the older <code>onclick = fn</code> style, it lets you attach multiple independent handlers to the same event without one overwriting another.</p>
+    <p>The event object passed automatically to your handler carries useful details about what happened: <code>event.target</code> is the actual element the event originated on, <code>event.currentTarget</code> is the element the listener is attached to (these differ once you use event delegation), and for keyboard/mouse events there's <code>event.key</code>, <code>event.clientX</code>/<code>clientY</code>, and more depending on the event type.</p>
+    <p>For forms specifically, calling <code>event.preventDefault()</code> inside a <code>submit</code> handler stops the browser's default action — a full page navigation/reload — which is essential once you're handling the submission with JavaScript (validating it, sending it via <code>fetch()</code>, updating the page in place) instead of letting the browser do a traditional form post.</p>
+    <p>Events don't just fire on the exact element clicked — they bubble up through every ancestor element in the DOM tree, from the target outward to <code>document</code>. Event delegation exploits this: instead of attaching a listener to every individual item in a list (expensive, and broken for items added later), you attach one listener to a stable parent container and check <code>event.target</code> inside it to figure out which child was actually interacted with. This is both more efficient and automatically works for elements added to the DOM after the listener was attached.</p>
+    <p>Some events don't bubble by default (like <code>focus</code> and <code>blur</code>), but most do, and you can control the flow further with <code>event.stopPropagation()</code> (stops the event from bubbling further up) — though this should be used sparingly, since it can silently break other code (like an outer analytics listener) that expected to see the event.</p>
+    <p>Listeners you no longer need should be removed with <code>removeEventListener()</code>, which requires passing the exact same function reference used in <code>addEventListener()</code> — an inline arrow function can never be removed this way, since a new function object is created every time. In single-page applications where elements are frequently created and destroyed, forgetting to clean up listeners is one of the most common sources of memory leaks.</p>
     <div class="code-block">
 <div class="cap">events.js</div>      <pre><code>const form = document.querySelector("form");
 
@@ -121,19 +138,57 @@ form.addEventListener("submit", (event) =&gt; {
   console.log("Submitting:", email);
 });</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">event-delegation.js</div>      <pre><code>// One listener on the parent, instead of one per item —
+// also automatically covers items added later.
+const list = document.querySelector("#todo-list");
+
+list.addEventListener("click", (event) =&gt; {
+  if (event.target.matches(".delete-btn")) {
+    const item = event.target.closest("li");
+    item.remove();
+  }
+});
+
+function addTodo(text) {
+  const li = document.createElement("li");
+  li.innerHTML = `${text} &lt;button class="delete-btn"&gt;Delete&lt;/button&gt;`;
+  list.appendChild(li); // works with the delegated listener automatically
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">cleanup-mistake.js</div>      <pre><code>// Bug: this can never be removed — a new function is created each call
+function attachBroken() {
+  window.addEventListener("scroll", () =&gt; console.log("scrolling"));
+}
+
+// Fix: keep a named reference so removeEventListener can find it
+function attachFixed() {
+  const onScroll = () =&gt; console.log("scrolling");
+  window.addEventListener("scroll", onScroll);
+  return () =&gt; window.removeEventListener("scroll", onScroll);
+}
+const cleanup = attachFixed();
+// later, when this feature is torn down:
+cleanup();</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li><code>event.preventDefault()</code> is essential for handling form submissions with JavaScript instead of a full page reload.</li>
-        <li><code>event.target</code> tells you exactly which element triggered the event, useful with event delegation.</li>
-        <li>Event delegation (listening on a parent, checking <code>event.target</code>) is more efficient than attaching a listener to every child individually.</li>
-        <li>Always remove listeners (<code>removeEventListener</code>) you no longer need, especially in single-page apps, to avoid memory leaks.</li>
+        <li><code>event.target</code> is what was actually interacted with; <code>event.currentTarget</code> is the element the listener lives on — they differ under delegation.</li>
+        <li>Events bubble up from the target through every ancestor by default, which is what makes event delegation possible.</li>
+        <li>Event delegation (one listener on a parent, checking <code>event.target</code>) is more efficient than per-child listeners and automatically covers elements added later.</li>
+        <li><code>removeEventListener()</code> requires the exact same function reference passed to <code>addEventListener()</code> — an inline arrow function can never be removed.</li>
+        <li>Always remove listeners you no longer need, especially in single-page apps, to avoid memory leaks from lingering references.</li>
+        <li><code>event.stopPropagation()</code> stops bubbling, but use it sparingly — it can silently break other code that expected to observe the event.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a form with an email input that logs the value to the console on submit, without reloading the page.</p>
+      <p>Build a form with an email input that logs the value to the console on submit, without reloading the page. Then build a small to-do list where each item has a delete button, using a single delegated click listener on the list container rather than one listener per button, and confirm newly added items are deletable without attaching any new listeners.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

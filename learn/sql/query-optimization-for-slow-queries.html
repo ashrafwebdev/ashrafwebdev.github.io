@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,12 +119,16 @@
     <span class="stage-chip"><span class="n">03</span> Advanced stage</span>
     <h1>Query optimization for slow queries</h1>
     <p class="lang-line"><b>SQL</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="views-and-stored-procedures.html">Views and stored procedures</a></p>
   </div>
 
   <article>
-    <p class="lead">Diagnosing a slow query starts the same way as any performance problem: measure first with <code>EXPLAIN ANALYZE</code> to see the actual execution plan and timing, rather than guessing which part is slow.</p>
-    <p>Common fixes include adding a missing index on filtered or joined columns, rewriting a correlated subquery as a JOIN, avoiding <code>SELECT *</code> when only a few columns are needed, and ensuring a <code>WHERE</code> clause doesn't wrap an indexed column in a function (which usually prevents the index from being used at all).</p>
-    <p>For very large tables, techniques like partitioning (splitting one logical table into smaller physical pieces) or precomputing expensive aggregates into a materialized view can help when indexing alone isn't enough, though these add real complexity and are worth reaching for only once simpler fixes are exhausted.</p>
+    <p class="lead">Diagnosing a slow query starts the same way as any performance problem: measure first with <code>EXPLAIN ANALYZE</code> to see the actual execution plan and timing, rather than guessing which part is slow &mdash; intuition about which clause is expensive is wrong often enough that skipping this step wastes more time than it saves.</p>
+    <p>Common fixes include adding a missing index on filtered or joined columns, rewriting a correlated subquery as a JOIN, avoiding <code>SELECT *</code> when only a few columns are needed, and ensuring a <code>WHERE</code> clause doesn't wrap an indexed column in a function (which usually prevents the index from being used at all, since the database would have to evaluate that function against every row first).</p>
+    <p>A condition that can use an index directly is called <b>sargable</b> (search-argument-able); wrapping a column in a function, doing implicit type conversion, or using a leading wildcard in LIKE typically makes a condition non-sargable, and rewriting it into an equivalent sargable form &mdash; a range comparison instead of a function call, for example &mdash; is one of the highest-leverage optimizations available.</p>
+    <p>For queries joining several tables, join order and join type both affect performance: the database's query planner usually picks a good order automatically based on table statistics, but stale statistics or an unusual data distribution can lead it astray, in which case refreshing statistics (<code>ANALYZE</code>) is often a faster fix than manually restructuring the query.</p>
+    <p>Pagination with a large <code>OFFSET</code> gets progressively slower as the offset grows, since the database still has to compute and discard every skipped row; <b>keyset pagination</b> (also called seek-based pagination), which filters using <code>WHERE id > last_seen_id</code> instead of an offset, avoids that cost entirely and scales to arbitrarily deep pages.</p>
+    <p>For very large tables, techniques like partitioning (splitting one logical table into smaller physical pieces) or precomputing expensive aggregates into a materialized view can help when indexing alone isn't enough, though these add real complexity and are worth reaching for only once simpler fixes are exhausted and profiling actually points at them as necessary.</p>
     <div class="code-block">
 <div class="cap">query.sql</div>      <pre><code>-- Slow: function on an indexed column prevents index use
 SELECT * FROM orders WHERE EXTRACT(YEAR FROM created_at) = 2024;
@@ -121,19 +137,46 @@ SELECT * FROM orders WHERE EXTRACT(YEAR FROM created_at) = 2024;
 SELECT * FROM orders
 WHERE created_at &gt;= '2024-01-01' AND created_at &lt; '2025-01-01';</code></pre>
     </div>
+    <div class="code-block">
+<div class="cap">keyset_pagination.sql</div>      <pre><code>-- Slow at deep pages: OFFSET still walks past every skipped row
+SELECT id, name FROM products ORDER BY id LIMIT 20 OFFSET 100000;
+
+-- Fast at any depth: keyset pagination using the last seen id
+SELECT id, name FROM products
+WHERE id &gt; 100020
+ORDER BY id
+LIMIT 20;</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">select_star_and_indexed_join.sql</div>      <pre><code>-- Wasteful: pulls every column when only two are needed
+SELECT * FROM orders JOIN customers ON customers.id = orders.customer_id;
+
+-- Better: select only what's needed, and ensure customer_id is indexed
+SELECT orders.id, customers.name
+FROM orders
+JOIN customers ON customers.id = orders.customer_id;</code></pre>
+    </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Always measure with EXPLAIN ANALYZE before attempting to fix a slow query.</li>
         <li>Wrapping an indexed column in a function usually prevents the index from being used.</li>
+        <li>A sargable condition can use an index directly; rewriting non-sargable conditions is high-leverage.</li>
+        <li>Stale statistics can mislead the query planner; ANALYZE is a cheap fix worth trying early.</li>
+        <li>Keyset (seek-based) pagination avoids the growing cost of a large OFFSET on deep pages.</li>
         <li>Rewriting correlated subqueries as JOINs is a common, effective optimization.</li>
         <li>Partitioning and materialized views help at scale, once simpler fixes are exhausted.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Rewrite a query that filters WHERE LOWER(email) = 'someone@example.com' into a form that can still use an index on the email column, and explain the tradeoff you chose.</p>
+      <p>Rewrite a query that filters WHERE LOWER(email) = 'someone@example.com' into a form that can still use an index on the email column, and explain the tradeoff you chose. Then rewrite a deep OFFSET-based pagination query as keyset pagination and explain why it stays fast at page 10,000.</p>
     </div>
+    <a class="capstone-banner" href="project-advanced.html">
+      <span class="cb-label">You've finished the Advanced stage &mdash; capstone project</span>
+      <span class="cb-title">Making the storefront's slowest report actually fast</span>
+      <span class="cb-sub">Build it with what you just learned, before moving on.</span>
+    </a>
   </article>
 
   <div class="lesson-nav">

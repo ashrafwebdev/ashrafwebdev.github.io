@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,20 +119,51 @@
     <span class="stage-chip"><span class="n">04</span> Hero stage</span>
     <h1>Clustering and horizontal scaling</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    <p class="builds-on">Builds on: <a href="event-loop-internals-and-performance-tuning.html">Event loop internals and performance tuning</a></p>
   </div>
 
   <article>
-    <p class="lead">Since Node runs JavaScript on a single thread per process, the built-in <code>cluster</code> module (or a process manager like PM2) lets you run multiple Node processes on one machine, sharing the same port, to use all available CPU cores.</p>
-    <p>Horizontal scaling goes further, running multiple machines/containers behind a load balancer — this requires the application itself to be stateless, since a given request could be handled by any instance.</p>
+    <p class="lead">Since Node runs JavaScript on a single thread per process, the built-in <code>cluster</code> module (or a process manager like PM2) lets you run multiple Node processes on one machine, sharing the same port, to use all available CPU cores instead of leaving most of them idle.</p>
+    <p>The cluster module works by having a primary process fork one worker process per CPU core; incoming connections are distributed across those workers by the operating system (or Node's own round-robin scheduling on most platforms), and each worker runs a full, independent copy of your application.</p>
+    <p>PM2 is a popular production process manager that wraps clustering, automatic restarts on crash, log management, and zero-downtime reloads together — for most real deployments it's a more practical choice than hand-rolling the <code>cluster</code> module directly, since it also handles worker respawning and basic monitoring out of the box.</p>
+    <p>Horizontal scaling goes further than clustering on one machine, running multiple separate machines or containers behind a load balancer — this requires the application itself to be stateless, since a given request could be routed to any instance, and any state that needs to persist (sessions, uploaded files, cached data) has to live somewhere shared, like Redis or a database, not on a single instance's local disk or memory.</p>
+    <p>Long-lived connections like WebSockets complicate horizontal scaling: a client connected to one instance needs its subsequent messages routed back to that same instance (or the state needs to be shared across instances via something like Redis pub/sub), which is why load balancers often support 'sticky sessions' to keep a client pinned to the instance it first connected to.</p>
+    <p>A load balancer (nginx, or a cloud provider's own) distributes incoming traffic across your scaled instances and typically also performs health checks, automatically routing traffic away from an instance that stops responding correctly — orchestration platforms like Kubernetes build on this idea further, automatically scaling the number of instances up or down based on load.</p>
     <div class="code-block">
 <div class="cap">cluster.js</div>      <pre><code>const cluster = require("cluster");
 const os = require("os");
 
 if (cluster.isPrimary) {
   os.cpus().forEach(() =&gt; cluster.fork());
+
+  cluster.on("exit", (worker, code) =&gt; {
+    console.log(`Worker ${worker.process.pid} died, restarting...`);
+    cluster.fork(); // keep the pool at full strength
+  });
 } else {
   require("./server"); // each worker runs the actual app
 }</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">ecosystem.config.js (PM2)</div>      <pre><code>module.exports = {
+  apps: [{
+    name: "api",
+    script: "./server.js",
+    instances: "max",     // one process per CPU core
+    exec_mode: "cluster",
+    max_memory_restart: "300M",
+  }],
+};
+
+// pm2 start ecosystem.config.js
+// pm2 reload api   -- zero-downtime reload across all instances</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">worker-id.js (confirming requests hit different workers)</div>      <pre><code>app.get("/whoami", (req, res) =&gt; {
+  res.json({ pid: process.pid });
+});
+// Hit this repeatedly with several curl requests — the pid should
+// rotate across your worker processes rather than staying fixed.</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -128,13 +171,17 @@ if (cluster.isPrimary) {
         <li>One Node process uses one CPU core by default — clustering is how you use the rest on a multi-core machine.</li>
         <li>PM2 is a popular production process manager that wraps clustering, auto-restarts, and log management together.</li>
         <li>Stateless application design (no in-memory session storage, no local file writes assumed) is a prerequisite for horizontal scaling to work correctly.</li>
-        <li>A load balancer (nginx, or a cloud provider's own) distributes incoming traffic across your scaled instances.</li>
+        <li>A load balancer (nginx, or a cloud provider's own) distributes incoming traffic across your scaled instances and performs health checks.</li>
+        <li>Long-lived connections like WebSockets need sticky sessions or shared cross-instance state (e.g. Redis pub/sub) to work correctly once horizontally scaled.</li>
+        <li>Listening for the cluster module's <code>"exit"</code> event and forking a replacement worker keeps a crashed worker from permanently shrinking your pool.</li>
+        <li>Container orchestration platforms like Kubernetes build on the same idea, automatically scaling instance count based on load.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Use the cluster module to run your Express app across multiple worker processes and confirm (via process.pid in a response) that requests are being handled by different workers.</p>
+      <p>Use the cluster module to run your Express app across multiple worker processes and confirm (via process.pid in a response) that requests are being handled by different workers across several requests. Then kill one worker process manually and verify your "exit" handler forks a replacement automatically, keeping the pool at full strength.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">

@@ -65,6 +65,18 @@
   .exercise .ex-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 10px; display:block;}
   .exercise p{color:#EAF1EC; margin:0; font-size:14.5px;}
 
+  .builds-on{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); margin:10px 0 0;}
+  .builds-on a{color:var(--teal-deep); text-decoration:none;}
+  .builds-on a:hover{text-decoration:underline;}
+
+  .capstone-banner{
+    background:linear-gradient(155deg, var(--teal-deep), var(--teal)); color:#EAF1EC; border-radius:8px;
+    padding:22px 24px; margin:0 0 24px; text-decoration:none; display:block;
+  }
+  .capstone-banner .cb-label{font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--amber); margin:0 0 8px; display:block;}
+  .capstone-banner .cb-title{font-family:'IBM Plex Serif', serif; font-size:17px; color:#fff; margin:0 0 6px;}
+  .capstone-banner .cb-sub{font-size:13.5px; color:#D7E3DE; margin:0;}
+
   .lesson-nav{display:flex; justify-content:space-between; gap:16px; padding:36px 0 40px; border-top:1px solid var(--line); margin-top:28px; flex-wrap:wrap;}
   .lesson-nav a{
     flex:1; min-width:200px; border:1px solid var(--line); background:var(--paper-raised); border-radius:6px; padding:16px 18px;
@@ -107,31 +119,60 @@
     <span class="stage-chip"><span class="n">01</span> Zero stage</span>
     <h1>Running scripts with node</h1>
     <p class="lang-line"><b>Node.js</b> &middot; part of the free zero-to-hero guide</p>
+    
   </div>
 
   <article>
-    <p class="lead">Node.js runs JavaScript outside the browser, on your machine or a server, using the same V8 engine Chrome uses — with browser-only APIs like <code>document</code> replaced by server-focused ones like the filesystem.</p>
-    <p>Any <code>.js</code> file runs with <code>node filename.js</code>. There's no HTML page or browser involved at all — output goes to the terminal via <code>console.log</code>, exactly like in the browser console.</p>
+    <p class="lead">Node.js runs JavaScript outside the browser, on your machine or a server, using the same V8 engine Chrome uses to compile JavaScript down to machine code — but with browser-only APIs like <code>document</code> and <code>window</code> replaced by server-focused ones like the filesystem and networking modules.</p>
+    <p>Any <code>.js</code> file runs with <code>node filename.js</code>. There's no HTML page or browser involved at all — output goes to the terminal via <code>console.log</code>, exactly like in the browser console, and uncaught errors print a stack trace to stderr instead of showing up in dev tools.</p>
+    <p>Running <code>node</code> with no filename drops you into a REPL (Read-Eval-Print Loop) — a live prompt that evaluates JavaScript as you type it, useful for quick experiments. The REPL stores the result of the last expression in a special <code>_</code> variable, and <code>.exit</code> or Ctrl+D leaves it.</p>
+    <p>Node exposes a global <code>process</code> object with no browser equivalent: <code>process.argv</code> holds command-line arguments, <code>process.env</code> holds environment variables, and <code>process.exit(code)</code> terminates the script immediately with a given exit code. There's also a Node-specific <code>global</code> object standing in for the browser's <code>window</code>, though reaching for it directly is rare in normal code.</p>
+    <p>A Node script runs top to bottom and exits automatically once there's no more pending work — no open server, no pending timer, no unresolved promise keeping the event loop alive. That's why a script doing purely synchronous work finishes instantly, while a script that starts an HTTP server keeps running until you stop it.</p>
+    <p>You can also add a shebang line (<code>#!/usr/bin/env node</code>) at the top of a script and mark it executable with <code>chmod +x</code> to run it directly as <code>./script.js</code> without typing <code>node</code> first — handy for small command-line tools. The <code>--watch</code> flag, stable since Node 18, automatically restarts a script whenever its files change, which is useful during development without installing a separate tool like nodemon.</p>
     <div class="code-block">
-<div class="cap">Terminal</div>      <pre><code>node --version
-node hello.js
+<div class="cap">hello.js</div>      <pre><code>console.log("Hello from Node!");
+console.log("Node version:", process.version);</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">process-info.js</div>      <pre><code>// Run with: node process-info.js some-argument
+console.log("Script path:", process.argv[1]);
+console.log("First real argument:", process.argv[2]);
+console.log("Current working dir:", process.cwd());
 
-# hello.js
-console.log("Hello from Node!");</code></pre>
+if (!process.argv[2]) {
+  console.error("Missing argument!");
+  process.exit(1); // non-zero exit code signals failure
+}</code></pre>
+    </div>
+    <div class="code-block">
+<div class="cap">Terminal</div>      <pre><code>$ node
+&gt; 2 + 2
+4
+&gt; _ * 10
+40
+&gt; .exit
+
+$ node --watch server.js   # auto-restarts on file changes
+$ chmod +x cli.js &amp;&amp; ./cli.js   # run directly via shebang line</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
       <ul>
         <li>Node runs the same JavaScript language as the browser, but with a different set of built-in APIs (no DOM, but filesystem/network access instead).</li>
-        <li><code>node</code> without a filename drops into a REPL (Read-Eval-Print Loop) for quick experimentation.</li>
-        <li>Node scripts run top to bottom, exiting automatically once there's no more pending work (like an open server).</li>
+        <li><code>node</code> without a filename drops into a REPL for quick experimentation; the special <code>_</code> variable holds the last result.</li>
+        <li><code>process.argv</code> is an array; real command-line arguments start at index 2 (index 0 is the node binary, index 1 the script path).</li>
+        <li>Node scripts run top to bottom, exiting automatically once there's no more pending work (like an open server or timer).</li>
+        <li>The <code>--watch</code> flag (Node 18+) restarts a script automatically on file changes, without needing nodemon.</li>
+        <li>A shebang line plus <code>chmod +x</code> lets a script run directly as an executable, no <code>node</code> prefix needed.</li>
+        <li><code>console.error</code> writes to stderr rather than stdout — useful for separating error output from normal output when piping.</li>
         <li>Use a version manager (nvm, fnm) rather than a single global install if you work across projects needing different Node versions.</li>
       </ul>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Write a script that logs your name and the current date, then run it with node from the terminal.</p>
+      <p>Write a script that logs your name, the current date, and the value of process.argv[2], then run it as node script.js SomeArgument from the terminal. Afterward, open a plain node REPL and evaluate a couple of expressions directly, checking what the _ variable holds after each one.</p>
     </div>
+    
   </article>
 
   <div class="lesson-nav">
