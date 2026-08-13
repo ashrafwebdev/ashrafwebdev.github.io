@@ -155,8 +155,8 @@ RETURNING id, name, price;</code></pre>
 <div class="cap">unsafe_mistake.sql</div>      <pre><code>-- DANGER: no WHERE clause updates every row in the table
 UPDATE products SET price = 0;
 
--- Always test the condition as a SELECT first
-SELECT count(*) FROM products WHERE price = 0;</code></pre>
+-- Always test the condition as a SELECT first, and look at which rows come back
+SELECT * FROM products WHERE price = 0;</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -164,7 +164,7 @@ SELECT count(*) FROM products WHERE price = 0;</code></pre>
         <li>Always list explicit column names in INSERT to protect against future schema changes.</li>
         <li>A single INSERT can add several rows at once using comma-separated value tuples.</li>
         <li>UPDATE and DELETE without a WHERE clause affect every row in the table.</li>
-        <li>Test the WHERE clause with a SELECT COUNT first before running a destructive UPDATE or DELETE.</li>
+        <li>Test the WHERE clause with a plain SELECT first, and check the rows it returns, before running a destructive UPDATE or DELETE.</li>
         <li>RETURNING hands back affected rows' values without a separate follow-up query.</li>
         <li>TRUNCATE clears an entire table faster than DELETE but cannot be filtered with a WHERE clause.</li>
         <li>Most databases support wrapping these statements in a transaction to allow rolling back mistakes.</li>

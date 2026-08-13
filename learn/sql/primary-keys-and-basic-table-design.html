@@ -139,9 +139,11 @@
 );</code></pre>
     </div>
     <div class="code-block">
-<div class="cap">composite_key.sql</div>      <pre><code>CREATE TABLE product_tags (
-    product_id INTEGER NOT NULL REFERENCES products(id),
-    tag_id INTEGER NOT NULL REFERENCES tags(id),
+<div class="cap">composite_key.sql</div>      <pre><code>-- product_id and tag_id would normally also reference other tables;
+-- that REFERENCES syntax is covered in a later foreign keys lesson
+CREATE TABLE product_tags (
+    product_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
     added_at TIMESTAMP NOT NULL DEFAULT now(),
     PRIMARY KEY (product_id, tag_id)
 );</code></pre>

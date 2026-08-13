@@ -133,7 +133,7 @@
 <div class="cap">terminal</div>      <pre><code>$ psql -U postgres -d mydb
 mydb=# \dt
 mydb=# \d products
-mydb=# SELECT count(*) FROM products;
+mydb=# SELECT * FROM products;
 mydb=# \q
 
 $ mysql -u root -p mydb
@@ -164,7 +164,7 @@ $ mysql --host=localhost --port=3306 --user=app_user -p mydb</code></pre>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Connect to a local database with psql or mysql from the command line, list its tables, describe one table's structure, and run a simple SELECT count query. Then write out (without any real password) what a PostgreSQL connection URI for a database named shop, user app, on localhost port 5432, would look like.</p>
+      <p>Connect to a local database with psql or mysql from the command line, list its tables, describe one table's structure, and run a simple SELECT query against it. Then write out (without any real password) what a PostgreSQL connection URI for a database named shop, user app, on localhost port 5432, would look like.</p>
     </div>
     <a class="capstone-banner" href="project-zero.html">
       <span class="cb-label">You've finished the Zero stage &mdash; capstone project</span>
