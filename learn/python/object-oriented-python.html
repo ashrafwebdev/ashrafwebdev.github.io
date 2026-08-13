@@ -194,7 +194,7 @@ print(car.make, car.doors)</code></pre>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Create a Shape base class with an area() method returning 0, then Circle and Rectangle subclasses that override it with the correct formula. Then add a __repr__ method to each subclass so printing an instance shows something readable, and write a small script that sorts a list of mixed Circle/Rectangle instances by area using sorted(shapes, key=lambda s: s.area()).</p>
+      <p>Create a Shape base class with an area() method returning 0, then Circle and Rectangle subclasses that override it with the correct formula. Then add a __repr__ method to each subclass so printing an instance shows something readable, and write a small script that sorts a list of mixed Circle/Rectangle instances by area -- write a small get_area(shape) helper function and pass it as sorted(shapes, key=get_area).</p>
     </div>
     
   </article>
