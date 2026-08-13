@@ -136,6 +136,9 @@
   gap: 16px;
 }
 
+/* @media conditionally applies CSS at a given viewport width — the full
+   syntax is covered in the next lesson; here it just swaps the column
+   count below 600px. */
 @media (max-width: 600px) {
   .gallery { grid-template-columns: 1fr; }
 }</code></pre>
@@ -177,7 +180,7 @@
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Build a 3-column responsive image gallery with CSS Grid that collapses to 1 column under 600px using a media query. Then rebuild the same gallery using repeat(auto-fit, minmax(...)) instead of the media query, and compare how each behaves as you resize the browser continuously rather than at a single breakpoint.</p>
+      <p>Build a 3-column responsive image gallery with CSS Grid that collapses to 1 column under 600px using <code>@media (max-width: 600px) { ... }</code> (the full media query syntax is covered in the next lesson, but this one line is enough to get started). Then rebuild the same gallery using repeat(auto-fit, minmax(...)) instead of the media query, and compare how each behaves as you resize the browser continuously rather than at a single breakpoint.</p>
     </div>
     
   </article>

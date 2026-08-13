@@ -132,11 +132,12 @@
     <div class="code-block">
 <div class="cap">styles.css</div>      <pre><code>:root {
   --brand: #1F4E44;
+  --brand-hover: #2E6B5E;
   --text: #1A231F;
 }
 
 .btn { background: var(--brand); }
-.btn:hover { background: color-mix(in srgb, var(--brand) 85%, white); }</code></pre>
+.btn:hover { background: var(--brand-hover); }</code></pre>
     </div>
     <div class="code-block">
 <div class="cap">styles.css (per-component override + JS bridge)</div>      <pre><code>:root { --card-accent: #1F4E44; }

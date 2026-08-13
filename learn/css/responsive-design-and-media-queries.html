@@ -139,10 +139,13 @@
     <div class="code-block">
 <div class="cap">styles.css (non-size media features)</div>      <pre><code>/* Only apply hover styles on devices that actually support hovering */
 @media (hover: hover) {
-  .card:hover { transform: translateY(-2px); }
+  .card:hover { background: #E7F0EA; }
 }
 
-/* Respect a user's OS-level reduced-motion preference */
+/* Respect a user's OS-level reduced-motion preference. transition and
+   animation (previewed here — both get their own lesson soon) are the
+   two properties that create motion, so turning them off covers almost
+   every case. */
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }</code></pre>

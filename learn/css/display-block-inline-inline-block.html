@@ -148,8 +148,8 @@ div.section { display: block; } /* default for div anyway */</code></pre>
 .tag-row { font-size: 0; }      /* collapses the whitespace gap... */
 .tag-row .tag { font-size: 14px; } /* ...then restore text size on the tags */
 
-/* Usually simpler: skip inline-block for grouped items and use Flexbox */
-.tag-row-flex { display: flex; gap: 8px; }</code></pre>
+/* An even simpler fix exists once you reach Flexbox (a few lessons ahead):
+   display: flex with gap avoids this whitespace quirk entirely. */</code></pre>
     </div>
     <div class="key-points">
       <span class="kp-label">Key points</span>
@@ -164,7 +164,7 @@ div.section { display: block; } /* default for div anyway */</code></pre>
     </div>
     <div class="exercise">
       <span class="ex-label">Try it yourself</span>
-      <p>Take three span elements and set them to inline, then inline-block with fixed widths, and observe the layout difference in each case. Then reproduce the inline-block whitespace gap between two of them, fix it two different ways (removing markup whitespace, and switching the parent to flex with gap), and compare the results.</p>
+      <p>Take three span elements and set them to inline, then inline-block with fixed widths, and observe the layout difference in each case. Then reproduce the inline-block whitespace gap between two of them and fix it by removing the whitespace in the markup (Flexbox offers an even simpler fix using gap, which you'll meet in an upcoming lesson).</p>
     </div>
     
   </article>
