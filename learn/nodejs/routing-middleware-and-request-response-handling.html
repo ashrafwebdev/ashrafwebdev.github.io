@@ -146,6 +146,10 @@ app.use("/api/users", usersRouter); // mounted at /api/users</code></pre>
   if (!req.headers.authorization) {
     return res.status(401).json({ error: "Unauthorized" });
   }
+  // A real app would decode/verify the token here to find out who's
+  // calling — that comes in the Authentication lesson. For now, just
+  // stand in a fake user so the next middleware has something to check:
+  req.user = { role: "admin" };
   next();
 }
 
