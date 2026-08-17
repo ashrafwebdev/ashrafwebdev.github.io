@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects — Mohammed Ashraf</title>
+<meta name="description" content="Open-source projects and client work by Mohammed Ashraf: a published SEO/security auditor CLI, a role-based access control system, a Laravel task tracker, and more.">
+<link rel="canonical" href="https://ashrafwebdev.github.io/projects/">
+
+<meta property="og:title" content="Projects — Mohammed Ashraf">
+<meta property="og:description" content="Open-source projects and client work: a published Python CLI, an RBAC system, a Laravel task tracker, and more — real code, honestly labeled by how finished it is.">
+<meta property="og:url" content="https://ashrafwebdev.github.io/projects/">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E9EDEA;
+    --paper-raised:#F4F6F4;
+    --ink:#1A231F;
+    --ink-soft:#485650;
+    --line:#C9D1CB;
+    --teal:#2E6B5E;
+    --teal-deep:#1F4E44;
+    --amber:#C1832E;
+    --mono-label:#6E7D77;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 28px;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--teal-deep); outline-offset:3px;}
+
+  header.site{padding:22px 0; border-bottom:1px solid var(--line);}
+  .navrow{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .navrow .name{font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:0.02em; text-decoration:none;}
+  .navrow .name b{color:var(--teal-deep);}
+  .navrow nav{display:flex; flex-wrap:wrap; gap:6px 20px;}
+  .navrow nav a{font-family:'IBM Plex Mono', monospace; font-size:13px; text-decoration:none; color:var(--ink-soft); white-space:nowrap;}
+  .navrow nav a:hover{color:var(--teal-deep);}
+  .navrow nav a.current{color:var(--teal-deep);}
+
+  .hero{padding:56px 0 40px;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--mono-label); margin:0 0 12px;}
+  h1{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:clamp(30px,4.6vw,46px); margin:0 0 16px; max-width:20ch;}
+  .hero p.sub{font-size:17px; color:var(--ink-soft); max-width:64ch; margin:0 0 12px;}
+
+  section.group{padding:8px 0 64px;}
+  h2{font-family:'IBM Plex Serif', serif; font-weight:600; font-size:22px; margin:0 0 22px;}
+
+  .project-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:18px;
+  }
+  .project-card{
+    border:1px solid var(--line);
+    background:var(--paper-raised);
+    border-radius:8px;
+    padding:24px 24px 22px;
+    display:flex;
+    flex-direction:column;
+  }
+  .project-card .pc-top{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:10px;
+  }
+  .project-card h3{font-family:'IBM Plex Sans', sans-serif; font-weight:600; font-size:17px; margin:0;}
+  .status{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    padding:4px 9px;
+    border-radius:20px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .status.published{background:#E1EEE8; color:var(--teal-deep);}
+  .status.active{background:#FBEAD3; color:#8A5A19;}
+  .status.wip{background:#EEE9DD; color:#7A6A3F;}
+  .status.client{background:#E4E9F0; color:#33455E;}
+  .status.learning{background:#EDEDED; color:var(--ink-soft);}
+
+  .project-card p.desc{font-size:14px; color:var(--ink-soft); margin:0 0 16px; flex:1;}
+  .tech-tags{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 16px;}
+  .tech-tags span{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:3px 8px;
+  }
+  .project-card .links{display:flex; gap:16px; align-items:center;}
+  .project-card .view-link{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    text-decoration:none;
+    color:var(--teal-deep);
+    border-bottom:1px solid var(--teal-deep);
+  }
+  .project-card .view-link:hover{color:var(--teal);}
+
+  .note-banner{
+    border:1px solid var(--line); border-left:4px solid var(--amber);
+    background:var(--paper-raised); border-radius:6px; padding:18px 22px; margin-bottom:34px;
+    font-size:14px; color:var(--ink-soft);
+  }
+  .note-banner b{color:var(--ink);}
+
+  footer{padding:36px 0 40px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--mono-label); text-align:center; border-top:1px solid var(--line);}
+  footer a{color:var(--teal-deep); text-decoration:none;}
+
+  @media (max-width:760px){
+    .project-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap navrow">
+    <a class="name" href="../index.html" style="text-decoration:none;"><b>Mohammed Ashraf</b> / automation &amp; systems</a>
+    <nav>
+      <a href="../index.html#work">Work</a>
+      <a href="../index.html#religious-sites">Web Design</a>
+      <a href="../learn/index.html">Learn</a>
+      <a href="../projects/index.html" class="current">Projects</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Open source &amp; client work</p>
+    <h1>Projects</h1>
+    <p class="sub">A working sample of code I've written outside client engagements — a published CLI tool, backend patterns I reach for often, and a couple of Laravel bootcamp exercises. Labeled honestly by how finished each one actually is.</p>
+  </div>
+</section>
+
+<section class="group">
+  <div class="wrap">
+
+    <div class="note-banner">
+      <b>How to read the status tags:</b> "Published" means it's a real installable package with docs. "Active" and "Client site" are working, deployed code. "Learning project" and "In progress" mean exactly that — I'd rather label a repo honestly than dress it up.
+    </div>
+
+    <div class="project-grid">
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>growthaudit</h3>
+          <span class="status published">Published</span>
+        </div>
+        <p class="desc">A free, open-source website auditor. Scans any URL for SEO, technical, security, and performance issues — the kind of report normally locked behind a paid SEMrush or GTmetrix subscription. Ships as a real CLI with a rich terminal report, JSON output for scripts, and an HTML report you can hand to a client. Supports a <code>--fail-under</code> flag so it can gate a CI pipeline.</p>
+        <div class="tech-tags"><span>Python</span><span>PyPI</span><span>CLI</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/website-growth-auditor" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>RBAC (Node.js / Express)</h3>
+          <span class="status active">Active</span>
+        </div>
+        <p class="desc">A role-based access control system built directly in Node.js and Express — no framework magic, just the middleware, route guards, and permission-checking patterns worth understanding before reaching for a library that does it for you.</p>
+        <div class="tech-tags"><span>Node.js</span><span>Express</span><span>Auth</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/rbac" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Task Management System</h3>
+          <span class="status active">Active</span>
+        </div>
+        <p class="desc">A Laravel task tracker with role-based auth, per-task work sessions (start/end timers), and a full status-change history per task — the kind of internal tool a small team actually uses, not a CRUD scaffold.</p>
+        <div class="tech-tags"><span>Laravel</span><span>PHP</span><span>MySQL</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/task-management-system" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Video Correction Desktop App</h3>
+          <span class="status active">Active</span>
+        </div>
+        <p class="desc">A lightweight Windows desktop client (Python + Tkinter) that wraps a backend "video correction" API — pick a file, upload it on a background thread so the UI never freezes, and see the result. Ships with a mock Flask backend implementing the same API contract, so the whole thing runs end-to-end with zero proprietary code. Demonstrates a pattern I use often: a thin, native-feeling client in front of someone else's service.</p>
+        <div class="tech-tags"><span>Python</span><span>Tkinter</span><span>Flask</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/video-correction-desktop-app" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Dawat-e-Hidayat</h3>
+          <span class="status client">Client site</span>
+        </div>
+        <p class="desc">A community website for an Islamic dawah organization — live radio, Tasawwuf resources, and news &amp; events, built and shipped as a static site. Directly in the same lane as the masjid and Islamic-nonprofit demo work showcased on the main portfolio page.</p>
+        <div class="tech-tags"><span>HTML</span><span>CSS</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/dawatehidayat" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Social Media Image Resizer</h3>
+          <span class="status active">Active</span>
+        </div>
+        <p class="desc">A small PHP utility for batch-resizing uploaded images to the exact dimensions each social platform expects, with download links for the results and automatic cleanup afterward. No framework, no build step — just a focused tool that does one thing.</p>
+        <div class="tech-tags"><span>PHP</span><span>JavaScript</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/social-media-image-resizer" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Apache Log Analyzer</h3>
+          <span class="status wip">In progress</span>
+        </div>
+        <p class="desc">A command-line tool that parses Apache access logs and reports on traffic patterns — top requesting IPs, HTTP status breakdowns, request volume over time. Applying years of real Apache server-admin work to a practical Java project rather than a toy exercise. Log parsing is done; aggregation and reporting are still being built.</p>
+        <div class="tech-tags"><span>Java</span><span>Maven</span><span>JUnit</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/apache-log-analyzer" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <div class="pc-top">
+          <h3>Laravel 12 Bootcamp</h3>
+          <span class="status learning">Learning project</span>
+        </div>
+        <p class="desc">Working repo from a Laravel 12 fundamentals bootcamp — routing (parameters, optional segments, named routes, redirects) and controller basics. Kept public as a record of the fundamentals, not presented as a finished app.</p>
+        <div class="tech-tags"><span>Laravel</span><span>PHP</span></div>
+        <div class="links">
+          <a class="view-link" href="https://github.com/ashrafwebdev/laravel12-taskmanager" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  Mohammed Ashraf — built and maintained directly, no agency in the middle. <a href="../index.html#contact">Get in touch</a>
+</footer>
+
+</body>
+</html>
